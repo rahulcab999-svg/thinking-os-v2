@@ -3,9 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
 // ─── WEB SEARCH MASTER SWITCH ──────────────────────────────────────────────────
-// 🔥 Set this to 'true' when you want Tavily web search (free 1000 searches/month)
-const ENABLE_WEB_SEARCH = true;   // ✅ Web search ON  // 👈 Change to trUe later for real-time search
-// ───────────────────────────────────────────────────────────────────────────────
+const ENABLE_WEB_SEARCH = true;  // 👈 Change to true later for real-time search
 
 // ─── PROBLEM TYPES ────────────────────────────────────────────────────────────
 const PROBLEM_TYPES = [
@@ -199,7 +197,6 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 ];
 
 // ─── STORAGE ──────────────────────────────────────────────────────────────────
-// ✅ SSR FIX: Added typeof window check
 function loadJournal() {
   if (typeof window === "undefined") return [];
   try { return JSON.parse(localStorage.getItem("tos_v2_journal") || "[]"); } catch { return []; }
@@ -215,7 +212,6 @@ function saveScores(s) {
   try { localStorage.setItem("tos_v2_scores", JSON.stringify(s)); } catch {}
 }
 
-// ─── FRAMEWORK SCORING ────────────────────────────────────────────────────────
 function recordFrameworkUse(scores, fwIds, confidence) {
   const updated = { ...scores };
   fwIds.forEach(id => {
@@ -243,7 +239,6 @@ function fwAvgConf(s) {
 }
 
 // ─── API CALL ──────────────────────────────────────────────────────────────────
-// 🔥 Calls YOUR backend, NOT Anthropic
 async function callClaude(systemPrompt, userContent, maxTokens = 1200, useWebSearch = false) {
   const response = await fetch("/api/analyze", {
     method: "POST",
@@ -261,6 +256,10 @@ async function callClaude(systemPrompt, userContent, maxTokens = 1200, useWebSea
 }
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function parseJSON(raw) {
   try { return JSON.parse(raw.replace(/```json|```/g, "").trim()); } catch { return null; }
 }
@@ -276,7 +275,9 @@ function confLabel(c) {
   if (c >= 70) return "HIGH";
   if (c >= 45) return "MEDIUM";
   return "LOW";
-}// ─── SYSTEM PROMPTS ───────────────────────────────────────────────────────────
+}
+
+// ─── SYSTEM PROMPTS ───────────────────────────────────────────────────────────
 
 const RESEARCH_SYSTEM = `You are an evidence collection engine. Your job: gather real, verifiable information about the question before any analysis begins. Use web search to collect:
 - Market size and trends (if applicable)
@@ -296,14 +297,7 @@ Return ONLY a JSON object (no markdown fences):
   "unknowns": [],
   "research_confidence": 0,
   "research_summary": ""
-}
-
-- facts: verified information with evidence
-- sources: where each fact came from (publication, domain, or "general knowledge")
-- assumptions: things inferred but not verified
-- unknowns: information needed for a reliable decision that could not be found
-- research_confidence: 0-100 how complete the evidence base is
-- research_summary: 1-2 sentence summary of what was and was not found`;
+}`;
 
 const REALITY_SYSTEM = `You are a reality extraction engine. You receive raw research data. Your job:
 1. Classify the problem type
@@ -397,10 +391,10 @@ function ConfidenceBadge({ value, small }) {
   const color = confColor(value);
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
-      <div style={{ fontSize: small ? "9px" : "10px", fontWeight: "700", color, letterSpacing: "0.06em" }}>
+      <div style={{ fontSize: small ? "11px" : "13px", fontWeight: "700", color, letterSpacing: "0.06em" }}>
         {confLabel(value)} {value}%
       </div>
-      <div style={{ width: small ? "48px" : "60px", height: "3px", background: "rgba(255,255,255,0.08)", borderRadius: "2px" }}>
+      <div style={{ width: small ? "48px" : "60px", height: "3px", background: "#e2e8f0", borderRadius: "2px" }}>
         <div style={{ height: "100%", width: `${value}%`, background: color, borderRadius: "2px", transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)" }} />
       </div>
     </div>
@@ -412,7 +406,7 @@ function SeverityBadge({ severity }) {
   const map = { Critical: "#ef4444", High: "#f97316", Medium: "#f59e0b", Low: "#64748b" };
   const c = map[severity] || "#64748b";
   return (
-    <div style={{ fontSize: "9px", fontWeight: "700", color: c, background: `${c}18`, border: `1px solid ${c}35`, borderRadius: "4px", padding: "2px 5px", flexShrink: 0, whiteSpace: "nowrap" }}>
+    <div style={{ fontSize: "11px", fontWeight: "700", color: c, background: `${c}18`, border: `1px solid ${c}35`, borderRadius: "4px", padding: "2px 8px", flexShrink: 0, whiteSpace: "nowrap" }}>
       {severity}
     </div>
   );
@@ -422,10 +416,10 @@ function SeverityBadge({ severity }) {
 function MiniSection({ title, items, color }) {
   if (!items?.length) return null;
   return (
-    <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "7px", padding: "8px 10px" }}>
-      <div style={{ fontSize: "9px", fontWeight: "600", color: "#475569", letterSpacing: "0.08em", marginBottom: "6px" }}>{title}</div>
+    <div style={{ background: "#f7fafc", borderRadius: "7px", padding: "8px 12px" }}>
+      <div style={{ fontSize: "11px", fontWeight: "600", color: "#4a5568", letterSpacing: "0.08em", marginBottom: "6px" }}>{title}</div>
       {items.slice(0, 3).map((item, i) => (
-        <div key={i} style={{ fontSize: "11px", color, lineHeight: "1.5", marginBottom: "3px" }}>· {item}</div>
+        <div key={i} style={{ fontSize: "14px", color, lineHeight: "1.6", marginBottom: "3px" }}>· {item}</div>
       ))}
     </div>
   );
@@ -436,9 +430,9 @@ function FrameworkList({ title, items, color }) {
   if (!items?.length) return null;
   return (
     <div>
-      <div style={{ fontSize: "9px", fontWeight: "600", color: "#475569", letterSpacing: "0.08em", marginBottom: "5px" }}>{title}</div>
+      <div style={{ fontSize: "11px", fontWeight: "600", color: "#4a5568", letterSpacing: "0.08em", marginBottom: "5px" }}>{title}</div>
       {items.slice(0, 4).map((item, i) => (
-        <div key={i} style={{ fontSize: "11px", color, lineHeight: "1.55", marginBottom: "3px" }}>· {item}</div>
+        <div key={i} style={{ fontSize: "14px", color, lineHeight: "1.6", marginBottom: "3px" }}>· {item}</div>
       ))}
     </div>
   );
@@ -448,12 +442,12 @@ function FrameworkList({ title, items, color }) {
 function LoadingSkeleton({ color, label }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", color, fontSize: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", color, fontSize: "14px" }}>
         <div style={{ width: "12px", height: "12px", border: `2px solid ${color}33`, borderTop: `2px solid ${color}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
         {label}
       </div>
       {[75, 55, 65, 45, 60].map((w, i) => (
-        <div key={i} style={{ height: "10px", width: `${w}%`, background: "rgba(255,255,255,0.04)", borderRadius: "4px", animation: "pulse 1.5s ease infinite", animationDelay: `${i * 0.1}s` }} />
+        <div key={i} style={{ height: "12px", width: `${w}%`, background: "#edf2f7", borderRadius: "4px", animation: "pulse 1.5s ease infinite", animationDelay: `${i * 0.1}s` }} />
       ))}
     </div>
   );
@@ -462,9 +456,11 @@ function LoadingSkeleton({ color, label }) {
 // ─── SPINNER ──────────────────────────────────────────────────────────────────
 function Spinner({ color }) {
   return (
-    <div style={{ width: "8px", height: "8px", border: `1.5px solid ${color}44`, borderTop: `1.5px solid ${color}`, borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
+    <div style={{ width: "10px", height: "10px", border: `2px solid ${color}44`, borderTop: `2px solid ${color}`, borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
   );
-}// ─── JOURNAL VIEW ─────────────────────────────────────────────────────────────
+}
+
+// ─── JOURNAL VIEW ─────────────────────────────────────────────────────────────
 function JournalView({ journal, scores, onBack, onUpdateOutcome }) {
   const [editingId, setEditingId] = useState(null);
   const [editOutcome, setEditOutcome] = useState("");
@@ -476,13 +472,13 @@ function JournalView({ journal, scores, onBack, onUpdateOutcome }) {
   const calibrationScore = withOutcomes > 0 ? Math.round((successCount / withOutcomes) * 100) : null;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060a12", color: "#e2e8f0", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px" }}>
-        <button onClick={onBack} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", padding: "5px 12px", cursor: "pointer", color: "#64748b", fontSize: "11px", fontFamily: "'Inter',sans-serif" }}>← Back</button>
-        <div style={{ fontSize: "13px", fontWeight: "700", color: "#f1f5f9" }}>📓 Decision Journal</div>
-        <div style={{ fontSize: "10px", color: "#334155" }}>{totalEntries} entries</div>
+    <div style={{ minHeight: "100vh", background: "#f0f2f5", color: "#1a1a2e", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>
+      <div style={{ borderBottom: "1px solid #e2e8f0", padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", background: "#ffffff" }}>
+        <button onClick={onBack} style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "5px 14px", cursor: "pointer", color: "#4a5568", fontSize: "13px", fontFamily: "'Inter',sans-serif" }}>← Back</button>
+        <div style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a2e" }}>📓 Decision Journal</div>
+        <div style={{ fontSize: "12px", color: "#718096" }}>{totalEntries} entries</div>
         {calibrationScore != null && (
-          <div style={{ marginLeft: "auto", fontSize: "10px", background: confColor(calibrationScore) + "15", border: `1px solid ${confColor(calibrationScore)}35`, borderRadius: "5px", padding: "3px 9px", color: confColor(calibrationScore), fontWeight: "700" }}>
+          <div style={{ marginLeft: "auto", fontSize: "12px", background: confColor(calibrationScore) + "15", border: `1px solid ${confColor(calibrationScore)}35`, borderRadius: "5px", padding: "3px 10px", color: confColor(calibrationScore), fontWeight: "700" }}>
             Calibration {calibrationScore}% ({withOutcomes} tracked)
           </div>
         )}
@@ -491,28 +487,28 @@ function JournalView({ journal, scores, onBack, onUpdateOutcome }) {
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", display: "grid", gridTemplateColumns: "1fr 260px", gap: "16px", alignItems: "start" }}>
         <div>
           {journal.length === 0 ? (
-            <div style={{ textAlign: "center", color: "#334155", fontSize: "13px", padding: "60px 20px" }}>No decisions recorded yet.</div>
+            <div style={{ textAlign: "center", color: "#718096", fontSize: "15px", padding: "60px 20px" }}>No decisions recorded yet.</div>
           ) : journal.map(entry => (
-            <div key={entry.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "10px", padding: "14px 16px", marginBottom: "10px" }}>
+            <div key={entry.id} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px 18px", marginBottom: "10px" }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "8px" }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "10px", color: "#334155", marginBottom: "3px" }}>
+                  <div style={{ fontSize: "12px", color: "#718096", marginBottom: "3px" }}>
                     {new Date(entry.date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                     {" · "}{entry.problem_type || "strategy"}
                   </div>
-                  <div style={{ fontSize: "11px", color: "#64748b", fontStyle: "italic", marginBottom: "6px" }}>"{entry.question}"</div>
-                  <div style={{ fontSize: "13px", fontWeight: "600", color: "#e2e8f0", lineHeight: "1.4" }}>{entry.prediction}</div>
+                  <div style={{ fontSize: "13px", color: "#4a5568", fontStyle: "italic", marginBottom: "6px" }}>"{entry.question}"</div>
+                  <div style={{ fontSize: "15px", fontWeight: "600", color: "#1a1a2e", lineHeight: "1.4" }}>{entry.prediction}</div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
                   <ConfidenceBadge value={entry.confidence} small />
                   {entry.risk_level && (
-                    <span style={{ fontSize: "9px", fontWeight: "700", padding: "2px 6px", borderRadius: "4px",
+                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "4px",
                       background: entry.risk_level === "High" ? "#ef444415" : entry.risk_level === "Medium" ? "#f59e0b15" : "#22c55e15",
                       color: entry.risk_level === "High" ? "#ef4444" : entry.risk_level === "Medium" ? "#f59e0b" : "#22c55e"
                     }}>{entry.risk_level} RISK</span>
                   )}
                   {entry.accuracy != null && (
-                    <span style={{ fontSize: "9px", fontWeight: "700", padding: "2px 6px", borderRadius: "4px",
+                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "4px",
                       background: entry.accuracy === true ? "#22c55e15" : entry.accuracy === "partial" ? "#f59e0b15" : "#ef444415",
                       color: entry.accuracy === true ? "#22c55e" : entry.accuracy === "partial" ? "#f59e0b" : "#ef4444"
                     }}>
@@ -523,33 +519,33 @@ function JournalView({ journal, scores, onBack, onUpdateOutcome }) {
               </div>
 
               {entry.reasoning && (
-                <div style={{ fontSize: "10px", color: "#475569", lineHeight: "1.5", marginBottom: "8px" }}>
+                <div style={{ fontSize: "12px", color: "#718096", lineHeight: "1.6", marginBottom: "8px" }}>
                   {entry.reasoning.slice(0, 180)}{entry.reasoning.length > 180 ? "…" : ""}
                 </div>
               )}
 
-              <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "8px", marginTop: "4px" }}>
-                <div style={{ fontSize: "9px", color: "#334155", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "5px" }}>OUTCOME</div>
+              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "8px", marginTop: "4px" }}>
+                <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "5px" }}>OUTCOME</div>
                 {editingId === entry.id ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <input value={editOutcome} onChange={e => setEditOutcome(e.target.value)} placeholder="What actually happened?" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "5px", padding: "6px 8px", color: "#e2e8f0", fontSize: "11px", fontFamily: "'Inter',sans-serif" }} />
+                    <input value={editOutcome} onChange={e => setEditOutcome(e.target.value)} placeholder="What actually happened?" style={{ background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "6px 10px", color: "#1a1a2e", fontSize: "13px", fontFamily: "'Inter',sans-serif" }} />
                     <div style={{ display: "flex", gap: "5px" }}>
                       {["success","partial","failure"].map(v => (
-                        <button key={v} onClick={() => setEditAccuracy(v)} style={{ flex: 1, background: editAccuracy === v ? (v === "success" ? "#22c55e20" : v === "partial" ? "#f59e0b20" : "#ef444420") : "transparent", border: `1px solid ${editAccuracy === v ? (v === "success" ? "#22c55e50" : v === "partial" ? "#f59e0b50" : "#ef444450") : "rgba(255,255,255,0.08)"}`, borderRadius: "5px", padding: "4px 6px", cursor: "pointer", color: editAccuracy === v ? (v === "success" ? "#22c55e" : v === "partial" ? "#f59e0b" : "#ef4444") : "#475569", fontSize: "10px", fontFamily: "'Inter',sans-serif", textTransform: "capitalize" }}>{v}</button>
+                        <button key={v} onClick={() => setEditAccuracy(v)} style={{ flex: 1, background: editAccuracy === v ? (v === "success" ? "#22c55e20" : v === "partial" ? "#f59e0b20" : "#ef444420") : "#f7fafc", border: `1px solid ${editAccuracy === v ? (v === "success" ? "#22c55e50" : v === "partial" ? "#f59e0b50" : "#ef444450") : "#e2e8f0"}`, borderRadius: "5px", padding: "4px 8px", cursor: "pointer", color: editAccuracy === v ? (v === "success" ? "#22c55e" : v === "partial" ? "#f59e0b" : "#ef4444") : "#4a5568", fontSize: "12px", fontFamily: "'Inter',sans-serif", textTransform: "capitalize" }}>{v}</button>
                       ))}
                     </div>
                     <div style={{ display: "flex", gap: "5px" }}>
-                      <button onClick={() => { onUpdateOutcome(entry.id, editOutcome, editAccuracy); setEditingId(null); }} style={{ background: "#6366f120", border: "1px solid #6366f140", borderRadius: "5px", padding: "5px 12px", cursor: "pointer", color: "#818cf8", fontSize: "10px", fontFamily: "'Inter',sans-serif" }}>Save</button>
-                      <button onClick={() => setEditingId(null)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "5px", padding: "5px 10px", cursor: "pointer", color: "#475569", fontSize: "10px", fontFamily: "'Inter',sans-serif" }}>✕</button>
+                      <button onClick={() => { onUpdateOutcome(entry.id, editOutcome, editAccuracy); setEditingId(null); }} style={{ background: "#6366f120", border: "1px solid #6366f140", borderRadius: "5px", padding: "5px 14px", cursor: "pointer", color: "#6366f1", fontSize: "12px", fontFamily: "'Inter',sans-serif" }}>Save</button>
+                      <button onClick={() => setEditingId(null)} style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "5px 12px", cursor: "pointer", color: "#718096", fontSize: "12px", fontFamily: "'Inter',sans-serif" }}>✕</button>
                     </div>
                   </div>
                 ) : entry.outcome ? (
                   <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
-                    <div style={{ fontSize: "11px", color: "#94a3b8", flex: 1 }}>{entry.outcome}</div>
-                    <button onClick={() => { setEditingId(entry.id); setEditOutcome(entry.outcome); setEditAccuracy(entry.accuracy === true ? "success" : entry.accuracy === "partial" ? "partial" : "failure"); }} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#334155", fontSize: "10px" }}>✏</button>
+                    <div style={{ fontSize: "13px", color: "#4a5568", flex: 1 }}>{entry.outcome}</div>
+                    <button onClick={() => { setEditingId(entry.id); setEditOutcome(entry.outcome); setEditAccuracy(entry.accuracy === true ? "success" : entry.accuracy === "partial" ? "partial" : "failure"); }} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#718096", fontSize: "12px" }}>✏</button>
                   </div>
                 ) : (
-                  <button onClick={() => { setEditingId(entry.id); setEditOutcome(""); setEditAccuracy("success"); }} style={{ background: "transparent", border: "1px dashed rgba(255,255,255,0.1)", borderRadius: "5px", padding: "5px 10px", cursor: "pointer", color: "#334155", fontSize: "10px", fontFamily: "'Inter',sans-serif" }}>+ Record outcome</button>
+                  <button onClick={() => { setEditingId(entry.id); setEditOutcome(""); setEditAccuracy("success"); }} style={{ background: "transparent", border: "1px dashed #e2e8f0", borderRadius: "5px", padding: "5px 12px", cursor: "pointer", color: "#718096", fontSize: "12px", fontFamily: "'Inter',sans-serif" }}>+ Record outcome</button>
                 )}
               </div>
             </div>
@@ -557,8 +553,8 @@ function JournalView({ journal, scores, onBack, onUpdateOutcome }) {
         </div>
 
         <div style={{ position: "sticky", top: 0 }}>
-          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "10px", padding: "12px 14px" }}>
-            <div style={{ fontSize: "10px", color: "#475569", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "10px" }}>FRAMEWORK PERFORMANCE</div>
+          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "12px 14px" }}>
+            <div style={{ fontSize: "12px", color: "#4a5568", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "10px" }}>FRAMEWORK PERFORMANCE</div>
             {ALL_FRAMEWORKS.map(fw => {
               const s = scores[fw.id];
               if (!s || s.uses === 0) return null;
@@ -567,27 +563,29 @@ function JournalView({ journal, scores, onBack, onUpdateOutcome }) {
               return (
                 <div key={fw.id} style={{ marginBottom: "8px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
-                    <span style={{ fontSize: "10px", color: "#94a3b8" }}>{fw.icon} {fw.label}</span>
-                    <span style={{ fontSize: "9px", fontFamily: "'JetBrains Mono', monospace", color: rate != null ? confColor(rate) : "#334155" }}>
+                    <span style={{ fontSize: "12px", color: "#4a5568" }}>{fw.icon} {fw.label}</span>
+                    <span style={{ fontSize: "11px", fontFamily: "'JetBrains Mono', monospace", color: rate != null ? confColor(rate) : "#718096" }}>
                       {rate != null ? `${rate}%` : "—"} · {s.uses}✗
                     </span>
                   </div>
                   {rate != null && (
-                    <div style={{ height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "2px" }}>
+                    <div style={{ height: "3px", background: "#edf2f7", borderRadius: "2px" }}>
                       <div style={{ height: "100%", width: `${rate}%`, background: confColor(rate), borderRadius: "2px", transition: "width 0.5s ease" }} />
                     </div>
                   )}
-                  {avgConf != null && <div style={{ fontSize: "9px", color: "#334155", marginTop: "1px" }}>Avg conf: {avgConf}%</div>}
+                  {avgConf != null && <div style={{ fontSize: "11px", color: "#a0aec0", marginTop: "1px" }}>Avg conf: {avgConf}%</div>}
                 </div>
               );
             })}
-            {Object.keys(scores).length === 0 && <div style={{ fontSize: "10px", color: "#334155" }}>No framework data yet. Complete analyses and record outcomes to build scorecards.</div>}
+            {Object.keys(scores).length === 0 && <div style={{ fontSize: "12px", color: "#a0aec0" }}>No framework data yet. Complete analyses and record outcomes to build scorecards.</div>}
           </div>
         </div>
       </div>
     </div>
   );
-}// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
+}
+
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function ThinkingOSv2() {
   const [view, setView]                       = useState("main");
   const [question, setQuestion]               = useState("");
@@ -613,18 +611,33 @@ export default function ThinkingOSv2() {
     s.textContent = `
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
       * { box-sizing: border-box; }
-      body { margin: 0; }
+      body { margin: 0; background: #f0f2f5; }
+      .light-theme { background: #f0f2f5 !important; color: #1a1a2e !important; }
+      .light-theme .card { background: #ffffff !important; border-color: #e2e8f0 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important; }
+      .light-theme .card-title { color: #1a1a2e !important; }
+      .light-theme .card-text { color: #2d3748 !important; }
+      body, .light-theme, .light-theme * { font-size: 16px !important; line-height: 1.7 !important; }
+      .light-theme h1 { font-size: 28px !important; }
+      .light-theme h2 { font-size: 22px !important; }
+      .light-theme h3 { font-size: 18px !important; }
+      .light-theme .small-text { font-size: 14px !important; }
       @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
       @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
       @keyframes spin { to{transform:rotate(360deg)} }
-      ::-webkit-scrollbar { width: 4px; height: 4px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: #e2e8f0; }
+      ::-webkit-scrollbar-thumb { background: #a0aec0; border-radius: 4px; }
       textarea:focus, input:focus { outline: none; }
       textarea { caret-color: #6366f1; }
+      .fw-pill { transition: all 0.15s ease; cursor: pointer; }
+      .fw-pill:hover { transform: scale(1.02); }
     `;
     document.head.appendChild(s);
-    return () => document.head.removeChild(s);
+    document.body.classList.add('light-theme');
+    return () => {
+      document.head.removeChild(s);
+      document.body.classList.remove('light-theme');
+    };
   }, []);
 
   const reset = useCallback(() => {
@@ -642,7 +655,6 @@ export default function ThinkingOSv2() {
     const q = question.trim();
     const col = {};
 
-    // ── PHASE 0: RESEARCH ────────────────────────────────────────────────────
     setActivePhase("research");
     let researchData;
     try {
@@ -663,7 +675,8 @@ export default function ThinkingOSv2() {
     setPhaseData(p => ({ ...p, research: researchData }));
     setCompletedPhases(c => ({ ...c, research: true }));
 
-    // ── PHASE 1: REALITY EXTRACTION ──────────────────────────────────────────
+    await sleep(500);
+
     setActivePhase("reality");
     let realityData;
     try {
@@ -692,15 +705,16 @@ export default function ThinkingOSv2() {
     setSelectedFwIds(fws.map(f => f.id));
     if (fws.length > 0) setActiveFwId(fws[0].id);
 
-    // ── PHASE 2: FRAMEWORK ANALYSIS ──────────────────────────────────────────
     setActivePhase("analysis");
     const loadInit = {};
     fws.forEach(f => { loadInit[f.id] = true; });
     setFwLoading(loadInit);
 
     const fwRes = {};
-    await Promise.all(fws.map(async (fw) => {
+    for (let i = 0; i < fws.length; i++) {
+      const fw = fws[i];
       try {
+        if (i > 0) await sleep(1500);
         const raw = await callClaude(
           fw.prompt,
           `Problem: "${q}"\n\nVERIFIED FACTS (from research — treat as factual):\n${JSON.stringify(researchData.facts)}\n\nSources: ${JSON.stringify(researchData.sources)}\n\nASSUMPTIONS (not verified — label clearly):\n${JSON.stringify(realityData.assumptions)}\n\nUNKNOWNS (missing info — lower confidence accordingly):\n${JSON.stringify(realityData.unknowns)}\n\nApply your framework now.`
@@ -711,7 +725,7 @@ export default function ThinkingOSv2() {
       }
       setFwResults(prev => ({ ...prev, [fw.id]: fwRes[fw.id] }));
       setFwLoading(prev => ({ ...prev, [fw.id]: false }));
-    }));
+    }
 
     col.frameworks = fwRes;
     setCompletedPhases(c => ({ ...c, analysis: true }));
@@ -721,7 +735,8 @@ export default function ThinkingOSv2() {
     setScores(updatedScores);
     saveScores(updatedScores);
 
-    // ── PHASE 3: CROSS-EXAMINATION ────────────────────────────────────────────
+    await sleep(500);
+
     setActivePhase("crossexam");
     let crossData;
     try {
@@ -738,7 +753,8 @@ export default function ThinkingOSv2() {
     setPhaseData(p => ({ ...p, crossexam: crossData }));
     setCompletedPhases(c => ({ ...c, crossexam: true }));
 
-    // ── PHASE 4: RED TEAM ─────────────────────────────────────────────────────
+    await sleep(500);
+
     setActivePhase("redteam");
     let redData;
     try {
@@ -752,7 +768,8 @@ export default function ThinkingOSv2() {
     setPhaseData(p => ({ ...p, redteam: redData }));
     setCompletedPhases(c => ({ ...c, redteam: true }));
 
-    // ── PHASE 5: SYNTHESIS ────────────────────────────────────────────────────
+    await sleep(500);
+
     setActivePhase("synthesis");
     let synthData;
     try {
@@ -807,7 +824,6 @@ export default function ThinkingOSv2() {
     }
   }, [journal, scores]);
 
-  // ── RENDER ────────────────────────────────────────────────────────────────
   const research  = phaseData.research;
   const reality   = phaseData.reality;
   const crossexam = phaseData.crossexam;
@@ -826,12 +842,12 @@ export default function ThinkingOSv2() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060a12", color: "#e2e8f0", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "10px 18px", display: "flex", alignItems: "center", gap: "12px", background: "rgba(255,255,255,0.015)", flexShrink: 0 }}>
-        <div style={{ width: "28px", height: "28px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", flexShrink: 0 }}>🧩</div>
+    <div style={{ minHeight: "100vh", background: "#f0f2f5", color: "#1a1a2e", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ borderBottom: "1px solid #e2e8f0", padding: "10px 18px", display: "flex", alignItems: "center", gap: "12px", background: "#ffffff", flexShrink: 0 }}>
+        <div style={{ width: "32px", height: "32px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", flexShrink: 0 }}>🧩</div>
         <div>
-          <div style={{ fontSize: "13px", fontWeight: "700", color: "#f1f5f9", letterSpacing: "-0.02em" }}>Thinking OS <span style={{ color: "#6366f1", fontSize: "10px", fontFamily: "'JetBrains Mono', monospace" }}>v2</span></div>
-          <div style={{ fontSize: "9px", color: "#334155", letterSpacing: "0.06em" }}>DECISION INTELLIGENCE · EVIDENCE-FIRST</div>
+          <div style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a2e", letterSpacing: "-0.02em" }}>Thinking OS <span style={{ color: "#6366f1", fontSize: "12px", fontFamily: "'JetBrains Mono', monospace" }}>v2</span></div>
+          <div style={{ fontSize: "11px", color: "#718096", letterSpacing: "0.06em" }}>DECISION INTELLIGENCE · EVIDENCE-FIRST</div>
         </div>
 
         {hasRun && (
@@ -839,16 +855,16 @@ export default function ThinkingOSv2() {
             {PHASES.map((ph, i) => (
               <div key={ph.id} style={{ display: "flex", alignItems: "center", gap: "3px" }}>
                 <div style={{
-                  fontSize: "10px", padding: "2px 7px", borderRadius: "4px", fontWeight: "600", whiteSpace: "nowrap",
-                  background: completedPhases[ph.id] ? `${ph.color}18` : activePhase === ph.id ? `${ph.color}12` : "rgba(255,255,255,0.03)",
-                  border: `1px solid ${completedPhases[ph.id] ? ph.color : activePhase === ph.id ? ph.color + "80" : "rgba(255,255,255,0.06)"}`,
-                  color: completedPhases[ph.id] ? ph.color : activePhase === ph.id ? ph.color : "#334155",
+                  fontSize: "12px", padding: "2px 10px", borderRadius: "4px", fontWeight: "600", whiteSpace: "nowrap",
+                  background: completedPhases[ph.id] ? `${ph.color}18` : activePhase === ph.id ? `${ph.color}12` : "#f7fafc",
+                  border: `1px solid ${completedPhases[ph.id] ? ph.color : activePhase === ph.id ? ph.color + "80" : "#e2e8f0"}`,
+                  color: completedPhases[ph.id] ? ph.color : activePhase === ph.id ? ph.color : "#718096",
                   display: "flex", alignItems: "center", gap: "4px"
                 }}>
                   {completedPhases[ph.id] ? "✓" : activePhase === ph.id ? <Spinner color={ph.color} /> : ph.icon}
                   <span style={{ display: "inline" }}>{ph.label}</span>
                 </div>
-                {i < PHASES.length - 1 && <div style={{ width: "5px", height: "1px", background: "rgba(255,255,255,0.08)" }} />}
+                {i < PHASES.length - 1 && <div style={{ width: "6px", height: "1px", background: "#e2e8f0" }} />}
               </div>
             ))}
           </div>
@@ -856,17 +872,17 @@ export default function ThinkingOSv2() {
 
         <div style={{ marginLeft: "auto", display: "flex", gap: "6px", alignItems: "center" }}>
           {hasRun && pendingEntry && !showJournalForm && (
-            <button onClick={() => setShowJournalForm(true)} style={{ fontSize: "10px", background: "#f1c40f12", border: "1px solid #f1c40f30", borderRadius: "5px", padding: "4px 10px", cursor: "pointer", color: "#f9e24b", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>+ Journal</button>
+            <button onClick={() => setShowJournalForm(true)} style={{ fontSize: "12px", background: "#f1c40f12", border: "1px solid #f1c40f30", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#b7791f", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>+ Journal</button>
           )}
-          <button onClick={() => setView("journal")} style={{ fontSize: "10px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "5px", padding: "4px 10px", cursor: "pointer", color: "#64748b", fontFamily: "'Inter',sans-serif" }}>📓 {journal.length}</button>
-          {hasRun && <button onClick={reset} style={{ fontSize: "10px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "5px", padding: "4px 10px", cursor: "pointer", color: "#64748b", fontFamily: "'Inter',sans-serif" }}>↺ Reset</button>}
+          <button onClick={() => setView("journal")} style={{ fontSize: "12px", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#4a5568", fontFamily: "'Inter',sans-serif" }}>📓 {journal.length}</button>
+          {hasRun && <button onClick={reset} style={{ fontSize: "12px", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#718096", fontFamily: "'Inter',sans-serif" }}>↺ Reset</button>}
         </div>
       </div>
 
       {!hasRun && (
-        <div style={{ padding: "20px 18px 0", flexShrink: 0 }}>
-          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: "12px", padding: "14px 16px" }}>
-            <div style={{ fontSize: "10px", color: "#475569", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "8px" }}>QUESTION OR DECISION</div>
+        <div style={{ padding: "30px 20px 0", flexShrink: 0 }}>
+          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "18px 20px" }}>
+            <div style={{ fontSize: "13px", color: "#4a5568", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "10px" }}>QUESTION OR DECISION</div>
             <textarea
               ref={textRef}
               value={question}
@@ -874,39 +890,39 @@ export default function ThinkingOSv2() {
               onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) runAnalysis(); }}
               placeholder="Describe the problem, decision, or question you need to think through…"
               rows={3}
-              style={{ width: "100%", background: "transparent", border: "none", color: "#e2e8f0", fontSize: "14px", fontFamily: "'Inter', sans-serif", resize: "none", lineHeight: "1.65" }}
+              style={{ width: "100%", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "10px 14px", color: "#1a1a2e", fontSize: "16px", fontFamily: "'Inter', sans-serif", resize: "none", lineHeight: "1.65" }}
             />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "10px", flexWrap: "wrap", gap: "8px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "12px", flexWrap: "wrap", gap: "8px" }}>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
-                <span style={{ fontSize: "9px", color: "#334155", fontWeight: "600", letterSpacing: "0.08em" }}>TYPE (optional)</span>
+                <span style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>TYPE (optional)</span>
                 {PROBLEM_TYPES.map(pt => (
                   <button key={pt.id} onClick={() => setManualType(manualProblemType === pt.id ? null : pt.id)} style={{
-                    padding: "2px 7px", borderRadius: "4px",
-                    border: `1px solid ${manualProblemType === pt.id ? "#6366f1" : "rgba(255,255,255,0.07)"}`,
+                    padding: "3px 10px", borderRadius: "4px",
+                    border: `1px solid ${manualProblemType === pt.id ? "#6366f1" : "#e2e8f0"}`,
                     background: manualProblemType === pt.id ? "#6366f118" : "transparent",
-                    color: manualProblemType === pt.id ? "#818cf8" : "#475569",
-                    fontSize: "10px", fontFamily: "'Inter',sans-serif", cursor: "pointer"
+                    color: manualProblemType === pt.id ? "#6366f1" : "#4a5568",
+                    fontSize: "12px", fontFamily: "'Inter',sans-serif", cursor: "pointer"
                   }}>{pt.icon} {pt.label}</button>
                 ))}
               </div>
               <button onClick={runAnalysis} disabled={!question.trim()} style={{
-                background: question.trim() ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)",
-                border: "none", borderRadius: "8px", padding: "9px 18px",
-                color: question.trim() ? "#fff" : "#475569", fontSize: "13px", fontWeight: "600",
+                background: question.trim() ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "#edf2f7",
+                border: "none", borderRadius: "8px", padding: "10px 24px",
+                color: question.trim() ? "#fff" : "#a0aec0", fontSize: "14px", fontWeight: "600",
                 cursor: question.trim() ? "pointer" : "not-allowed", fontFamily: "'Inter',sans-serif", whiteSpace: "nowrap"
               }}>Analyze →</button>
             </div>
-            <div style={{ fontSize: "10px", color: "#1e293b", marginTop: "6px" }}>⌘+Enter to run · Web search: {ENABLE_WEB_SEARCH ? "✅ ON" : "❌ OFF"} · Auto-selects frameworks</div>
+            <div style={{ fontSize: "12px", color: "#a0aec0", marginTop: "8px" }}>⌘+Enter to run · Web search: {ENABLE_WEB_SEARCH ? "✅ ON" : "❌ OFF"} · Auto-selects frameworks</div>
           </div>
 
-          <div style={{ padding: "36px 0", textAlign: "center" }}>
-            <div style={{ fontSize: "28px", marginBottom: "10px" }}>🧩</div>
-            <div style={{ color: "#334155", fontSize: "12px", maxWidth: "480px", margin: "0 auto", lineHeight: "1.75" }}>
+          <div style={{ padding: "40px 0", textAlign: "center" }}>
+            <div style={{ fontSize: "36px", marginBottom: "12px" }}>🧩</div>
+            <div style={{ color: "#718096", fontSize: "15px", maxWidth: "480px", margin: "0 auto", lineHeight: "1.8" }}>
               Research → Reality Extraction → Framework Analysis → Cross-Examination → Red Team → Decision Synthesis
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", justifyContent: "center", marginTop: "14px", maxWidth: "520px", margin: "14px auto 0" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", justifyContent: "center", marginTop: "16px", maxWidth: "520px", margin: "16px auto 0" }}>
               {ALL_FRAMEWORKS.map(f => (
-                <div key={f.id} style={{ padding: "3px 8px", background: `${f.color}10`, border: `1px solid ${f.color}22`, borderRadius: "20px", fontSize: "10px", color: f.accent }}>
+                <div key={f.id} style={{ padding: "4px 12px", background: `${f.color}10`, border: `1px solid ${f.color}22`, borderRadius: "20px", fontSize: "12px", color: f.color }}>
                   {f.icon} {f.label}
                 </div>
               ))}
@@ -917,27 +933,27 @@ export default function ThinkingOSv2() {
 
       {hasRun && (
         <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
-          <div style={{ width: "210px", borderRight: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", flexShrink: 0, overflow: "hidden" }}>
-            <div style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: "10px", color: "#334155", lineHeight: "1.5", fontStyle: "italic" }}>
+          <div style={{ width: "220px", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", flexShrink: 0, overflow: "hidden", background: "#ffffff" }}>
+            <div style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0", fontSize: "12px", color: "#718096", lineHeight: "1.5", fontStyle: "italic" }}>
               "{question.slice(0, 70)}{question.length > 70 ? "…" : ""}"
             </div>
-            <div style={{ padding: "6px 7px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column", gap: "2px" }}>
+            <div style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "2px" }}>
               {PHASES.filter(ph => ph.id !== "analysis").map(ph => (
                 <button key={ph.id} onClick={() => setActiveFwId("__" + ph.id)} style={{
-                  background: "rgba(255,255,255,0.02)",
-                  border: `1px solid ${completedPhases[ph.id] ? ph.color + "55" : "rgba(255,255,255,0.05)"}`,
-                  borderRadius: "6px", padding: "6px 9px", cursor: "pointer", textAlign: "left",
-                  display: "flex", alignItems: "center", gap: "7px", transition: "all 0.15s ease"
+                  background: "#f7fafc",
+                  border: `1px solid ${completedPhases[ph.id] ? ph.color + "55" : "#e2e8f0"}`,
+                  borderRadius: "6px", padding: "6px 10px", cursor: "pointer", textAlign: "left",
+                  display: "flex", alignItems: "center", gap: "8px", transition: "all 0.15s ease"
                 }}>
-                  <span style={{ fontSize: "11px" }}>
+                  <span style={{ fontSize: "14px" }}>
                     {completedPhases[ph.id] ? "✓" : activePhase === ph.id ? <Spinner color={ph.color} /> : ph.icon}
                   </span>
-                  <span style={{ fontSize: "10px", fontWeight: "600", color: completedPhases[ph.id] ? ph.color : "#334155" }}>{ph.label}</span>
+                  <span style={{ fontSize: "12px", fontWeight: "600", color: completedPhases[ph.id] ? ph.color : "#4a5568" }}>{ph.label}</span>
                 </button>
               ))}
             </div>
-            <div style={{ padding: "5px 7px 3px", fontSize: "9px", color: "#1e293b", letterSpacing: "0.08em", fontWeight: "600" }}>FRAMEWORKS</div>
-            <div style={{ flex: 1, overflowY: "auto", padding: "0 7px 7px", display: "flex", flexDirection: "column", gap: "2px" }}>
+            <div style={{ padding: "6px 10px 3px", fontSize: "11px", color: "#a0aec0", letterSpacing: "0.08em", fontWeight: "600" }}>FRAMEWORKS</div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "0 8px 8px", display: "flex", flexDirection: "column", gap: "2px" }}>
               {selectedFwIds.map(fid => {
                 const fw = ALL_FRAMEWORKS.find(f => f.id === fid);
                 if (!fw) return null;
@@ -946,55 +962,55 @@ export default function ThinkingOSv2() {
                 const isActive = activeFrameworkId === fid;
                 return (
                   <button key={fid} onClick={() => setActiveFwId(fid)} style={{
-                    background: isActive ? `${fw.color}18` : "rgba(255,255,255,0.02)",
-                    border: `1px solid ${isActive ? fw.color : "rgba(255,255,255,0.05)"}`,
-                    borderRadius: "6px", padding: "6px 9px", cursor: "pointer", textAlign: "left",
-                    display: "flex", alignItems: "center", gap: "7px", transition: "all 0.15s ease"
+                    background: isActive ? `${fw.color}18` : "#f7fafc",
+                    border: `1px solid ${isActive ? fw.color : "#e2e8f0"}`,
+                    borderRadius: "6px", padding: "6px 10px", cursor: "pointer", textAlign: "left",
+                    display: "flex", alignItems: "center", gap: "8px", transition: "all 0.15s ease"
                   }}>
-                    <span style={{ fontSize: "13px", flexShrink: 0 }}>{fw.icon}</span>
+                    <span style={{ fontSize: "16px", flexShrink: 0 }}>{fw.icon}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: "10px", fontWeight: "600", color: isActive ? fw.accent : "#64748b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{fw.label}</div>
-                      {res && <div style={{ fontSize: "9px", color: confColor(res.confidence), marginTop: "1px" }}>{res.confidence}%</div>}
+                      <div style={{ fontSize: "12px", fontWeight: "600", color: isActive ? fw.accent : "#4a5568", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{fw.label}</div>
+                      {res && <div style={{ fontSize: "11px", color: confColor(res.confidence), marginTop: "1px" }}>{res.confidence}%</div>}
                     </div>
-                    {loading && <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: fw.accent, animation: "pulse 1s infinite", flexShrink: 0 }} />}
-                    {res && !loading && <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#22c55e", flexShrink: 0 }} />}
+                    {loading && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: fw.accent, animation: "pulse 1s infinite", flexShrink: 0 }} />}
+                    {res && !loading && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", flexShrink: 0 }} />}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: "18px 22px", minWidth: 0 }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", minWidth: 0, background: "#f0f2f5" }}>
             {showJournalForm && (
-              <div style={{ background: "#f1c40f08", border: "1px solid #f1c40f28", borderRadius: "10px", padding: "12px 14px", marginBottom: "14px", animation: "fadeUp 0.3s ease" }}>
-                <div style={{ fontSize: "11px", fontWeight: "700", color: "#f9e24b", marginBottom: "6px" }}>📓 Save to Decision Journal</div>
-                <input value={journalOutcome} onChange={e => setJournalOutcome(e.target.value)} placeholder="What outcome are you expecting / betting on?" style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: "6px", padding: "6px 9px", color: "#e2e8f0", fontSize: "11px", fontFamily: "'Inter',sans-serif" }} />
-                <div style={{ display: "flex", gap: "6px", marginTop: "7px" }}>
-                  <button onClick={saveToJournal} style={{ background: "#f1c40f18", border: "1px solid #f1c40f35", borderRadius: "6px", padding: "5px 12px", cursor: "pointer", color: "#f9e24b", fontSize: "10px", fontWeight: "600", fontFamily: "'Inter',sans-serif" }}>Save Entry</button>
-                  <button onClick={() => setShowJournalForm(false)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "6px", padding: "5px 10px", cursor: "pointer", color: "#475569", fontSize: "10px", fontFamily: "'Inter',sans-serif" }}>Cancel</button>
+              <div style={{ background: "#fefcbf", border: "1px solid #f6e05e", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.3s ease" }}>
+                <div style={{ fontSize: "14px", fontWeight: "700", color: "#744210", marginBottom: "6px" }}>📓 Save to Decision Journal</div>
+                <input value={journalOutcome} onChange={e => setJournalOutcome(e.target.value)} placeholder="What outcome are you expecting / betting on?" style={{ width: "100%", background: "#fffff0", border: "1px solid #ecc94b", borderRadius: "6px", padding: "6px 12px", color: "#1a1a2e", fontSize: "14px", fontFamily: "'Inter',sans-serif" }} />
+                <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
+                  <button onClick={saveToJournal} style={{ background: "#f6e05e", border: "1px solid #ecc94b", borderRadius: "6px", padding: "5px 14px", cursor: "pointer", color: "#744210", fontSize: "12px", fontWeight: "600", fontFamily: "'Inter',sans-serif" }}>Save Entry</button>
+                  <button onClick={() => setShowJournalForm(false)} style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "5px 12px", cursor: "pointer", color: "#718096", fontSize: "12px", fontFamily: "'Inter',sans-serif" }}>Cancel</button>
                 </div>
               </div>
             )}
 
             {synthesis && (
-              <div style={{ background: insufficientInfo ? "rgba(239,68,68,0.04)" : "rgba(241,196,15,0.04)", border: `1px solid ${insufficientInfo ? "rgba(239,68,68,0.18)" : "rgba(241,196,15,0.15)"}`, borderRadius: "12px", padding: "16px 18px", marginBottom: "16px", animation: "fadeUp 0.4s ease" }}>
+              <div style={{ background: insufficientInfo ? "#fff5f5" : "#fffff0", border: `1px solid ${insufficientInfo ? "#feb2b2" : "#f6e05e"}`, borderRadius: "12px", padding: "18px 22px", marginBottom: "18px", animation: "fadeUp 0.4s ease" }}>
                 {insufficientInfo ? (
                   <>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
-                      <div style={{ fontSize: "10px", color: "#ef4444", fontWeight: "700", letterSpacing: "0.08em" }}>⛔ INSUFFICIENT INFORMATION — DO NOT DECIDE YET</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+                      <div style={{ fontSize: "13px", color: "#c53030", fontWeight: "700", letterSpacing: "0.08em" }}>⛔ INSUFFICIENT INFORMATION — DO NOT DECIDE YET</div>
                       <ConfidenceBadge value={synthesis.confidence} />
                     </div>
-                    <div style={{ fontSize: "13px", color: "#94a3b8", marginBottom: "12px" }}>{synthesis.recommendation}</div>
+                    <div style={{ fontSize: "15px", color: "#4a5568", marginBottom: "12px" }}>{synthesis.recommendation}</div>
                     {synthesis.missing_information?.length > 0 && (
                       <div style={{ marginBottom: "8px" }}>
-                        <div style={{ fontSize: "9px", color: "#334155", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "5px" }}>MISSING INFORMATION</div>
-                        {synthesis.missing_information.map((m, i) => <div key={i} style={{ fontSize: "11px", color: "#ef4444", marginBottom: "3px" }}>· {m}</div>)}
+                        <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "5px" }}>MISSING INFORMATION</div>
+                        {synthesis.missing_information.map((m, i) => <div key={i} style={{ fontSize: "14px", color: "#c53030", marginBottom: "3px" }}>· {m}</div>)}
                       </div>
                     )}
                     {synthesis.recommended_research?.length > 0 && (
                       <div>
-                        <div style={{ fontSize: "9px", color: "#334155", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "5px" }}>RECOMMENDED RESEARCH</div>
-                        {synthesis.recommended_research.map((r, i) => <div key={i} style={{ fontSize: "11px", color: "#60a5fa", marginBottom: "3px" }}>→ {r}</div>)}
+                        <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "5px" }}>RECOMMENDED RESEARCH</div>
+                        {synthesis.recommended_research.map((r, i) => <div key={i} style={{ fontSize: "14px", color: "#2b6cb0", marginBottom: "3px" }}>→ {r}</div>)}
                       </div>
                     )}
                   </>
@@ -1002,13 +1018,13 @@ export default function ThinkingOSv2() {
                   <>
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "12px" }}>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: "9px", color: "#64748b", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>FINAL DECISION</div>
-                        <div style={{ fontSize: "16px", fontWeight: "700", color: "#f1f5f9", lineHeight: "1.4" }}>{synthesis.recommendation}</div>
+                        <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>FINAL DECISION</div>
+                        <div style={{ fontSize: "20px", fontWeight: "700", color: "#1a1a2e", lineHeight: "1.4" }}>{synthesis.recommendation}</div>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "5px", flexShrink: 0 }}>
                         <ConfidenceBadge value={synthesis.confidence} />
                         <span style={{
-                          fontSize: "9px", fontWeight: "700", padding: "2px 7px", borderRadius: "4px",
+                          fontSize: "12px", fontWeight: "700", padding: "2px 10px", borderRadius: "4px",
                           background: synthesis.risk_level === "High" ? "#ef444415" : synthesis.risk_level === "Medium" ? "#f59e0b15" : "#22c55e15",
                           color: synthesis.risk_level === "High" ? "#ef4444" : synthesis.risk_level === "Medium" ? "#f59e0b" : "#22c55e",
                           border: `1px solid ${synthesis.risk_level === "High" ? "#ef444430" : synthesis.risk_level === "Medium" ? "#f59e0b30" : "#22c55e30"}`
@@ -1017,26 +1033,26 @@ export default function ThinkingOSv2() {
                     </div>
 
                     {synthesis.confidence_reasoning?.length > 0 && (
-                      <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "6px", padding: "7px 9px", marginBottom: "10px" }}>
-                        <div style={{ fontSize: "9px", color: "#334155", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>CONFIDENCE REASONING</div>
-                        {synthesis.confidence_reasoning.map((r, i) => <div key={i} style={{ fontSize: "10px", color: "#64748b", marginBottom: "2px" }}>· {r}</div>)}
+                      <div style={{ background: "#f7fafc", borderRadius: "6px", padding: "8px 12px", marginBottom: "12px" }}>
+                        <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>CONFIDENCE REASONING</div>
+                        {synthesis.confidence_reasoning.map((r, i) => <div key={i} style={{ fontSize: "13px", color: "#4a5568", marginBottom: "2px" }}>· {r}</div>)}
                       </div>
                     )}
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "10px" }}>
-                      <MiniSection title="WHY" items={synthesis.why} color="#60a5fa" />
-                      <MiniSection title="TOP RISKS" items={synthesis.top_risks} color="#f87171" />
-                      <MiniSection title="WHAT WOULD CHANGE THIS (+)" items={synthesis.what_would_change_positive} color="#34d399" />
-                      <MiniSection title="WHAT WOULD CHANGE THIS (−)" items={synthesis.what_would_change_negative} color="#fb923c" />
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
+                      <MiniSection title="WHY" items={synthesis.why} color="#2b6cb0" />
+                      <MiniSection title="TOP RISKS" items={synthesis.top_risks} color="#c53030" />
+                      <MiniSection title="WHAT WOULD CHANGE THIS (+)" items={synthesis.what_would_change_positive} color="#276749" />
+                      <MiniSection title="WHAT WOULD CHANGE THIS (−)" items={synthesis.what_would_change_negative} color="#c05621" />
                     </div>
 
                     {synthesis.next_actions?.length > 0 && (
                       <div>
-                        <div style={{ fontSize: "9px", color: "#334155", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "6px" }}>NEXT ACTIONS</div>
+                        <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "6px" }}>NEXT ACTIONS</div>
                         {synthesis.next_actions.slice(0, 5).map((a, i) => (
-                          <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "4px" }}>
-                            <span style={{ fontSize: "9px", fontFamily: "'JetBrains Mono', monospace", color: "#6366f1", fontWeight: "700", flexShrink: 0, marginTop: "2px" }}>{String(i + 1).padStart(2, "0")}</span>
-                            <span style={{ fontSize: "11px", color: "#94a3b8", lineHeight: "1.5" }}>{a}</span>
+                          <div key={i} style={{ display: "flex", gap: "10px", marginBottom: "4px" }}>
+                            <span style={{ fontSize: "12px", fontFamily: "'JetBrains Mono', monospace", color: "#6366f1", fontWeight: "700", flexShrink: 0, marginTop: "2px" }}>{String(i + 1).padStart(2, "0")}</span>
+                            <span style={{ fontSize: "14px", color: "#4a5568", lineHeight: "1.6" }}>{a}</span>
                           </div>
                         ))}
                       </div>
@@ -1047,42 +1063,42 @@ export default function ThinkingOSv2() {
             )}
 
             {crossexam && (
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "10px", padding: "12px 14px", marginBottom: "14px", animation: "fadeUp 0.35s ease" }}>
+              <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.35s ease" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <div style={{ fontSize: "10px", color: "#64748b", fontWeight: "600", letterSpacing: "0.08em" }}>CONSENSUS ENGINE</div>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <span style={{ fontSize: "10px", color: "#22c55e", fontWeight: "600" }}>Agreement {crossexam.agreement_score}%</span>
-                    <span style={{ fontSize: "10px", color: "#ef4444", fontWeight: "600" }}>Conflict {crossexam.conflict_score}%</span>
+                  <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>CONSENSUS ENGINE</div>
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <span style={{ fontSize: "13px", color: "#22c55e", fontWeight: "600" }}>Agreement {crossexam.agreement_score}%</span>
+                    <span style={{ fontSize: "13px", color: "#ef4444", fontWeight: "600" }}>Conflict {crossexam.conflict_score}%</span>
                   </div>
                 </div>
 
                 {consensusItems.map((c, i) => (
-                  <div key={i} style={{ marginBottom: "7px" }}>
+                  <div key={i} style={{ marginBottom: "8px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
-                      <span style={{ fontSize: "11px", color: "#e2e8f0" }}>{c.recommendation}</span>
-                      <span style={{ fontSize: "9px", fontFamily: "'JetBrains Mono', monospace", color: "#94a3b8" }}>{c.support_count}/{selectedFwIds.length}</span>
+                      <span style={{ fontSize: "14px", color: "#1a1a2e" }}>{c.recommendation}</span>
+                      <span style={{ fontSize: "12px", fontFamily: "'JetBrains Mono', monospace", color: "#718096" }}>{c.support_count}/{selectedFwIds.length}</span>
                     </div>
-                    <div style={{ height: "4px", background: "rgba(255,255,255,0.05)", borderRadius: "3px" }}>
-                      <div style={{ height: "100%", width: `${(c.support_count / maxSupport) * 100}%`, background: i === 0 ? "#6366f1" : "#334155", borderRadius: "3px", transition: "width 0.6s ease" }} />
+                    <div style={{ height: "5px", background: "#edf2f7", borderRadius: "3px" }}>
+                      <div style={{ height: "100%", width: `${(c.support_count / maxSupport) * 100}%`, background: i === 0 ? "#6366f1" : "#a0aec0", borderRadius: "3px", transition: "width 0.6s ease" }} />
                     </div>
                   </div>
                 ))}
 
                 {crossexam.major_disagreements?.length > 0 && (
-                  <div style={{ marginTop: "10px", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "10px" }}>
-                    <div style={{ fontSize: "9px", color: "#ec4899", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "7px" }}>⚡ MAJOR DISAGREEMENTS — Often the most valuable insight</div>
+                  <div style={{ marginTop: "10px", borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
+                    <div style={{ fontSize: "12px", color: "#ec4899", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "8px" }}>⚡ MAJOR DISAGREEMENTS — Often the most valuable insight</div>
                     {crossexam.major_disagreements.map((d, i) => (
-                      <div key={i} style={{ marginBottom: "8px", padding: "7px 9px", background: "#ec489908", border: "1px solid #ec489920", borderRadius: "6px" }}>
-                        <div style={{ fontSize: "10px", color: "#f472b6", fontWeight: "600", marginBottom: "3px" }}>{d.framework_a} vs {d.framework_b}</div>
-                        <div style={{ fontSize: "11px", color: "#94a3b8", marginBottom: "3px" }}>{d.disagreement}</div>
-                        {d.why_this_matters && <div style={{ fontSize: "10px", color: "#64748b" }}>Why it matters: {d.why_this_matters}</div>}
+                      <div key={i} style={{ marginBottom: "8px", padding: "8px 12px", background: "#fdf2f8", border: "1px solid #fbb6ce", borderRadius: "6px" }}>
+                        <div style={{ fontSize: "12px", color: "#d53f8c", fontWeight: "600", marginBottom: "3px" }}>{d.framework_a} vs {d.framework_b}</div>
+                        <div style={{ fontSize: "14px", color: "#4a5568", marginBottom: "3px" }}>{d.disagreement}</div>
+                        {d.why_this_matters && <div style={{ fontSize: "13px", color: "#718096" }}>Why it matters: {d.why_this_matters}</div>}
                       </div>
                     ))}
                   </div>
                 )}
 
                 {crossexam.hidden_insight && (
-                  <div style={{ marginTop: "8px", padding: "7px 9px", background: "#f59e0b08", border: "1px solid #f59e0b1f", borderRadius: "6px", fontSize: "11px", color: "#fbbf24" }}>
+                  <div style={{ marginTop: "10px", padding: "8px 12px", background: "#fefcbf", border: "1px solid #f6e05e", borderRadius: "6px", fontSize: "14px", color: "#744210" }}>
                     💡 {crossexam.hidden_insight}
                   </div>
                 )}
@@ -1090,39 +1106,39 @@ export default function ThinkingOSv2() {
             )}
 
             {redteam && (
-              <div style={{ background: "#ef444408", border: "1px solid rgba(239,68,68,0.14)", borderRadius: "10px", padding: "12px 14px", marginBottom: "14px", animation: "fadeUp 0.35s ease" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <div style={{ fontSize: "10px", color: "#64748b", fontWeight: "600", letterSpacing: "0.08em" }}>RED TEAM REVIEW</div>
+              <div style={{ background: "#ffffff", border: "1px solid #feb2b2", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.35s ease" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>RED TEAM REVIEW</div>
                   <span style={{
-                    fontSize: "9px", fontWeight: "700", padding: "2px 7px", borderRadius: "4px",
+                    fontSize: "12px", fontWeight: "700", padding: "2px 10px", borderRadius: "4px",
                     background: redteam.survivability === "Yes" ? "#22c55e15" : redteam.survivability === "No" ? "#ef444415" : "#f59e0b15",
                     color: redteam.survivability === "Yes" ? "#22c55e" : redteam.survivability === "No" ? "#ef4444" : "#f59e0b",
                     border: `1px solid ${redteam.survivability === "Yes" ? "#22c55e30" : redteam.survivability === "No" ? "#ef444430" : "#f59e0b30"}`
                   }}>Survives: {redteam.survivability}</span>
                 </div>
 
-                {redteam.kill_shot && <div style={{ fontSize: "11px", color: "#ef4444", fontWeight: "600", marginBottom: "9px" }}>☠ Kill shot: {redteam.kill_shot}</div>}
+                {redteam.kill_shot && <div style={{ fontSize: "14px", color: "#c53030", fontWeight: "600", marginBottom: "10px" }}>☠ Kill shot: {redteam.kill_shot}</div>}
 
                 {(redteam.failure_modes || []).slice(0, 5).map((fm, i) => (
-                  <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "7px", padding: "7px 9px", background: "rgba(255,255,255,0.02)", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.04)" }}>
+                  <div key={i} style={{ display: "flex", gap: "10px", marginBottom: "7px", padding: "8px 12px", background: "#f7fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
                     <SeverityBadge severity={fm.severity} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "11px", color: "#e2e8f0", fontWeight: "500" }}>{fm.mode}</div>
-                      {fm.warning_signal && <div style={{ fontSize: "10px", color: "#64748b", marginTop: "2px" }}>⚡ {fm.warning_signal}</div>}
-                      {fm.mitigation && <div style={{ fontSize: "10px", color: "#60a5fa", marginTop: "2px" }}>🛡 {fm.mitigation}</div>}
+                      <div style={{ fontSize: "14px", color: "#1a1a2e", fontWeight: "500" }}>{fm.mode}</div>
+                      {fm.warning_signal && <div style={{ fontSize: "13px", color: "#718096", marginTop: "2px" }}>⚡ {fm.warning_signal}</div>}
+                      {fm.mitigation && <div style={{ fontSize: "13px", color: "#2b6cb0", marginTop: "2px" }}>🛡 {fm.mitigation}</div>}
                     </div>
                   </div>
                 ))}
 
                 {redteam.mitigation_plan?.length > 0 && (
-                  <div style={{ marginTop: "8px", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "8px" }}>
-                    <div style={{ fontSize: "9px", color: "#334155", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "6px" }}>MITIGATION PLAN</div>
+                  <div style={{ marginTop: "10px", borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
+                    <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "6px" }}>MITIGATION PLAN</div>
                     {redteam.mitigation_plan.slice(0, 4).map((m, i) => (
-                      <div key={i} style={{ marginBottom: "5px", display: "flex", gap: "8px" }}>
-                        <span style={{ fontSize: "9px", fontFamily: "'JetBrains Mono', monospace", color: "#ef4444", flexShrink: 0, marginTop: "2px" }}>{String(i + 1).padStart(2, "0")}</span>
+                      <div key={i} style={{ marginBottom: "5px", display: "flex", gap: "10px" }}>
+                        <span style={{ fontSize: "12px", fontFamily: "'JetBrains Mono', monospace", color: "#c53030", flexShrink: 0, marginTop: "2px" }}>{String(i + 1).padStart(2, "0")}</span>
                         <div>
-                          <div style={{ fontSize: "10px", color: "#94a3b8" }}>{m.risk}</div>
-                          <div style={{ fontSize: "10px", color: "#60a5fa" }}>→ {m.action}</div>
+                          <div style={{ fontSize: "14px", color: "#4a5568" }}>{m.risk}</div>
+                          <div style={{ fontSize: "13px", color: "#2b6cb0" }}>→ {m.action}</div>
                         </div>
                       </div>
                     ))}
@@ -1132,55 +1148,55 @@ export default function ThinkingOSv2() {
             )}
 
             {research && (
-              <div style={{ background: "rgba(34,197,94,0.03)", border: "1px solid rgba(34,197,94,0.12)", borderRadius: "10px", padding: "12px 14px", marginBottom: "14px", animation: "fadeUp 0.3s ease" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "9px" }}>
-                  <div style={{ fontSize: "10px", color: "#64748b", fontWeight: "600", letterSpacing: "0.08em" }}>🔎 RESEARCH LAYER</div>
+              <div style={{ background: "#ffffff", border: "1px solid #68d391", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.3s ease" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>🔎 RESEARCH LAYER</div>
                   <ConfidenceBadge value={research.research_confidence} small />
                 </div>
-                {research.research_summary && <div style={{ fontSize: "11px", color: "#64748b", marginBottom: "9px", fontStyle: "italic" }}>{research.research_summary}</div>}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                {research.research_summary && <div style={{ fontSize: "14px", color: "#4a5568", marginBottom: "10px", fontStyle: "italic" }}>{research.research_summary}</div>}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
                   <div>
-                    <div style={{ fontSize: "9px", color: "#22c55e", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>FACTS ✓</div>
-                    {(!research.facts?.length) ? <div style={{ fontSize: "10px", color: "#1e293b" }}>None found</div>
-                      : research.facts.slice(0, 5).map((f, i) => <div key={i} style={{ fontSize: "10px", color: "#64748b", lineHeight: "1.55", marginBottom: "3px" }}>· {f}</div>)}
+                    <div style={{ fontSize: "11px", color: "#22c55e", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>FACTS ✓</div>
+                    {(!research.facts?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None found</div>
+                      : research.facts.slice(0, 5).map((f, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {f}</div>)}
                   </div>
                   <div>
-                    <div style={{ fontSize: "9px", color: "#f59e0b", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>SOURCES</div>
-                    {(!research.sources?.length) ? <div style={{ fontSize: "10px", color: "#1e293b" }}>None</div>
-                      : research.sources.slice(0, 5).map((s, i) => <div key={i} style={{ fontSize: "10px", color: "#64748b", lineHeight: "1.55", marginBottom: "3px" }}>· {s}</div>)}
+                    <div style={{ fontSize: "11px", color: "#f59e0b", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>SOURCES</div>
+                    {(!research.sources?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None</div>
+                      : research.sources.slice(0, 5).map((s, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {s}</div>)}
                   </div>
                   <div>
-                    <div style={{ fontSize: "9px", color: "#ef4444", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>UNKNOWNS ?</div>
-                    {(!research.unknowns?.length) ? <div style={{ fontSize: "10px", color: "#1e293b" }}>None</div>
-                      : research.unknowns.slice(0, 5).map((u, i) => <div key={i} style={{ fontSize: "10px", color: "#64748b", lineHeight: "1.55", marginBottom: "3px" }}>· {u}</div>)}
+                    <div style={{ fontSize: "11px", color: "#ef4444", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>UNKNOWNS ?</div>
+                    {(!research.unknowns?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None</div>
+                      : research.unknowns.slice(0, 5).map((u, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {u}</div>)}
                   </div>
                 </div>
               </div>
             )}
 
             {reality && (
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "10px", padding: "12px 14px", marginBottom: "14px", animation: "fadeUp 0.3s ease" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "9px" }}>
-                  <div style={{ fontSize: "10px", color: "#64748b", fontWeight: "600", letterSpacing: "0.08em" }}>REALITY EXTRACTION</div>
+              <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.3s ease" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>REALITY EXTRACTION</div>
                   <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                     {reality.problem_type && (
-                      <span style={{ fontSize: "10px", background: "#6366f112", border: "1px solid #6366f128", borderRadius: "4px", padding: "2px 7px", color: "#818cf8" }}>
+                      <span style={{ fontSize: "12px", background: "#6366f112", border: "1px solid #6366f128", borderRadius: "4px", padding: "2px 8px", color: "#6366f1" }}>
                         {PROBLEM_TYPES.find(p => p.id === reality.problem_type)?.icon} {reality.problem_type}
                       </span>
                     )}
                     <ConfidenceBadge value={reality.extraction_confidence} small />
                   </div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
                   {[
                     { title: "FACTS ✓", items: reality.facts, color: "#22c55e" },
                     { title: "ASSUMPTIONS ~", items: reality.assumptions, color: "#f59e0b" },
                     { title: "UNKNOWNS ?", items: reality.unknowns, color: "#ef4444" },
                   ].map(({ title, items, color }) => (
                     <div key={title}>
-                      <div style={{ fontSize: "9px", color, fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>{title}</div>
-                      {(!items?.length) ? <div style={{ fontSize: "10px", color: "#1e293b" }}>None</div>
-                        : items.slice(0, 4).map((item, i) => <div key={i} style={{ fontSize: "10px", color: "#64748b", lineHeight: "1.55", marginBottom: "3px" }}>· {item}</div>)}
+                      <div style={{ fontSize: "11px", color, fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>{title}</div>
+                      {(!items?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None</div>
+                        : items.slice(0, 4).map((item, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {item}</div>)}
                     </div>
                   ))}
                 </div>
@@ -1188,12 +1204,12 @@ export default function ThinkingOSv2() {
             )}
 
             {activeFrameworkId && !activeFrameworkId.startsWith("__") && activeFw && (
-              <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${activeFw.color}28`, borderRadius: "10px", padding: "14px 16px", animation: "fadeUp 0.3s ease" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-                  <div style={{ width: "30px", height: "30px", background: `${activeFw.color}18`, border: `1px solid ${activeFw.color}35`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "15px", flexShrink: 0 }}>{activeFw.icon}</div>
+              <div style={{ background: "#ffffff", border: `1px solid ${activeFw.color}40`, borderRadius: "10px", padding: "16px 20px", animation: "fadeUp 0.3s ease" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                  <div style={{ width: "36px", height: "36px", background: `${activeFw.color}18`, border: `1px solid ${activeFw.color}35`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>{activeFw.icon}</div>
                   <div>
-                    <div style={{ fontSize: "13px", fontWeight: "700", color: "#f1f5f9" }}>{activeFw.label}</div>
-                    <div style={{ fontSize: "10px", color: "#475569" }}>{activeFw.thinker}</div>
+                    <div style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a2e" }}>{activeFw.label}</div>
+                    <div style={{ fontSize: "12px", color: "#718096" }}>{activeFw.thinker}</div>
                   </div>
                   {activeFwResult && <ConfidenceBadge value={activeFwResult.confidence} />}
                 </div>
@@ -1203,25 +1219,25 @@ export default function ThinkingOSv2() {
                 ) : activeFwResult ? (
                   <div style={{ animation: "fadeUp 0.3s ease" }}>
                     {activeFwResult.key_claim && (
-                      <div style={{ marginBottom: "10px" }}>
-                        <div style={{ fontSize: "9px", color: "#334155", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>KEY CLAIM</div>
-                        <div style={{ fontSize: "13px", color: "#e2e8f0", lineHeight: "1.6", fontWeight: "500" }}>{activeFwResult.key_claim}</div>
+                      <div style={{ marginBottom: "12px" }}>
+                        <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>KEY CLAIM</div>
+                        <div style={{ fontSize: "15px", color: "#1a1a2e", lineHeight: "1.6", fontWeight: "500" }}>{activeFwResult.key_claim}</div>
                       </div>
                     )}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                      <FrameworkList title="EVIDENCE" items={activeFwResult.evidence} color="#60a5fa" />
-                      <FrameworkList title="COUNTERARGUMENTS" items={activeFwResult.counterarguments} color="#f87171" />
-                      <FrameworkList title="UNKNOWNS" items={activeFwResult.unknowns} color="#fbbf24" />
+                      <FrameworkList title="EVIDENCE" items={activeFwResult.evidence} color="#2b6cb0" />
+                      <FrameworkList title="COUNTERARGUMENTS" items={activeFwResult.counterarguments} color="#c53030" />
+                      <FrameworkList title="UNKNOWNS" items={activeFwResult.unknowns} color="#c05621" />
                       {activeFwResult.recommendation && (
                         <div>
-                          <div style={{ fontSize: "9px", color: "#334155", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>RECOMMENDATION</div>
-                          <div style={{ fontSize: "11px", color: `${activeFw.accent}`, lineHeight: "1.5" }}>{activeFwResult.recommendation}</div>
+                          <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>RECOMMENDATION</div>
+                          <div style={{ fontSize: "14px", color: activeFw.accent, lineHeight: "1.6" }}>{activeFwResult.recommendation}</div>
                         </div>
                       )}
                     </div>
                   </div>
                 ) : (
-                  <div style={{ color: "#334155", fontSize: "12px" }}>Waiting to load…</div>
+                  <div style={{ color: "#a0aec0", fontSize: "14px" }}>Waiting to load…</div>
                 )}
               </div>
             )}
