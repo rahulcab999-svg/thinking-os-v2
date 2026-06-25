@@ -33,7 +33,7 @@ export async function POST(req) {
     // ─── BUILD THE FULL PROMPT ──────────────────────────────────────────────
     const fullPrompt = `${context}System: ${systemPrompt}\n\nUser Question: ${question}`;
 
-    // ─── CALL GROQ (100% FREE, NO BALANCE REQUIRED) ─────────────────────────
+    // ─── CALL GROQ WITH LATEST MODEL ────────────────────────────────────────
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -41,7 +41,7 @@ export async function POST(req) {
         'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.1-70b-versatile', // Fast, smart, and free!
+        model: 'llama-3.3-70b-versatile', // 👈 Updated model!
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: question }
