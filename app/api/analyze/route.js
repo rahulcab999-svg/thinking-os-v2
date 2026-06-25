@@ -33,9 +33,9 @@ export async function POST(req) {
     // ─── BUILD THE FULL PROMPT ──────────────────────────────────────────────
     const fullPrompt = `${context}System: ${systemPrompt}\n\nUser Question: ${question}`;
 
-    // ─── CALL GEMINI (100% FREE) ─────────────────────────────────────────────
+    // ─── CALL GEMINI (FIXED MODEL NAME) ──────────────────────────────────────
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
