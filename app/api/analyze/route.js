@@ -33,15 +33,15 @@ export async function POST(req) {
     // ─── BUILD THE FULL PROMPT ──────────────────────────────────────────────
     const fullPrompt = `${context}System: ${systemPrompt}\n\nUser Question: ${question}`;
 
-    // ─── CALL DEEPSEEK (FREE, 50 REQUESTS/MINUTE) ──────────────────────────
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    // ─── CALL GROQ (100% FREE, NO BALANCE REQUIRED) ─────────────────────────
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'deepseek-chat', // Use 'deepseek-reasoner' for deeper thinking
+        model: 'llama-3.1-70b-versatile', // Fast, smart, and free!
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: question }
@@ -53,7 +53,7 @@ export async function POST(req) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error?.message || 'DeepSeek API error');
+      throw new Error(data.error?.message || 'Groq API error');
     }
 
     const text = data.choices?.[0]?.message?.content || 'No analysis generated.';
