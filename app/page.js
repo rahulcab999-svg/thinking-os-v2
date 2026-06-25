@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 
 // ─── WEB SEARCH MASTER SWITCH ──────────────────────────────────────────────────
 // 🔥 Set this to 'true' when you want Tavily web search (free 1000 searches/month)
-const ENABLE_WEB_SEARCH = false;  // 👈 Change to true later for real-time search
+const ENABLE_WEB_SEARCH = true;   // ✅ Web search ON  // 👈 Change to trUe later for real-time search
 // ───────────────────────────────────────────────────────────────────────────────
 
 // ─── PROBLEM TYPES ────────────────────────────────────────────────────────────
