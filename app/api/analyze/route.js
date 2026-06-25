@@ -33,26 +33,30 @@ export async function POST(req) {
     // ─── BUILD THE FULL PROMPT ──────────────────────────────────────────────
     const fullPrompt = `${context}System: ${systemPrompt}\n\nUser Question: ${question}`;
 
-    // ─── CALL GEMINI (FIXED MODEL NAME) ──────────────────────────────────────
-  const response = await fetch(
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: fullPrompt }] }],
-          generationConfig: { maxOutputTokens: maxTokens || 1000 },
-        }),
-      }
-    );
+    // ─── CALL DEEPSEEK (FREE, 50 REQUESTS/MINUTE) ──────────────────────────
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat', // Use 'deepseek-reasoner' for deeper thinking
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: question }
+        ],
+        max_tokens: maxTokens || 1000,
+      }),
+    });
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error?.message || 'Gemini API error');
+      throw new Error(data.error?.message || 'DeepSeek API error');
     }
 
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No analysis generated.';
+    const text = data.choices?.[0]?.message?.content || 'No analysis generated.';
 
     // ─── RETURN IN THE FORMAT THE FRONTEND EXPECTS ──────────────────────────
     return NextResponse.json({ 
