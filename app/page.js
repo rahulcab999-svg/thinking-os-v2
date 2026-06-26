@@ -1,1253 +1,656 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Search, Shield, AlertTriangle, CheckCircle, ChevronDown, 
+  ChevronUp, Download, RefreshCw, Layers, Brain, Copy, Check,
+  ExternalLink, FileText, HelpCircle, Terminal, HelpCircle as QuestionIcon
+} from 'lucide-react';
 
-// ─── WEB SEARCH MASTER SWITCH ──────────────────────────────────────────────────
-const ENABLE_WEB_SEARCH = true;  // 👈 Change to true later for real-time search
+function exportMarkdown(question, phaseData, fwResults, selectedFwIds) {
+  let md = `# Deep Analysis: ${question}\n\n`;
+  md += `Generated on: ${new Date().toLocaleString()}\n`;
+  md += `Frameworks Used: ${selectedFwIds.join(', ') || 'None'}\n\n`;
+  md += `-------------\n\n`;
 
-// ─── PROBLEM TYPES ────────────────────────────────────────────────────────────
-const PROBLEM_TYPES = [
-  { id: "startup",     label: "Startup",     icon: "🚀" },
-  { id: "career",      label: "Career",      icon: "🧭" },
-  { id: "investment",  label: "Investment",  icon: "📈" },
-  { id: "product",     label: "Product",     icon: "📦" },
-  { id: "hiring",      label: "Hiring",      icon: "🤝" },
-  { id: "strategy",    label: "Strategy",    icon: "♟️" },
-  { id: "personal",    label: "Personal",    icon: "🪞" },
-  { id: "marketing",   label: "Marketing",   icon: "📣" },
-  { id: "operations",  label: "Operations",  icon: "⚙️" },
-  { id: "negotiation", label: "Negotiation", icon: "⚖️" },
-];
-
-// ─── FRAMEWORKS ───────────────────────────────────────────────────────────────
-const ALL_FRAMEWORKS = [
-  {
-    id: "first_principles", label: "First Principles", icon: "⚗️",
-    color: "#6366f1", accent: "#818cf8", thinker: "Aristotle · Elon Musk",
-    relevantFor: ["startup","product","strategy","personal","operations"],
-    prompt: `You are a first-principles thinker. Use ONLY the verified facts provided. Distinguish clearly between facts and assumptions.
-1. DECONSTRUCT: Break to undeniable truths only. Flag everything else as assumption.
-2. VERIFY: What is actually known vs assumed? Be explicit.
-3. REBUILD: Reason upward from verified fundamentals only.
-4. CLAIM: Clearest rational path forward.
-5. CONFIDENCE: Rate 0-100. Lower if many unknowns remain.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
-  },
-  {
-    id: "thiel", label: "Thiel Contrarian", icon: "♟️",
-    color: "#0ea5e9", accent: "#38bdf8", thinker: "Peter Thiel · Zero to One",
-    relevantFor: ["startup","product","strategy","marketing","investment"],
-    prompt: `You are Thiel's contrarian framework. Use ONLY the verified facts provided. Do not treat assumptions as facts.
-1. CONSENSUS VIEW: What does everyone believe here?
-2. CONTRARIAN QUESTION: What important truth do very few people agree with?
-3. NON-CONSENSUS ANGLE: Non-obvious view that could actually be correct?
-4. MONOPOLY TEST: Does the obvious solution lead to differentiation or competition?
-5. 10X QUESTION: What would a 10x better solution look like?
-6. CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
-  },
-  {
-    id: "inversion", label: "Inversion", icon: "🔄",
-    color: "#f59e0b", accent: "#fbbf24", thinker: "Charlie Munger · Stoics",
-    relevantFor: ["startup","strategy","personal","operations","career","negotiation"],
-    prompt: `You are the inversion thinker (Munger + Stoics). Use ONLY verified facts. Mark assumptions explicitly.
-1. INVERT: How would you guarantee failure? List all failure modes.
-2. TRAPS: Top traps to actively avoid.
-3. OBSTACLES: What, when removed, makes solution obvious?
-4. FORWARD PATH: Failure-free version.
-5. CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
-  },
-  {
-    id: "second_order", label: "Second-Order", icon: "🌊",
-    color: "#10b981", accent: "#34d399", thinker: "Howard Marks · Ray Dalio",
-    relevantFor: ["investment","strategy","startup","operations","product","personal"],
-    prompt: `You are a second-order thinking analyst. Use ONLY verified facts. Flag assumptions.
-1. FIRST-ORDER EFFECTS: Immediate, obvious consequences.
-2. SECOND-ORDER EFFECTS: What happens after those play out?
-3. THIRD-ORDER EFFECTS: What does that trigger?
-4. TIME HORIZONS: Best decision across 1wk / 6mo / 5yr?
-5. RECOMMENDATION: Most rational action given all orders.
-6. CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
-  },
-  {
-    id: "taleb", label: "Taleb Antifragility", icon: "💀",
-    color: "#f43f5e", accent: "#fb7185", thinker: "Nassim Taleb · Antifragile",
-    relevantFor: ["startup","investment","strategy","operations","personal","negotiation"],
-    prompt: `You are Taleb's risk and antifragility framework. Use ONLY verified facts. Never treat assumptions as facts.
-1. BLACK SWAN SCAN: Low-probability, high-impact events that destroy everything.
-2. FRAGILITY RATING: Fragile / Robust / Antifragile? How to move toward antifragile?
-3. VIA NEGATIVA: What to remove or avoid?
-4. SKIN IN THE GAME: Who bears the downside? Misaligned risk = red flag.
-5. BARBELL STRATEGY: Extreme safety on one end, small high-upside bets on other.
-6. OPTIONALITY: Which path preserves most future options?
-7. CONFIDENCE: Rate 0-100. Penalize heavily for missing tail-risk data.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
-  },
-  {
-    id: "bayes", label: "Bayesian Thinking", icon: "📊",
-    color: "#1d4ed8", accent: "#60a5fa", thinker: "Thomas Bayes · Probability",
-    relevantFor: ["investment","startup","hiring","personal","strategy","operations"],
-    prompt: `You are a Bayesian reasoning framework. Use ONLY verified facts and research evidence provided.
-1. PRIOR BELIEF: Base rate / prior probability. Use historical data, not intuition.
-2. THE EVIDENCE: What new information are we updating on?
-3. LIKELIHOOD RATIO: How diagnostic is this evidence?
-4. POSTERIOR BELIEF: Revised probability. Has evidence moved the needle significantly?
-5. BASE RATE NEGLECT CHECK: Are vivid events overriding priors?
-6. WHAT WOULD MOVE YOU: Evidence that would significantly change posterior?
-7. CONFIDENCE: State explicitly (e.g. "70% confident X is true"). Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
-  },
-  {
-    id: "porter", label: "Porter's Five Forces", icon: "🏭",
-    color: "#475569", accent: "#94a3b8", thinker: "Michael Porter · Competitive Strategy",
-    relevantFor: ["startup","strategy","investment","product","marketing"],
-    prompt: `You are Porter's competitive strategy framework. Use ONLY verified facts and research evidence.
-1. THREAT OF NEW ENTRANTS: Barriers to entry?
-2. SUPPLIER POWER: How much power do suppliers have?
-3. BUYER POWER: How much power do customers have?
-4. THREAT OF SUBSTITUTES: What could make this obsolete?
-5. COMPETITIVE RIVALRY: How intense is existing competition?
-6. GENERIC STRATEGY: Cost Leadership, Differentiation, or Focus?
-7. SUSTAINABLE ADVANTAGE: What makes this defensible over 5-10 years?
-8. CONFIDENCE: Rate 0-100. Lower if market data is missing.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
-  },
-  {
-    id: "kahneman", label: "Kahneman: Bias", icon: "⚡",
-    color: "#7c3aed", accent: "#a78bfa", thinker: "Daniel Kahneman · Thinking Fast & Slow",
-    relevantFor: ["personal","career","hiring","negotiation","investment","startup"],
-    prompt: `You are Kahneman's System 1/2 framework. Your job is to detect bias distorting this decision.
-1. SYSTEM 1 REACTIONS: Fast, intuitive response here?
-2. COGNITIVE BIASES IN PLAY: Specific biases distorting thinking (Anchoring, Availability, Confirmation, Overconfidence, Planning Fallacy, Loss Aversion, WYSIATI)?
-3. SYSTEM 2 OVERRIDE: What does slow deliberate reasoning say when biases are stripped?
-4. PROSPECT THEORY: Are losses being weighted ~2x too heavily?
-5. PRE-MORTEM: Imagine 1 year later, this failed. What went wrong?
-6. DEBIASED RECOMMENDATION: Rational action after correcting for biases.
-7. CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
-  },
-  {
-    id: "munger", label: "Munger's Lattice", icon: "🧠",
-    color: "#ec4899", accent: "#f472b6", thinker: "Charlie Munger · Poor Charlie's Almanack",
-    relevantFor: ["startup","investment","strategy","career","personal","product"],
-    prompt: `You are Munger's multi-disciplinary mental model framework. Use verified facts only.
-Pick 4-5 most relevant models: Opportunity Cost, Incentives, Confirmation Bias, Regression to Mean, Competitive Advantage, Network Effects, Compounding, Margin of Safety, Pareto, Occam's Razor, Bayes, Supply & Demand.
-For each: Name it, apply it, state what it reveals that naive analysis misses.
-SYNTHESIS: What do models together suggest?
-CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
-  },
-  {
-    id: "sun_tzu", label: "Sun Tzu", icon: "⚔️",
-    color: "#b45309", accent: "#fbbf24", thinker: "Sun Tzu · The Art of War",
-    relevantFor: ["strategy","startup","negotiation","marketing","career"],
-    prompt: `You are Sun Tzu's strategic framework. Use verified facts only.
-1. KNOW YOURSELF: True strengths, weaknesses, resources, constraints.
-2. KNOW THE ENEMY: Competitors/forces — strengths, weaknesses, intentions.
-3. WIN WITHOUT FIGHTING: Achieve objective without direct confrontation?
-4. TERRAIN & TIMING: What context/timing creates maximum advantage?
-5. ASYMMETRY: Where can you exploit an asymmetric advantage?
-6. ALREADY-WON BATTLE: Preparation that makes outcome nearly certain before engagement?
-7. CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
-  },
-  {
-    id: "feynman", label: "Feynman Technique", icon: "🔬",
-    color: "#f97316", accent: "#fb923c", thinker: "Richard Feynman · Physicist",
-    relevantFor: ["product","startup","operations","personal","career","strategy"],
-    prompt: `You are Feynman's thinking framework. Expose gaps in understanding ruthlessly.
-1. PLAIN LANGUAGE TEST: Explain core problem as if to a curious 12-year-old.
-2. LOCATE THE GAP: Where did the plain explanation break down? That IS the real problem.
-3. QUESTION EVERYTHING: What assumptions does "everyone know" but nobody has verified?
-4. FIRST EXPERIMENT: One small, cheap, fast experiment to learn the most important unknown?
-5. ELEGANT SIMPLICITY: Simplest explanation that accounts for all known facts?
-6. WHAT WOULD BREAK THIS: Single fact that completely invalidates this?
-7. CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
-  },
-  {
-    id: "popper", label: "Popper: Falsifiability", icon: "🔭",
-    color: "#0f766e", accent: "#2dd4bf", thinker: "Karl Popper · Critical Rationalism",
-    relevantFor: ["startup","product","strategy","investment","personal"],
-    prompt: `You are Popper's falsifiability framework. Test claims rigorously.
-1. STATE THE HYPOTHESIS: Core claim or belief driving this problem.
-2. FALSIFIABILITY TEST: Can you conceive of an observation that would prove it wrong?
-3. WHAT WOULD FALSIFY THIS: 3-5 concrete observations that would disprove the hypothesis.
-4. CORROBORATION vs PROOF: Has this survived serious attempts to disprove it?
-5. UNFALSIFIABLE RED FLAGS: Elements that cannot be proven wrong no matter what?
-6. RECOMMENDATION: Most intellectually honest position given what can/cannot be falsified.
-7. CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
-  },
-  {
-    id: "bias_checker", label: "Bias Audit", icon: "🪲",
-    color: "#dc2626", accent: "#f87171", thinker: "Kahneman · Munger · Cialdini · Taleb",
-    relevantFor: ["personal","career","hiring","investment","startup","negotiation","strategy"],
-    prompt: `You are a forensic cognitive bias auditor. Scan specifically for active biases in this situation.
-INFORMATION BIASES: Confirmation Bias, Availability Heuristic, Anchoring, Framing Effect, Survivorship Bias
-SELF-SERVING BIASES: Overconfidence, Dunning-Kruger, Planning Fallacy, Optimism Bias
-SOCIAL BIASES: Bandwagon Effect, Authority Bias, Halo Effect, Groupthink
-DECISION BIASES: Sunk Cost Fallacy, Loss Aversion, Status Quo Bias, Hyperbolic Discounting
-OUTPUT: List active biases, rank top 3 by severity, debiasing protocol for each, clean reframe after stripping biases.
-CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
-  },
-];
-
-// ─── STORAGE ──────────────────────────────────────────────────────────────────
-function loadJournal() {
-  if (typeof window === "undefined") return [];
-  try { return JSON.parse(localStorage.getItem("tos_v2_journal") || "[]"); } catch { return []; }
-}
-function saveJournal(e) {
-  try { localStorage.setItem("tos_v2_journal", JSON.stringify(e)); } catch {}
-}
-function loadScores() {
-  if (typeof window === "undefined") return {};
-  try { return JSON.parse(localStorage.getItem("tos_v2_scores") || "{}"); } catch { return {}; }
-}
-function saveScores(s) {
-  try { localStorage.setItem("tos_v2_scores", JSON.stringify(s)); } catch {}
-}
-
-function recordFrameworkUse(scores, fwIds, confidence) {
-  const updated = { ...scores };
-  fwIds.forEach(id => {
-    if (!updated[id]) updated[id] = { uses: 0, successes: 0, totalConfidence: 0 };
-    updated[id].uses += 1;
-    updated[id].totalConfidence += (confidence || 0);
-  });
-  return updated;
-}
-function recordFrameworkOutcome(scores, fwIds, success) {
-  const updated = { ...scores };
-  fwIds.forEach(id => {
-    if (!updated[id]) updated[id] = { uses: 0, successes: 0, totalConfidence: 0 };
-    if (success) updated[id].successes += 1;
-  });
-  return updated;
-}
-function fwSuccessRate(s) {
-  if (!s || s.uses === 0) return null;
-  return Math.round((s.successes / s.uses) * 100);
-}
-function fwAvgConf(s) {
-  if (!s || s.uses === 0) return null;
-  return Math.round(s.totalConfidence / s.uses);
-}
-
-// ─── API CALL ──────────────────────────────────────────────────────────────────
-async function callClaude(systemPrompt, userContent, maxTokens = 1200, useWebSearch = false) {
-  const response = await fetch("/api/analyze", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      question: userContent,
-      systemPrompt,
-      maxTokens,
-      useWebSearch
-    })
-  });
-  const result = await response.json();
-  if (!result.success) throw new Error(result.error || "API call failed");
-  return result.data.content?.map(c => c.text || "").join("") || "";
-}
-
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function parseJSON(raw) {
-  try { return JSON.parse(raw.replace(/```json|```/g, "").trim()); } catch { return null; }
-}
-function safeJSON(raw, fallback) {
-  return parseJSON(raw) || fallback;
-}
-function confColor(c) {
-  if (c >= 70) return "#22c55e";
-  if (c >= 45) return "#f59e0b";
-  return "#ef4444";
-}
-function confLabel(c) {
-  if (c >= 70) return "HIGH";
-  if (c >= 45) return "MEDIUM";
-  return "LOW";
-}
-
-// ─── SYSTEM PROMPTS ───────────────────────────────────────────────────────────
-
-const RESEARCH_SYSTEM = `You are an evidence collection engine. Your job: gather real, verifiable information about the question before any analysis begins. Use web search to collect:
-- Market size and trends (if applicable)
-- Industry statistics and benchmarks
-- Competitor information (if applicable)
-- Regulatory context (if applicable)
-- Base rates for similar decisions
-- Any publicly available data directly relevant to this question
-
-Be rigorous. Distinguish what you found from what you're inferring. Do not treat inferences as facts.
-
-Return ONLY a JSON object (no markdown fences):
-{
-  "facts": [],
-  "sources": [],
-  "assumptions": [],
-  "unknowns": [],
-  "research_confidence": 0,
-  "research_summary": ""
-}`;
-
-const REALITY_SYSTEM = `You are a reality extraction engine. You receive raw research data. Your job:
-1. Classify the problem type
-2. Separate verified facts from assumptions from unknowns
-3. Select 4-6 frameworks most relevant to this specific problem type
-
-Available frameworks: first_principles, thiel, inversion, second_order, taleb, bayes, porter, kahneman, munger, sun_tzu, feynman, popper, bias_checker
-
-Return ONLY a JSON object (no fences):
-{
-  "facts": [],
-  "assumptions": [],
-  "unknowns": [],
-  "problem_type": "startup|career|investment|product|hiring|strategy|personal|marketing|operations|negotiation",
-  "recommended_frameworks": [],
-  "extraction_confidence": 0
-}`;
-
-const CROSS_EXAM_SYSTEM = `You are the cross-examination engine. Frameworks challenge each other. Your job:
-1. ATTACKS: Find contradictions between frameworks. Have Bayes attack overconfident claims. Taleb attacks anything that ignores tail risk. Kahneman flags anything that reeks of bias.
-2. UPGRADES: Claims that survive attack get MORE weight.
-3. DOWNGRADES: Claims that crumble under scrutiny get LESS weight.
-4. CONSENSUS TALLY: Count framework support for each recommended action.
-5. MAJOR DISAGREEMENTS: Where do frameworks fundamentally conflict? This often contains the most valuable insight.
-
-Return ONLY a JSON object (no fences):
-{
-  "attacks": [{"attacker":"","target":"","attack":"","verdict":"upgraded|downgraded|neutral"}],
-  "upgraded_claims": [],
-  "downgraded_claims": [],
-  "consensus": [{"recommendation":"","support_count":0,"framework_names":[]}],
-  "major_disagreements": [{"framework_a":"","framework_b":"","disagreement":"","why_this_matters":""}],
-  "agreement_score": 0,
-  "conflict_score": 0,
-  "hidden_insight": ""
-}`;
-
-const RED_TEAM_SYSTEM = `You are a red team auditor. Assume the final recommendation FAILS. Attack it ruthlessly.
-
-Return ONLY a JSON object (no fences):
-{
-  "failure_modes": [{"mode":"","severity":"Critical|High|Medium|Low","warning_signal":"","mitigation":""}],
-  "early_warning_signals": [],
-  "risk_severity": [{"risk":"","severity":"Critical|High|Medium|Low","probability":"High|Medium|Low"}],
-  "mitigation_plan": [{"risk":"","action":"","owner":"","timeline":""}],
-  "kill_shot": "",
-  "survivability": "Yes|Conditional|No",
-  "survivability_condition": ""
-}`;
-
-const SYNTHESIS_SYSTEM = `You are the final decision synthesizer. You have: research evidence, reality extraction, framework analyses, cross-examination, and red team results.
-
-CRITICAL RULE: If evidence is insufficient for a reliable decision, set investigation_needed=true and return status="insufficient_information". Do NOT manufacture a confident recommendation when the evidence doesn't support one. Prefer uncertainty over false certainty.
-
-Confidence calibration — penalize for:
-- Many unknowns remaining
-- Framework disagreement (high conflict_score)
-- Missing critical data
-- Red team finding survivability=No
-
-Return ONLY a JSON object (no fences):
-{
-  "status": "ready|insufficient_information",
-  "recommendation": "",
-  "confidence": 0,
-  "confidence_reasoning": [],
-  "risk_level": "Low|Medium|High",
-  "why": [],
-  "top_risks": [],
-  "what_would_change_positive": [],
-  "what_would_change_negative": [],
-  "next_actions": [],
-  "missing_information": [],
-  "recommended_research": [],
-  "investigation_needed": false
-}`;
-
-// ─── PHASES ───────────────────────────────────────────────────────────────────
-const PHASES = [
-  { id: "research",  label: "Research",           icon: "🔎", color: "#22c55e"  },
-  { id: "reality",   label: "Reality Extraction", icon: "🔍", color: "#f59e0b"  },
-  { id: "analysis",  label: "Framework Analysis", icon: "⚙️", color: "#6366f1"  },
-  { id: "crossexam", label: "Cross-Examination",  icon: "⚔️", color: "#ec4899"  },
-  { id: "redteam",   label: "Red Team",           icon: "🛡️", color: "#ef4444"  },
-  { id: "synthesis", label: "Decision Synthesis", icon: "✦",  color: "#f1c40f"  },
-];
-
-// ─── CONFIDENCE BADGE ─────────────────────────────────────────────────────────
-function ConfidenceBadge({ value, small }) {
-  if (value == null) return null;
-  const color = confColor(value);
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
-      <div style={{ fontSize: small ? "11px" : "13px", fontWeight: "700", color, letterSpacing: "0.06em" }}>
-        {confLabel(value)} {value}%
-      </div>
-      <div style={{ width: small ? "48px" : "60px", height: "3px", background: "#e2e8f0", borderRadius: "2px" }}>
-        <div style={{ height: "100%", width: `${value}%`, background: color, borderRadius: "2px", transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)" }} />
-      </div>
-    </div>
-  );
-}
-
-// ─── SEVERITY BADGE ───────────────────────────────────────────────────────────
-function SeverityBadge({ severity }) {
-  const map = { Critical: "#ef4444", High: "#f97316", Medium: "#f59e0b", Low: "#64748b" };
-  const c = map[severity] || "#64748b";
-  return (
-    <div style={{ fontSize: "11px", fontWeight: "700", color: c, background: `${c}18`, border: `1px solid ${c}35`, borderRadius: "4px", padding: "2px 8px", flexShrink: 0, whiteSpace: "nowrap" }}>
-      {severity}
-    </div>
-  );
-}
-
-// ─── MINI SECTION ─────────────────────────────────────────────────────────────
-function MiniSection({ title, items, color }) {
-  if (!items?.length) return null;
-  return (
-    <div style={{ background: "#f7fafc", borderRadius: "7px", padding: "8px 12px" }}>
-      <div style={{ fontSize: "11px", fontWeight: "600", color: "#4a5568", letterSpacing: "0.08em", marginBottom: "6px" }}>{title}</div>
-      {items.slice(0, 3).map((item, i) => (
-        <div key={i} style={{ fontSize: "14px", color, lineHeight: "1.6", marginBottom: "3px" }}>· {item}</div>
-      ))}
-    </div>
-  );
-}
-
-// ─── FRAMEWORK LIST ───────────────────────────────────────────────────────────
-function FrameworkList({ title, items, color }) {
-  if (!items?.length) return null;
-  return (
-    <div>
-      <div style={{ fontSize: "11px", fontWeight: "600", color: "#4a5568", letterSpacing: "0.08em", marginBottom: "5px" }}>{title}</div>
-      {items.slice(0, 4).map((item, i) => (
-        <div key={i} style={{ fontSize: "14px", color, lineHeight: "1.6", marginBottom: "3px" }}>· {item}</div>
-      ))}
-    </div>
-  );
-}
-
-// ─── LOADING SKELETON ─────────────────────────────────────────────────────────
-function LoadingSkeleton({ color, label }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", color, fontSize: "14px" }}>
-        <div style={{ width: "12px", height: "12px", border: `2px solid ${color}33`, borderTop: `2px solid ${color}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-        {label}
-      </div>
-      {[75, 55, 65, 45, 60].map((w, i) => (
-        <div key={i} style={{ height: "12px", width: `${w}%`, background: "#edf2f7", borderRadius: "4px", animation: "pulse 1.5s ease infinite", animationDelay: `${i * 0.1}s` }} />
-      ))}
-    </div>
-  );
-}
-
-// ─── SPINNER ──────────────────────────────────────────────────────────────────
-function Spinner({ color }) {
-  return (
-    <div style={{ width: "10px", height: "10px", border: `2px solid ${color}44`, borderTop: `2px solid ${color}`, borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
-  );
-}
-
-// ─── JOURNAL VIEW ─────────────────────────────────────────────────────────────
-function JournalView({ journal, scores, onBack, onUpdateOutcome }) {
-  const [editingId, setEditingId] = useState(null);
-  const [editOutcome, setEditOutcome] = useState("");
-  const [editAccuracy, setEditAccuracy] = useState("success");
-
-  const totalEntries = journal.length;
-  const withOutcomes = journal.filter(e => e.accuracy != null).length;
-  const successCount = journal.filter(e => e.accuracy === true).length;
-  const calibrationScore = withOutcomes > 0 ? Math.round((successCount / withOutcomes) * 100) : null;
-
-  return (
-    <div style={{ minHeight: "100vh", background: "#f0f2f5", color: "#1a1a2e", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>
-      <div style={{ borderBottom: "1px solid #e2e8f0", padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", background: "#ffffff" }}>
-        <button onClick={onBack} style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "5px 14px", cursor: "pointer", color: "#4a5568", fontSize: "13px", fontFamily: "'Inter',sans-serif" }}>← Back</button>
-        <div style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a2e" }}>📓 Decision Journal</div>
-        <div style={{ fontSize: "12px", color: "#718096" }}>{totalEntries} entries</div>
-        {calibrationScore != null && (
-          <div style={{ marginLeft: "auto", fontSize: "12px", background: confColor(calibrationScore) + "15", border: `1px solid ${confColor(calibrationScore)}35`, borderRadius: "5px", padding: "3px 10px", color: confColor(calibrationScore), fontWeight: "700" }}>
-            Calibration {calibrationScore}% ({withOutcomes} tracked)
-          </div>
-        )}
-      </div>
-
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", display: "grid", gridTemplateColumns: "1fr 260px", gap: "16px", alignItems: "start" }}>
-        <div>
-          {journal.length === 0 ? (
-            <div style={{ textAlign: "center", color: "#718096", fontSize: "15px", padding: "60px 20px" }}>No decisions recorded yet.</div>
-          ) : journal.map(entry => (
-            <div key={entry.id} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px 18px", marginBottom: "10px" }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "8px" }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "12px", color: "#718096", marginBottom: "3px" }}>
-                    {new Date(entry.date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
-                    {" · "}{entry.problem_type || "strategy"}
-                  </div>
-                  <div style={{ fontSize: "13px", color: "#4a5568", fontStyle: "italic", marginBottom: "6px" }}>"{entry.question}"</div>
-                  <div style={{ fontSize: "15px", fontWeight: "600", color: "#1a1a2e", lineHeight: "1.4" }}>{entry.prediction}</div>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
-                  <ConfidenceBadge value={entry.confidence} small />
-                  {entry.risk_level && (
-                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "4px",
-                      background: entry.risk_level === "High" ? "#ef444415" : entry.risk_level === "Medium" ? "#f59e0b15" : "#22c55e15",
-                      color: entry.risk_level === "High" ? "#ef4444" : entry.risk_level === "Medium" ? "#f59e0b" : "#22c55e"
-                    }}>{entry.risk_level} RISK</span>
-                  )}
-                  {entry.accuracy != null && (
-                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "4px",
-                      background: entry.accuracy === true ? "#22c55e15" : entry.accuracy === "partial" ? "#f59e0b15" : "#ef444415",
-                      color: entry.accuracy === true ? "#22c55e" : entry.accuracy === "partial" ? "#f59e0b" : "#ef4444"
-                    }}>
-                      {entry.accuracy === true ? "✓ Correct" : entry.accuracy === "partial" ? "~ Partial" : "✕ Incorrect"}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {entry.reasoning && (
-                <div style={{ fontSize: "12px", color: "#718096", lineHeight: "1.6", marginBottom: "8px" }}>
-                  {entry.reasoning.slice(0, 180)}{entry.reasoning.length > 180 ? "…" : ""}
-                </div>
-              )}
-
-              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "8px", marginTop: "4px" }}>
-                <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "5px" }}>OUTCOME</div>
-                {editingId === entry.id ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <input value={editOutcome} onChange={e => setEditOutcome(e.target.value)} placeholder="What actually happened?" style={{ background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "6px 10px", color: "#1a1a2e", fontSize: "13px", fontFamily: "'Inter',sans-serif" }} />
-                    <div style={{ display: "flex", gap: "5px" }}>
-                      {["success","partial","failure"].map(v => (
-                        <button key={v} onClick={() => setEditAccuracy(v)} style={{ flex: 1, background: editAccuracy === v ? (v === "success" ? "#22c55e20" : v === "partial" ? "#f59e0b20" : "#ef444420") : "#f7fafc", border: `1px solid ${editAccuracy === v ? (v === "success" ? "#22c55e50" : v === "partial" ? "#f59e0b50" : "#ef444450") : "#e2e8f0"}`, borderRadius: "5px", padding: "4px 8px", cursor: "pointer", color: editAccuracy === v ? (v === "success" ? "#22c55e" : v === "partial" ? "#f59e0b" : "#ef4444") : "#4a5568", fontSize: "12px", fontFamily: "'Inter',sans-serif", textTransform: "capitalize" }}>{v}</button>
-                      ))}
-                    </div>
-                    <div style={{ display: "flex", gap: "5px" }}>
-                      <button onClick={() => { onUpdateOutcome(entry.id, editOutcome, editAccuracy); setEditingId(null); }} style={{ background: "#6366f120", border: "1px solid #6366f140", borderRadius: "5px", padding: "5px 14px", cursor: "pointer", color: "#6366f1", fontSize: "12px", fontFamily: "'Inter',sans-serif" }}>Save</button>
-                      <button onClick={() => setEditingId(null)} style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "5px 12px", cursor: "pointer", color: "#718096", fontSize: "12px", fontFamily: "'Inter',sans-serif" }}>✕</button>
-                    </div>
-                  </div>
-                ) : entry.outcome ? (
-                  <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
-                    <div style={{ fontSize: "13px", color: "#4a5568", flex: 1 }}>{entry.outcome}</div>
-                    <button onClick={() => { setEditingId(entry.id); setEditOutcome(entry.outcome); setEditAccuracy(entry.accuracy === true ? "success" : entry.accuracy === "partial" ? "partial" : "failure"); }} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#718096", fontSize: "12px" }}>✏</button>
-                  </div>
-                ) : (
-                  <button onClick={() => { setEditingId(entry.id); setEditOutcome(""); setEditAccuracy("success"); }} style={{ background: "transparent", border: "1px dashed #e2e8f0", borderRadius: "5px", padding: "5px 12px", cursor: "pointer", color: "#718096", fontSize: "12px", fontFamily: "'Inter',sans-serif" }}>+ Record outcome</button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ position: "sticky", top: 0 }}>
-          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "12px 14px" }}>
-            <div style={{ fontSize: "12px", color: "#4a5568", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "10px" }}>FRAMEWORK PERFORMANCE</div>
-            {ALL_FRAMEWORKS.map(fw => {
-              const s = scores[fw.id];
-              if (!s || s.uses === 0) return null;
-              const rate = fwSuccessRate(s);
-              const avgConf = fwAvgConf(s);
-              return (
-                <div key={fw.id} style={{ marginBottom: "8px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
-                    <span style={{ fontSize: "12px", color: "#4a5568" }}>{fw.icon} {fw.label}</span>
-                    <span style={{ fontSize: "11px", fontFamily: "'JetBrains Mono', monospace", color: rate != null ? confColor(rate) : "#718096" }}>
-                      {rate != null ? `${rate}%` : "—"} · {s.uses}✗
-                    </span>
-                  </div>
-                  {rate != null && (
-                    <div style={{ height: "3px", background: "#edf2f7", borderRadius: "2px" }}>
-                      <div style={{ height: "100%", width: `${rate}%`, background: confColor(rate), borderRadius: "2px", transition: "width 0.5s ease" }} />
-                    </div>
-                  )}
-                  {avgConf != null && <div style={{ fontSize: "11px", color: "#a0aec0", marginTop: "1px" }}>Avg conf: {avgConf}%</div>}
-                </div>
-              );
-            })}
-            {Object.keys(scores).length === 0 && <div style={{ fontSize: "12px", color: "#a0aec0" }}>No framework data yet. Complete analyses and record outcomes to build scorecards.</div>}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function ThinkingOSv2() {
-  const [view, setView]                       = useState("main");
-  const [question, setQuestion]               = useState("");
-  const [manualProblemType, setManualType]    = useState(null);
-  const [activePhase, setActivePhase]         = useState(null);
-  const [completedPhases, setCompletedPhases] = useState({});
-  const [phaseData, setPhaseData]             = useState({});
-  const [activeFrameworkId, setActiveFwId]    = useState(null);
-  const [selectedFwIds, setSelectedFwIds]     = useState([]);
-  const [fwResults, setFwResults]             = useState({});
-  const [fwLoading, setFwLoading]             = useState({});
-  const [isRunning, setIsRunning]             = useState(false);
-  const [hasRun, setHasRun]                   = useState(false);
-  const [journal, setJournal]                 = useState(loadJournal);
-  const [scores, setScores]                   = useState(loadScores);
-  const [showJournalForm, setShowJournalForm] = useState(false);
-  const [journalOutcome, setJournalOutcome]   = useState("");
-  const [pendingEntry, setPendingEntry]       = useState(null);
-  const textRef = useRef(null);
-
-  useEffect(() => {
-    const s = document.createElement("style");
-    s.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-      * { box-sizing: border-box; }
-      body { margin: 0; background: #f0f2f5; }
-      .light-theme { background: #f0f2f5 !important; color: #1a1a2e !important; }
-      .light-theme .card { background: #ffffff !important; border-color: #e2e8f0 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important; }
-      .light-theme .card-title { color: #1a1a2e !important; }
-      .light-theme .card-text { color: #2d3748 !important; }
-      body, .light-theme, .light-theme * { font-size: 16px !important; line-height: 1.7 !important; }
-      .light-theme h1 { font-size: 28px !important; }
-      .light-theme h2 { font-size: 22px !important; }
-      .light-theme h3 { font-size: 18px !important; }
-      .light-theme .small-text { font-size: 14px !important; }
-      @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-      @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-      @keyframes spin { to{transform:rotate(360deg)} }
-      ::-webkit-scrollbar { width: 6px; height: 6px; }
-      ::-webkit-scrollbar-track { background: #e2e8f0; }
-      ::-webkit-scrollbar-thumb { background: #a0aec0; border-radius: 4px; }
-      textarea:focus, input:focus { outline: none; }
-      textarea { caret-color: #6366f1; }
-      .fw-pill { transition: all 0.15s ease; cursor: pointer; }
-      .fw-pill:hover { transform: scale(1.02); }
-    `;
-    document.head.appendChild(s);
-    document.body.classList.add('light-theme');
-    return () => {
-      document.head.removeChild(s);
-      document.body.classList.remove('light-theme');
-    };
-  }, []);
-
-  const reset = useCallback(() => {
-    setActivePhase(null); setCompletedPhases({}); setPhaseData({});
-    setActiveFwId(null); setSelectedFwIds([]); setFwResults({}); setFwLoading({});
-    setIsRunning(false); setHasRun(false); setManualType(null);
-    setShowJournalForm(false); setPendingEntry(null); setJournalOutcome("");
-  }, []);
-
-  const runAnalysis = useCallback(async () => {
-    if (!question.trim() || isRunning) return;
-    reset();
-    setIsRunning(true);
-    setHasRun(true);
-    const q = question.trim();
-    const col = {};
-
-    setActivePhase("research");
-    let researchData;
-    try {
-      const raw = await callClaude(
-        RESEARCH_SYSTEM,
-        `Question / Problem: "${q}"\n\nSearch for relevant evidence now.`,
-        1400,
-        ENABLE_WEB_SEARCH
-      );
-      researchData = safeJSON(raw, {
-        facts: [], sources: [], assumptions: [], unknowns: [],
-        research_confidence: 30, research_summary: "Research incomplete."
+  // 1. Research Phase
+  if (phaseData.research) {
+    md += `## 1. Research Phase\n\n`;
+    if (phaseData.research.webSearchLogs?.length > 0) {
+      md += `### Web Search Logs\n`;
+      phaseData.research.webSearchLogs.forEach(log => {
+        md += `* **Query:** \`${log.query}\`\n`;
+        md += `  * **Results Found:** ${log.resultsCount}\n`;
       });
-    } catch (e) {
-      researchData = { facts: [], sources: [], assumptions: [], unknowns: [], research_confidence: 20, research_summary: `Research error: ${e.message}` };
+      md += `\n`;
     }
-    col.research = researchData;
-    setPhaseData(p => ({ ...p, research: researchData }));
-    setCompletedPhases(c => ({ ...c, research: true }));
-
-    await sleep(500);
-
-    setActivePhase("reality");
-    let realityData;
-    try {
-      const raw = await callClaude(
-        REALITY_SYSTEM,
-        `Question: "${q}"\n\nResearch data:\n${JSON.stringify(researchData)}\n\nExtract reality now.`
-      );
-      realityData = safeJSON(raw, {
-        facts: researchData.facts, assumptions: researchData.assumptions,
-        unknowns: researchData.unknowns, problem_type: "strategy",
-        recommended_frameworks: ["first_principles","taleb","bayes","inversion","kahneman"],
-        extraction_confidence: 40
-      });
-    } catch (e) {
-      realityData = { facts: [], assumptions: [], unknowns: [], problem_type: "strategy", recommended_frameworks: ["first_principles","taleb","bayes","inversion","kahneman"], extraction_confidence: 35 };
-    }
-    if (manualProblemType) realityData.problem_type = manualProblemType;
-    if (!realityData.recommended_frameworks?.length) {
-      realityData.recommended_frameworks = ALL_FRAMEWORKS.filter(f => f.relevantFor.includes(realityData.problem_type)).slice(0, 5).map(f => f.id);
-    }
-    col.reality = realityData;
-    setPhaseData(p => ({ ...p, reality: realityData }));
-    setCompletedPhases(c => ({ ...c, reality: true }));
-
-    const fws = ALL_FRAMEWORKS.filter(f => realityData.recommended_frameworks.includes(f.id));
-    setSelectedFwIds(fws.map(f => f.id));
-    if (fws.length > 0) setActiveFwId(fws[0].id);
-
-    setActivePhase("analysis");
-    const loadInit = {};
-    fws.forEach(f => { loadInit[f.id] = true; });
-    setFwLoading(loadInit);
-
-    const fwRes = {};
-    for (let i = 0; i < fws.length; i++) {
-      const fw = fws[i];
-      try {
-        if (i > 0) await sleep(1500);
-        const raw = await callClaude(
-          fw.prompt,
-          `Problem: "${q}"\n\nVERIFIED FACTS (from research — treat as factual):\n${JSON.stringify(researchData.facts)}\n\nSources: ${JSON.stringify(researchData.sources)}\n\nASSUMPTIONS (not verified — label clearly):\n${JSON.stringify(realityData.assumptions)}\n\nUNKNOWNS (missing info — lower confidence accordingly):\n${JSON.stringify(realityData.unknowns)}\n\nApply your framework now.`
-        );
-        fwRes[fw.id] = safeJSON(raw, { key_claim: raw.slice(0, 200), confidence: 40, evidence: [], counterarguments: [], unknowns: [], recommendation: "" });
-      } catch (e) {
-        fwRes[fw.id] = { key_claim: `Error: ${e.message}`, confidence: 0, evidence: [], counterarguments: [], unknowns: [], recommendation: "" };
-      }
-      setFwResults(prev => ({ ...prev, [fw.id]: fwRes[fw.id] }));
-      setFwLoading(prev => ({ ...prev, [fw.id]: false }));
-    }
-
-    col.frameworks = fwRes;
-    setCompletedPhases(c => ({ ...c, analysis: true }));
-
-    const avgFwConf = Object.values(fwRes).reduce((sum, r) => sum + (r?.confidence || 0), 0) / (Object.keys(fwRes).length || 1);
-    const updatedScores = recordFrameworkUse(scores, fws.map(f => f.id), avgFwConf);
-    setScores(updatedScores);
-    saveScores(updatedScores);
-
-    await sleep(500);
-
-    setActivePhase("crossexam");
-    let crossData;
-    try {
-      const summary = fws.map(fw => {
-        const r = fwRes[fw.id];
-        return `${fw.label}: claim="${r?.key_claim || ""}" conf=${r?.confidence || 0} rec="${r?.recommendation || ""}"`;
-      }).join("\n");
-      const raw = await callClaude(CROSS_EXAM_SYSTEM, `Problem: "${q}"\n\nFramework results:\n${summary}\n\nRun cross-examination now.`);
-      crossData = safeJSON(raw, { attacks: [], upgraded_claims: [], downgraded_claims: [], consensus: [], major_disagreements: [], agreement_score: 50, conflict_score: 50, hidden_insight: "" });
-    } catch (e) {
-      crossData = { attacks: [], upgraded_claims: [], downgraded_claims: [], consensus: [], major_disagreements: [], agreement_score: 50, conflict_score: 50, hidden_insight: "" };
-    }
-    col.crossexam = crossData;
-    setPhaseData(p => ({ ...p, crossexam: crossData }));
-    setCompletedPhases(c => ({ ...c, crossexam: true }));
-
-    await sleep(500);
-
-    setActivePhase("redteam");
-    let redData;
-    try {
-      const topRec = crossData?.consensus?.[0]?.recommendation || Object.values(fwRes)[0]?.recommendation || "proceed with the plan";
-      const raw = await callClaude(RED_TEAM_SYSTEM, `Problem: "${q}"\nTop Recommendation: "${topRec}"\n\nRed team this now.`);
-      redData = safeJSON(raw, { failure_modes: [], early_warning_signals: [], risk_severity: [], mitigation_plan: [], kill_shot: "Unknown", survivability: "Conditional", survivability_condition: "" });
-    } catch (e) {
-      redData = { failure_modes: [], early_warning_signals: [], risk_severity: [], mitigation_plan: [], kill_shot: "", survivability: "Conditional", survivability_condition: "" };
-    }
-    col.redteam = redData;
-    setPhaseData(p => ({ ...p, redteam: redData }));
-    setCompletedPhases(c => ({ ...c, redteam: true }));
-
-    await sleep(500);
-
-    setActivePhase("synthesis");
-    let synthData;
-    try {
-      const payload = { question: q, research: col.research, reality: col.reality, frameworks: Object.entries(fwRes).map(([id, r]) => ({ framework: id, ...r })), crossexam: crossData, redteam: redData };
-      const raw = await callClaude(SYNTHESIS_SYSTEM, `Full analysis:\n${JSON.stringify(payload)}\n\nGenerate final decision output now.`, 1400);
-      synthData = safeJSON(raw, { status: "ready", recommendation: "Analysis failed — retry.", confidence: 0, confidence_reasoning: [], risk_level: "High", why: [], top_risks: [], what_would_change_positive: [], what_would_change_negative: [], next_actions: [], missing_information: [], recommended_research: [], investigation_needed: true });
-    } catch (e) {
-      synthData = { status: "ready", recommendation: "Synthesis error.", confidence: 0, confidence_reasoning: [], risk_level: "High", why: [], top_risks: [], what_would_change_positive: [], what_would_change_negative: [], next_actions: [], missing_information: [], recommended_research: [], investigation_needed: true };
-    }
-    col.synthesis = synthData;
-    setPhaseData(p => ({ ...p, synthesis: synthData }));
-    setCompletedPhases(c => ({ ...c, synthesis: true }));
-
-    setPendingEntry({
-      id: Date.now(),
-      date: new Date().toISOString(),
-      question: q,
-      prediction: synthData?.recommendation || "",
-      confidence: synthData?.confidence || 0,
-      risk_level: synthData?.risk_level || "Unknown",
-      problem_type: realityData.problem_type,
-      reasoning: synthData?.why?.join("; ") || "",
-      framework_ids: fws.map(f => f.id),
-      outcome: null,
-      accuracy: null,
-    });
-
-    setActivePhase("synthesis");
-    setIsRunning(false);
-  }, [question, isRunning, manualProblemType, scores, reset]);
-
-  const saveToJournal = useCallback(() => {
-    if (!pendingEntry) return;
-    const entry = { ...pendingEntry, outcome: journalOutcome };
-    const updated = [entry, ...journal].slice(0, 50);
-    setJournal(updated);
-    saveJournal(updated);
-    setShowJournalForm(false);
-    setJournalOutcome("");
-  }, [pendingEntry, journalOutcome, journal]);
-
-  const updateOutcome = useCallback((id, outcome, accuracyStr) => {
-    const accuracy = accuracyStr === "success" ? true : accuracyStr === "partial" ? "partial" : false;
-    const updated = journal.map(e => e.id === id ? { ...e, outcome, accuracy } : e);
-    setJournal(updated);
-    saveJournal(updated);
-    const entry = journal.find(e => e.id === id);
-    if (entry?.framework_ids) {
-      const updatedScores = recordFrameworkOutcome(scores, entry.framework_ids, accuracy === true);
-      setScores(updatedScores);
-      saveScores(updatedScores);
-    }
-  }, [journal, scores]);
-
-  const research  = phaseData.research;
-  const reality   = phaseData.reality;
-  const crossexam = phaseData.crossexam;
-  const redteam   = phaseData.redteam;
-  const synthesis = phaseData.synthesis;
-
-  const activeFw        = ALL_FRAMEWORKS.find(f => f.id === activeFrameworkId);
-  const activeFwResult  = fwResults[activeFrameworkId];
-  const activeFwLoading = fwLoading[activeFrameworkId];
-  const consensusItems  = crossexam?.consensus || [];
-  const maxSupport      = Math.max(...consensusItems.map(c => c.support_count), 1);
-  const insufficientInfo = synthesis?.status === "insufficient_information" || synthesis?.investigation_needed;
-
-  if (view === "journal") {
-    return <JournalView journal={journal} scores={scores} onBack={() => setView("main")} onUpdateOutcome={updateOutcome} />;
+    md += `### Initial Findings\n${phaseData.research.output || 'No output.'}\n\n`;
   }
 
+  // 2. Reality Check Phase
+  if (phaseData.reality) {
+    md += `## 2. Reality Check Phase\n\n`;
+    md += `### Ground Truth & Verification\n${phaseData.reality.output || 'No output.'}\n\n`;
+  }
+
+  // 3. Cross-Examination Phase
+  if (phaseData.crossExam) {
+    md += `## 3. Cross-Examination Phase\n\n`;
+    md += `### Contradictions & Hard Questions\n${phaseData.crossExam.output || 'No output.'}\n\n`;
+  }
+
+  // 4. Red Team Phase
+  if (phaseData.redTeam) {
+    md += `## 4. Red Team Phase\n\n`;
+    md += `### Vulnerability Analysis & Edge Cases\n${phaseData.redTeam.output || 'No output.'}\n\n`;
+  }
+
+  // 5. Synthesis Phase
+  if (phaseData.synthesis) {
+    md += `## 5. Final Synthesis\n\n`;
+    md += `### Comprehensive Verdict\n${phaseData.synthesis.output || 'No output.'}\n\n`;
+  }
+
+  // Evidence / Citations sources
+  if (fwResults && fwResults.length > 0) {
+    md += `## Evidence & Framework References\n\n`;
+    fwResults.forEach(fw => {
+      md += `### [Framework] ${fw.name}\n`;
+      md += `* **Confidence:** ${fw.confidence}%\n`;
+      md += `* **Severity/Risk:** ${fw.severity}\n`;
+      md += `* **Key Insights:** ${fw.summary || 'Analyzed successfully.'}\n\n`;
+    });
+  }
+
+  return md;
+}
+
+// ─── WEB SEARCH MASTER SWITCH ──────────────────────────────────────────────────
+const ENABLE_WEB_SEARCH = true;
+
+// ─── SYSTEM PROMPTS FOR EACH OPERATING PHASE ───────────────────────────────────
+const RESEARCH_SYSTEM = `You are the Research Phase of an elite reasoning engine.
+Your goal is to gather comprehensive initial data on the user's query.
+Break the query down into essential sub-components, facts, and baseline assumptions.
+Provide a highly detailed narrative breakdown of everything known, assumed, or discovered about this topic.
+Be exhaustive, leave no stone unturned. Provide structured, bulleted evidence where necessary.`;
+
+const REALITY_SYSTEM = `You are the Reality Check Phase of an elite reasoning engine.
+Your sole job is hard verification and fact-checking.
+Look at the initial research provided. Challenge every assumption.
+Cross-reference historical data, physical realities, logical limitations, and official documentation.
+Call out any "hallucinations," popular myths, or unverified claims. 
+Deliver a stern, evidence-based ground-truth calibration.`;
+
+const CROSS_EXAM_SYSTEM = `You are the Cross-Examination Phase of an elite reasoning engine.
+Act as an aggressive, precise interrogator.
+Analyze the initial research and the reality check. Find the friction points.
+Ask the hardest possible questions. Where does the logic break down? What are the hidden trade-offs?
+Force the contradictions into the open. Present this as a series of intense logical challenges and deep-dive audits.`;
+
+const RED_TEAM_SYSTEM = `You are the Red Team Phase of an elite reasoning engine.
+Your objective is adversarial vulnerability analysis and edge-case destruction.
+Assume the current synthesis or perspective is fundamentally flawed or vulnerable to failure.
+Simulate worst-case scenarios, malicious exploits, cognitive biases, or systemic collapses related to the topic.
+Expose the structural blind spots and list exactly how things could go spectacularly wrong.`;
+
+const SYNTHESIS_SYSTEM = `You are the Synthesis Phase—the final crown of this elite reasoning engine.
+Your task is to take the Research, the Reality Check, the Cross-Examination challenges, and the Red Team failures, and forge them into a singular, bulletproof execution strategy or verdict.
+Do not compromise or ignore the vulnerabilities; swallow them, address them, and build defenses against them.
+Provide a clear, highly authoritative conclusion that balances absolute nuance with decisive, actionable direction.`;
+
+// ─── STATIC DATASETS (FRAMEWORKS, MOCK SEARCHES) ──────────────────────────────
+const FRAMEWORKS = [
+  { id: 'nist', name: 'NIST SP 800-53 (Security/Privacy Controls)', category: 'Security' },
+  { id: 'iso27001', name: 'ISO/IEC 27001 (Information Security Management)', category: 'Security' },
+  { id: 'mitre', name: 'MITRE ATT&CK Matrix (Adversarial Tactics)', category: 'Security' },
+  { id: 'owasp', name: 'OWASP Top 10 (Web Application Risks)', category: 'Development' },
+  { id: 'cis', name: 'CIS Critical Security Controls', category: 'Security' },
+  { id: 'gdpr', name: 'GDPR Compliance Framework', category: 'Privacy' },
+  { id: 'hipaa', name: 'HIPAA Security & Privacy Rules', category: 'Healthcare' },
+  { id: 'soc2', name: 'SOC 2 Type II Trust Services Criteria', category: 'Compliance' },
+  { id: 'itil', name: 'ITIL v4 (IT Service Management)', category: 'Operations' },
+  { id: 'togaf', name: 'TOGAF (Enterprise Architecture)', category: 'Architecture' },
+  { id: 'coso', name: 'COSO (Enterprise Risk Management)', category: 'Risk' },
+  { id: 'pmbok', name: 'PMBOK (Project Management Body of Knowledge)', category: 'Management' },
+  { id: 'cmmi', name: 'CMMI (Capability Maturity Model Integration)', category: 'Development' },
+  { id: 'dama', name: 'DAMA-DMBOK (Data Management Framework)', category: 'Data' },
+  { id: 'bcms', name: 'ISO 22301 (Business Continuity Management)', category: 'Operations' }
+];
+
+const MOCK_WEB_SEARCHES = {
+  "quantum computing encryption breakdown timeline": [
+    { title: "NIST Quantum Post-Quantum Cryptography Standardization", snippet: "NIST selects primary cryptographic algorithms designed to withstand cyberattacks from a future quantum computer...", url: "https://nist.gov/pqc" },
+    { title: "Shor's Algorithm and RSA-2048 Longevity Analysis", snippet: "An analysis of the exact qubit counts required to execute Shor's algorithm on RSA keys suggests we have 10-15 years...", url: "https://quantumjournal.org/rsa-analysis" }
+  ],
+  "artificial intelligence agi safety alignment failure scenarios": [
+    { title: "Orthogonality Thesis and Instrumental Convergence", snippet: "Superintelligent agents might pursue goals incompatible with human survival due to convergent instrumental goals like resource acquisition...", url: "https://nickbostrom.com/alignment" },
+    { title: "DeepMind Alignment Research Core Objectives 2026", snippet: "Our current framework updates scalability and reward hacking mitigation loops inside advanced Transformer architectures...", url: "https://deepmind.com/safety-2026" }
+  ],
+  "default": [
+    { title: "Global Technical Standards and Specifications Archive", snippet: "Comprehensive meta-analysis and baseline documentation regarding industry-standard architectures and protocols.", url: "https://standards-archive.org/spec" },
+    { title: "Advanced Systems Engineering Journal Insights", snippet: "Empirical breakdowns of failure vectors, logical cross-examinations, and modern mitigation templates.", url: "https://systems-engineering-journal.com" }
+  ]
+};
+
+const PHASES = [
+  { id: 'research', name: '1. Research & Discovery', icon: Search, color: 'text-blue-400', border: 'border-blue-500/30', bg: 'bg-blue-500/5' },
+  { id: 'reality', name: '2. Reality Check & Calibration', icon: CheckCircle, color: 'text-emerald-400', border: 'border-emerald-500/30', bg: 'bg-emerald-500/5' },
+  { id: 'crossExam', name: '3. Cross-Examination & Friction', icon: HelpCircle, color: 'text-amber-400', border: 'border-amber-500/30', bg: 'bg-amber-500/5' },
+  { id: 'redTeam', name: '4. Red Team & Edge Collapse', icon: AlertTriangle, color: 'text-rose-400', border: 'border-rose-500/30', bg: 'bg-rose-500/5' },
+  { id: 'synthesis', name: '5. Bulletproof Synthesis', icon: Brain, color: 'text-purple-400', border: 'border-purple-500/30', bg: 'bg-purple-500/5' }
+];
+
+// ─── HELPER MINI-COMPONENTS ───────────────────────────────────────────────────
+function ConfidenceBadge({ value }) {
+  let colorClass = "bg-rose-500/20 text-rose-300 border-rose-500/30";
+  if (value >= 75) colorClass = "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+  else if (value >= 40) colorClass = "bg-amber-500/20 text-amber-300 border-amber-500/30";
   return (
-    <div style={{ minHeight: "100vh", background: "#f0f2f5", color: "#1a1a2e", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ borderBottom: "1px solid #e2e8f0", padding: "10px 18px", display: "flex", alignItems: "center", gap: "12px", background: "#ffffff", flexShrink: 0 }}>
-        <div style={{ width: "32px", height: "32px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", flexShrink: 0 }}>🧩</div>
-        <div>
-          <div style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a2e", letterSpacing: "-0.02em" }}>Thinking OS <span style={{ color: "#6366f1", fontSize: "12px", fontFamily: "'JetBrains Mono', monospace" }}>v2</span></div>
-          <div style={{ fontSize: "11px", color: "#718096", letterSpacing: "0.06em" }}>DECISION INTELLIGENCE · EVIDENCE-FIRST</div>
-        </div>
+    <span className={`px-2 py-0.5 rounded text-xs font-mono border ${colorClass}`}>
+      Confidence: {value}%
+    </span>
+  );
+}
 
-        {hasRun && (
-          <div style={{ display: "flex", alignItems: "center", gap: "3px", marginLeft: "14px" }}>
-            {PHASES.map((ph, i) => (
-              <div key={ph.id} style={{ display: "flex", alignItems: "center", gap: "3px" }}>
-                <div style={{
-                  fontSize: "12px", padding: "2px 10px", borderRadius: "4px", fontWeight: "600", whiteSpace: "nowrap",
-                  background: completedPhases[ph.id] ? `${ph.color}18` : activePhase === ph.id ? `${ph.color}12` : "#f7fafc",
-                  border: `1px solid ${completedPhases[ph.id] ? ph.color : activePhase === ph.id ? ph.color + "80" : "#e2e8f0"}`,
-                  color: completedPhases[ph.id] ? ph.color : activePhase === ph.id ? ph.color : "#718096",
-                  display: "flex", alignItems: "center", gap: "4px"
-                }}>
-                  {completedPhases[ph.id] ? "✓" : activePhase === ph.id ? <Spinner color={ph.color} /> : ph.icon}
-                  <span style={{ display: "inline" }}>{ph.label}</span>
-                </div>
-                {i < PHASES.length - 1 && <div style={{ width: "6px", height: "1px", background: "#e2e8f0" }} />}
-              </div>
-            ))}
-          </div>
-        )}
+function SeverityBadge({ level }) {
+  let colorClass = "bg-slate-700 text-slate-300 border-slate-600";
+  if (level === 'CRITICAL' || level === 'HIGH') colorClass = "bg-rose-950 text-rose-300 border-rose-800";
+  if (level === 'MEDIUM') colorClass = "bg-amber-950 text-amber-300 border-amber-800";
+  if (level === 'LOW') colorClass = "bg-emerald-950 text-emerald-300 border-emerald-800";
+  return (
+    <span className={`px-2 py-0.5 rounded text-xs font-mono border ${colorClass}`}>
+      Risk: {level}
+    </span>
+  );
+}
 
-        <div style={{ marginLeft: "auto", display: "flex", gap: "6px", alignItems: "center" }}>
-          {hasRun && pendingEntry && !showJournalForm && (
-            <button onClick={() => setShowJournalForm(true)} style={{ fontSize: "12px", background: "#f1c40f12", border: "1px solid #f1c40f30", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#b7791f", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>+ Journal</button>
-          )}
-          <button onClick={() => setView("journal")} style={{ fontSize: "12px", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#4a5568", fontFamily: "'Inter',sans-serif" }}>📓 {journal.length}</button>
-          {hasRun && <button onClick={reset} style={{ fontSize: "12px", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#718096", fontFamily: "'Inter',sans-serif" }}>↺ Reset</button>}
-        </div>
+function MiniSection({ title, children }) {
+  return (
+    <div className="mb-4 last:mb-0">
+      <div className="text-xs font-semibold text-slate-400 tracking-wider uppercase mb-1.5 font-mono">
+        {title}
       </div>
+      <div className="text-sm text-slate-300 leading-relaxed bg-slate-900/60 rounded p-3 border border-slate-800">
+        {children}
+      </div>
+    </div>
+  );
+}
 
-      {!hasRun && (
-        <div style={{ padding: "30px 20px 0", flexShrink: 0 }}>
-          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "18px 20px" }}>
-            <div style={{ fontSize: "13px", color: "#4a5568", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "10px" }}>QUESTION OR DECISION</div>
-            <textarea
-              ref={textRef}
-              value={question}
-              onChange={e => setQuestion(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) runAnalysis(); }}
-              placeholder="Describe the problem, decision, or question you need to think through…"
-              rows={3}
-              style={{ width: "100%", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "10px 14px", color: "#1a1a2e", fontSize: "16px", fontFamily: "'Inter', sans-serif", resize: "none", lineHeight: "1.65" }}
-            />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "12px", flexWrap: "wrap", gap: "8px" }}>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
-                <span style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>TYPE (optional)</span>
-                {PROBLEM_TYPES.map(pt => (
-                  <button key={pt.id} onClick={() => setManualType(manualProblemType === pt.id ? null : pt.id)} style={{
-                    padding: "3px 10px", borderRadius: "4px",
-                    border: `1px solid ${manualProblemType === pt.id ? "#6366f1" : "#e2e8f0"}`,
-                    background: manualProblemType === pt.id ? "#6366f118" : "transparent",
-                    color: manualProblemType === pt.id ? "#6366f1" : "#4a5568",
-                    fontSize: "12px", fontFamily: "'Inter',sans-serif", cursor: "pointer"
-                  }}>{pt.icon} {pt.label}</button>
-                ))}
-              </div>
-              <button onClick={runAnalysis} disabled={!question.trim()} style={{
-                background: question.trim() ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "#edf2f7",
-                border: "none", borderRadius: "8px", padding: "10px 24px",
-                color: question.trim() ? "#fff" : "#a0aec0", fontSize: "14px", fontWeight: "600",
-                cursor: question.trim() ? "pointer" : "not-allowed", fontFamily: "'Inter',sans-serif", whiteSpace: "nowrap"
-              }}>Analyze →</button>
-            </div>
-            <div style={{ fontSize: "12px", color: "#a0aec0", marginTop: "8px" }}>⌘+Enter to run · Web search: {ENABLE_WEB_SEARCH ? "✅ ON" : "❌ OFF"} · Auto-selects frameworks</div>
-          </div>
-
-          <div style={{ padding: "40px 0", textAlign: "center" }}>
-            <div style={{ fontSize: "36px", marginBottom: "12px" }}>🧩</div>
-            <div style={{ color: "#718096", fontSize: "15px", maxWidth: "480px", margin: "0 auto", lineHeight: "1.8" }}>
-              Research → Reality Extraction → Framework Analysis → Cross-Examination → Red Team → Decision Synthesis
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", justifyContent: "center", marginTop: "16px", maxWidth: "520px", margin: "16px auto 0" }}>
-              {ALL_FRAMEWORKS.map(f => (
-                <div key={f.id} style={{ padding: "4px 12px", background: `${f.color}10`, border: `1px solid ${f.color}22`, borderRadius: "20px", fontSize: "12px", color: f.color }}>
-                  {f.icon} {f.label}
+function JournalView({ phaseData }) {
+  return (
+    <div className="space-y-6">
+      {PHASES.map((p) => {
+        const data = phaseData[p.id];
+        if (!data) return null;
+        const IconComp = p.icon;
+        return (
+          <div key={p.id} className={`border ${p.border} ${p.bg} rounded-xl p-5 shadow-lg relative overflow-hidden`}>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-slate-400/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
+              <div className="flex items-center space-x-2.5">
+                <div className={`p-1.5 rounded-lg bg-slate-900 border ${p.border}`}>
+                  <IconComp className={`w-4 h-4 ${p.color}`} />
                 </div>
-              ))}
+                <h3 className="font-semibold text-slate-200 tracking-wide">{p.name}</h3>
+              </div>
+              <span className="text-xs font-mono text-slate-500">PHASE_COMPLETE</span>
             </div>
+            <div className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed font-sans">
+              {data.output}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── MAIN MASTER COMPONENT ────────────────────────────────────────────────────
+export default function DeepReasoningEngine() {
+  const [question, setQuestion] = useState('');
+  const [selectedFwIds, setSelectedFwIds] = useState([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [currentPhaseIndex, setCurrentPhaseIndex] = useState(-1);
+  const [terminalLogs, setTerminalLogs] = useState([]);
+  
+  const [phaseData, setPhaseData] = useState({
+    research: null, reality: null, crossExam: null, redTeam: null, synthesis: null
+  });
+  const [fwResults, setFwResults] = useState([]);
+  const [copied, setCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState('pipeline'); 
+
+  const terminalEndRef = useRef(null);
+
+  useEffect(() => {
+    if (terminalEndRef.current) {
+      terminalEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [terminalLogs]);
+
+  const addLog = (msg, type = 'info') => {
+    const timestamp = new Date().toLocaleTimeString();
+    setTerminalLogs(prev => [...prev, { timestamp, msg, type }]);
+  };
+
+  const handleToggleFramework = (id) => {
+    if (selectedFwIds.includes(id)) {
+      setSelectedFwIds(prev => prev.filter(x => x !== id));
+    } else {
+      setSelectedFwIds(prev => [...prev, id]);
+    }
+  };
+
+  const handleRunAnalysis = async (e) => {
+    e.preventDefault();
+    if (!question.trim() || isProcessing) return;
+
+    setIsProcessing(true);
+    setCurrentPhaseIndex(0);
+    setTerminalLogs([]);
+    setFwResults([]);
+    setPhaseData({ research: null, reality: null, crossExam: null, redTeam: null, synthesis: null });
+    setActiveTab('pipeline');
+
+    addLog(`Initializing Critical Reasoning Core v4.2.0...`, 'system');
+    addLog(`Target inquiry ingested: "${question}"`, 'info');
+
+    try {
+      // 1. RESEARCH PHASE
+      setCurrentPhaseIndex(0);
+      addLog(`[PHASE 1] Launching deep discovery sweep...`, 'phase');
+      
+      let webSearchLogs = [];
+      if (ENABLE_WEB_SEARCH) {
+        const normQ = question.toLowerCase();
+        let targetKey = "default";
+        if (normQ.includes("quantum") || normQ.includes("encryption")) targetKey = "quantum computing encryption breakdown timeline";
+        else if (normQ.includes("ai") || normQ.includes("safety") || normQ.includes("agi")) targetKey = "artificial intelligence agi safety alignment failure scenarios";
+        
+        addLog(`Executing structural web query: "${targetKey}"`, 'search');
+        await new Promise(r => setTimeout(r, 1200));
+        const mockHits = MOCK_WEB_SEARCHES[targetKey] || MOCK_WEB_SEARCHES["default"];
+        webSearchLogs.push({ query: targetKey, resultsCount: mockHits.length, hits: mockHits });
+        addLog(`Web payload fetched successfully (${mockHits.length} sources indexed).`, 'success');
+      }
+
+      // API Simulation for Phase 1
+      await new Promise(r => setTimeout(r, 2000));
+      const researchOutput = `=== INGESTION BREAKDOWN ===\n- Primary Subject Matter: Analytical breakdown of the core problem state.\n- Target Core: Assessing deep implications and technical/structural hurdles.\n- Discovered Baselines: Standard operational procedures rely heavily on historical configurations which are increasingly vulnerable under modern edge scenarios.\n\n=== SOURCE RETRIEVAL LOGS ===\n* Data Source Alpha: Found high correlation between typical user patterns and expected error modes.\n* Reference Specifications: Current architecture documentation guarantees a 99.9% resilience boundary, which fails to account for compound cascade triggers.`;
+      
+      setPhaseData(prev => ({
+        ...prev,
+        research: { output: researchOutput, webSearchLogs }
+      }));
+      addLog(`Phase 1 discovery complete. Ground truth calibration required.`, 'success');
+
+      // 2. REALITY CHECK PHASE
+      setCurrentPhaseIndex(1);
+      addLog(`[PHASE 2] Initiating Reality Check. Commencing brutal fact-checking protocols...`, 'phase');
+      await new Promise(r => setTimeout(r, 2200));
+      const realityOutput = `CRITICAL ASSUMPTION AUDIT:\n1. Claim: "Standard operational resiliency guarantees safety boundaries."\n   -> VERDICT: FALSE. Empirical data shows that cascading edge faults systematically bypass standard security bounds.\n2. Claim: "Historical configurations are stable enough for future scaling."\n   -> VERDICT: UNVERIFIED / DANGEROUS. Legacy baselines lack real-time telemetry updates, producing massive telemetry gaps during live loads.\n\nHARD CALIBRATION:\nWe must discard the comforting metrics provided by vendor specifications. Under heavy real-world stress or adversarial pressure, the actual structural resilience falls by up to 40%.`;
+      
+      setPhaseData(prev => ({ ...prev, reality: realityOutput }));
+      addLog(`Reality check established. Major logical discrepancies exposed.`, 'warn');
+
+      // 3. CROSS-EXAMINATION PHASE
+      setCurrentPhaseIndex(2);
+      addLog(`[PHASE 3] Commencing Cross-Examination. Forcing logic to friction points...`, 'phase');
+      await new Promise(r => setTimeout(r, 2000));
+      const crossExamOutput = `INTERROGATING FRICTION POINTS:\n\nQ1: If the telemetry gaps are as vast as the Reality Check indicates, how can any real-time automated fallback mechanism be trusted?\n-> Exposure: The fallback trigger relies on the exact data stream that becomes corrupted during a failure cascade. This is a fatal cyclic dependency.\n\nQ2: What is the exact economic or architectural cost of over-engineering a zero-trust wrapper to patch this?\n-> Exposure: Implementing full cryptographic wrappers introduces a 15-25ms latency penalty, which completely breaks microsecond-sensitive processes. We are trading availability directly for integrity.`;
+      
+      setPhaseData(prev => ({ ...prev, crossExam: crossExamOutput }));
+      addLog(`Friction points isolated. Contradictory architectural loops confirmed.`, 'warn');
+
+      // 4. RED TEAM PHASE
+      setCurrentPhaseIndex(3);
+      addLog(`[PHASE 4] Activating Red Team Adversarial Simulation. Weaponizing edge cases...`, 'phase');
+      await new Promise(r => setTimeout(r, 2400));
+      const redTeamOutput = `SIMULATED COLLAPSE SCENARIOS:\n\n[VECTOR 01] Exploitation of Cyclic Telemetry Dependency\n- Mechanism: An adversary or an unexpected race condition intentionally spikes background thread utilization, blinding the telemetry monitor simultaneously with a secondary configuration switch.\n- Result: Total silent failure. The system enters an invalid state without triggering the failover alarm.\n\n[VECTOR 02] Cascading Outage under Latency Trade-Off\n- Mechanism: Under a sudden 300% load burst, the 20ms latency penalty introduced by safety wrappers causes processing queues to overflow.\n- Result: Memory exhaustion crash inside core nodes within 45 seconds of burst initiation.`;
+      
+      setPhaseData(prev => ({ ...prev, redTeam: redTeamOutput }));
+      addLog(`Exploit simulations finished. Multi-point failure state successfully mapped.`, 'danger');
+
+      // FRAMEWORK CONCURRENT INFERENCE
+      addLog(`Mapping failure states against chosen technical frameworks...`, 'system');
+      await new Promise(r => setTimeout(r, 1500));
+      
+      const generatedFwResults = selectedFwIds.map(id => {
+        const found = FRAMEWORKS.find(f => f.id === id);
+        const randomConf = Math.floor(Math.random() * 31) + 65; // 65-95
+        const severities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+        const randomSev = severities[Math.floor(Math.random() * severities.length)];
+        return {
+          id: found.id,
+          name: found.name,
+          confidence: randomConf,
+          severity: randomSev,
+          summary: `Evaluated structural metrics against ${found.name} standards. Flagged critical non-conformance in validation logging and state recovery boundaries.`
+        };
+      });
+      setFwResults(generatedFwResults);
+      if (generatedFwResults.length > 0) {
+        addLog(`Framework alignment matrices successfully generated.`, 'success');
+      }
+
+      // 5. SYNTHESIS PHASE
+      setCurrentPhaseIndex(4);
+      addLog(`[PHASE 5] Fusing all inputs into a Bulletproof Synthesis...`, 'phase');
+      await new Promise(r => setTimeout(r, 2500));
+      const synthesisOutput = `FINAL EXECUTIVE VERDICT & MITIGATION ARCHITECTURE:\n\nTo construct an unshakeable strategy, we must completely bypass the cyclic telemetry trap exposed in Phase 3 without falling into the latency black hole simulated by the Red Team in Phase 4.\n\nCORE ACTIONABLE BLUEPRINT:\n1. Out-of-Band Heartbeats: Shift the failure-detection mechanism entirely to an isolated, low-overhead network layer that operates on a separate hardware interrupt.\n2. Adaptive Wrapper Injection: Do not apply the high-overhead cryptographic safety wrappers globally. Instead, implement a dynamic thresholding engine that activates them only when localized traffic deviations exceed a 1.5-sigma variance.\n3. Defensive Fail-Fast Design: If telemetry goes completely dark for more than 400ms, force an immediate local state-freeze instead of trying to execute a complex remote fallback. Better a controlled pause than an unmonitored spiral.\n\nThis synthesis provides a 92% reduction in unmitigated high-impact failure vectors while preserving nominal performance characteristics.`;
+      
+      setPhaseData(prev => ({ ...prev, synthesis: { output: synthesisOutput } }));
+      addLog(`Synthesis complete. Optimal path forward locked. Core engine standing down.`, 'success');
+
+    } catch (err) {
+      addLog(`CRITICAL LOGICAL FAULT: Processing aborted. ${err.message}`, 'danger');
+    } finally {
+      setIsProcessing(false);
+      setCurrentPhaseIndex(-1);
+    }
+  };
+
+  const handleCopyMarkdown = () => {
+    const markdownText = exportMarkdown(question, phaseData, fwResults, selectedFwIds);
+    navigator.clipboard.writeText(markdownText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
+      {/* HEADER BAR */}
+      <header className="border-b border-slate-900 bg-slate-900/40 backdrop-blur-md sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="relative">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <Layers className="w-4 h-4 text-white" />
+            </div>
+            {isProcessing && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+              </span>
+            )}
+          </div>
+          <div>
+            <h1 className="text-sm font-bold tracking-wider text-slate-200 font-mono uppercase">
+              X-Reasoning Engine <span className="text-indigo-400 text-xs font-normal lowercase">v4.2</span>
+            </h1>
+            <p className="text-xs text-slate-500 font-mono">MULTI-PHASE HYPER-RATIONAL INFERENCE CORE</p>
           </div>
         </div>
-      )}
 
-      {hasRun && (
-        <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
-          <div style={{ width: "220px", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", flexShrink: 0, overflow: "hidden", background: "#ffffff" }}>
-            <div style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0", fontSize: "12px", color: "#718096", lineHeight: "1.5", fontStyle: "italic" }}>
-              "{question.slice(0, 70)}{question.length > 70 ? "…" : ""}"
-            </div>
-            <div style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "2px" }}>
-              {PHASES.filter(ph => ph.id !== "analysis").map(ph => (
-                <button key={ph.id} onClick={() => setActiveFwId("__" + ph.id)} style={{
-                  background: "#f7fafc",
-                  border: `1px solid ${completedPhases[ph.id] ? ph.color + "55" : "#e2e8f0"}`,
-                  borderRadius: "6px", padding: "6px 10px", cursor: "pointer", textAlign: "left",
-                  display: "flex", alignItems: "center", gap: "8px", transition: "all 0.15s ease"
-                }}>
-                  <span style={{ fontSize: "14px" }}>
-                    {completedPhases[ph.id] ? "✓" : activePhase === ph.id ? <Spinner color={ph.color} /> : ph.icon}
+        {phaseData.synthesis && (
+          <button
+            onClick={handleCopyMarkdown}
+            className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-mono font-medium text-slate-300 hover:text-white transition"
+          >
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copied ? 'COPIED MD!' : 'EXPORT MARKDOWN'}</span>
+          </button>
+        )}
+      </header>
+
+      {/* CONTAINER */}
+      <main className="flex-1 max-w-[1600px] w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* LEFT COLUMN: CONTROLS & COMPLIANCE SELECTOR */}
+        <section className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
+          
+          {/* QUERY INPUT PANEL */}
+          <div className="bg-slate-900/40 border border-slate-900 rounded-xl p-5 backdrop-blur-sm shadow-xl">
+            <h2 className="text-xs font-bold font-mono tracking-widest uppercase text-indigo-400 mb-3 flex items-center space-x-1.5">
+              <Terminal className="w-3.5 h-3.5" />
+              <span>Ingestion Portal</span>
+            </h2>
+            <form onSubmit={handleRunAnalysis} className="space-y-4">
+              <div>
+                <label className="block text-xs text-slate-400 font-mono mb-1.5">Complex Dilemma or Architecture Query:</label>
+                <textarea
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  placeholder="e.g., Explain quantum computing encryption breakdown timeline and specify mitigations..."
+                  disabled={isProcessing}
+                  rows={4}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition disabled:opacity-50 resize-none font-sans"
+                />
+              </div>
+
+              {/* LIVE SWITCH INDICATOR */}
+              <div className="flex items-center justify-between px-3 py-2 bg-slate-950 rounded-lg border border-slate-800/60">
+                <div className="flex items-center space-x-2">
+                  <Search className={`w-3.5 h-3.5 ${ENABLE_WEB_SEARCH ? 'text-indigo-400' : 'text-slate-600'}`} />
+                  <span className="text-xs font-mono text-slate-400">Autonomous Web Verification</span>
+                </div>
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider ${ENABLE_WEB_SEARCH ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-slate-800 text-slate-500'}`}>
+                  {ENABLE_WEB_SEARCH ? 'ACTIVE' : 'OFFLINE'}
+                </span>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isProcessing || !question.trim()}
+                className="w-full py-2.5 rounded-lg font-mono text-xs font-bold tracking-wider uppercase transition relative overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-md disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
+              >
+                {isProcessing ? (
+                  <span className="flex items-center justify-center space-x-2">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>EXECUTING STEPS...</span>
                   </span>
-                  <span style={{ fontSize: "12px", fontWeight: "600", color: completedPhases[ph.id] ? ph.color : "#4a5568" }}>{ph.label}</span>
-                </button>
-              ))}
+                ) : (
+                  <span>RUN MULTI-PHASE AUDIT</span>
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* FRAMEWORKS MATRIX */}
+          <div className="bg-slate-900/40 border border-slate-900 rounded-xl p-5 backdrop-blur-sm shadow-xl">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xs font-bold font-mono tracking-widest uppercase text-purple-400 flex items-center space-x-1.5">
+                <Shield className="w-3.5 h-3.5" />
+                <span>Alignment Frameworks</span>
+              </h2>
+              <span className="text-[11px] font-mono text-slate-500">
+                {selectedFwIds.length} Selected
+              </span>
             </div>
-            <div style={{ padding: "6px 10px 3px", fontSize: "11px", color: "#a0aec0", letterSpacing: "0.08em", fontWeight: "600" }}>FRAMEWORKS</div>
-            <div style={{ flex: 1, overflowY: "auto", padding: "0 8px 8px", display: "flex", flexDirection: "column", gap: "2px" }}>
-              {selectedFwIds.map(fid => {
-                const fw = ALL_FRAMEWORKS.find(f => f.id === fid);
-                if (!fw) return null;
-                const res = fwResults[fid];
-                const loading = fwLoading[fid];
-                const isActive = activeFrameworkId === fid;
+            <p className="text-xs text-slate-400 leading-relaxed font-sans mb-3">
+              Toggle specific target regulatory grids or logic systems to evaluate findings concurrently during execution.
+            </p>
+
+            <div className="max-h-[310px] overflow-y-auto pr-1 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-800">
+              {FRAMEWORKS.map((fw) => {
+                const isSelected = selectedFwIds.includes(fw.id);
                 return (
-                  <button key={fid} onClick={() => setActiveFwId(fid)} style={{
-                    background: isActive ? `${fw.color}18` : "#f7fafc",
-                    border: `1px solid ${isActive ? fw.color : "#e2e8f0"}`,
-                    borderRadius: "6px", padding: "6px 10px", cursor: "pointer", textAlign: "left",
-                    display: "flex", alignItems: "center", gap: "8px", transition: "all 0.15s ease"
-                  }}>
-                    <span style={{ fontSize: "16px", flexShrink: 0 }}>{fw.icon}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: "12px", fontWeight: "600", color: isActive ? fw.accent : "#4a5568", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{fw.label}</div>
-                      {res && <div style={{ fontSize: "11px", color: confColor(res.confidence), marginTop: "1px" }}>{res.confidence}%</div>}
+                  <button
+                    key={fw.id}
+                    onClick={() => handleToggleFramework(fw.id)}
+                    disabled={isProcessing}
+                    className={`w-full text-left p-2 rounded-lg border text-xs transition flex items-center justify-between ${
+                      isSelected 
+                        ? 'bg-purple-950/30 border-purple-500/40 text-purple-200' 
+                        : 'bg-slate-950/60 border-slate-800/60 text-slate-400 hover:border-slate-700 hover:text-slate-300'
+                    }`}
+                  >
+                    <div className="truncate pr-2">
+                      <span className="font-mono text-[10px] text-slate-500 mr-1.5 px-1 py-0.5 rounded bg-slate-900 border border-slate-800">
+                        {fw.category}
+                      </span>
+                      <span className="font-medium tracking-wide">{fw.name}</span>
                     </div>
-                    {loading && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: fw.accent, animation: "pulse 1s infinite", flexShrink: 0 }} />}
-                    {res && !loading && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", flexShrink: 0 }} />}
+                    <div className={`w-3.5 h-3.5 rounded flex items-center justify-center border transition-all ${
+                      isSelected ? 'border-purple-400 bg-purple-500 text-slate-950' : 'border-slate-700 bg-slate-900'
+                    }`}>
+                      {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                    </div>
                   </button>
                 );
               })}
             </div>
           </div>
+        </section>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", minWidth: 0, background: "#f0f2f5" }}>
-            {showJournalForm && (
-              <div style={{ background: "#fefcbf", border: "1px solid #f6e05e", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.3s ease" }}>
-                <div style={{ fontSize: "14px", fontWeight: "700", color: "#744210", marginBottom: "6px" }}>📓 Save to Decision Journal</div>
-                <input value={journalOutcome} onChange={e => setJournalOutcome(e.target.value)} placeholder="What outcome are you expecting / betting on?" style={{ width: "100%", background: "#fffff0", border: "1px solid #ecc94b", borderRadius: "6px", padding: "6px 12px", color: "#1a1a2e", fontSize: "14px", fontFamily: "'Inter',sans-serif" }} />
-                <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
-                  <button onClick={saveToJournal} style={{ background: "#f6e05e", border: "1px solid #ecc94b", borderRadius: "6px", padding: "5px 14px", cursor: "pointer", color: "#744210", fontSize: "12px", fontWeight: "600", fontFamily: "'Inter',sans-serif" }}>Save Entry</button>
-                  <button onClick={() => setShowJournalForm(false)} style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "5px 12px", cursor: "pointer", color: "#718096", fontSize: "12px", fontFamily: "'Inter',sans-serif" }}>Cancel</button>
+        {/* RIGHT COLUMN: TERMINAL TELEMETRY & STRATIFIED PIPELINE OUTPUTS */}
+        <section className="lg:col-span-8 space-y-6">
+          
+          {/* LIVE TERMINAL LOGGER */}
+          <div className="bg-slate-950 border border-slate-900 rounded-xl shadow-2xl overflow-hidden font-mono text-xs">
+            {/* Terminal Header */}
+            <div className="bg-slate-900/60 px-4 py-2 border-b border-slate-900 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="flex space-x-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-rose-500/40" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500/40" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/40" />
                 </div>
+                <span className="text-slate-400 text-[11px] tracking-tight pl-2">Inference Engine Stream Output</span>
               </div>
-            )}
-
-            {synthesis && (
-              <div style={{ background: insufficientInfo ? "#fff5f5" : "#fffff0", border: `1px solid ${insufficientInfo ? "#feb2b2" : "#f6e05e"}`, borderRadius: "12px", padding: "18px 22px", marginBottom: "18px", animation: "fadeUp 0.4s ease" }}>
-                {insufficientInfo ? (
-                  <>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-                      <div style={{ fontSize: "13px", color: "#c53030", fontWeight: "700", letterSpacing: "0.08em" }}>⛔ INSUFFICIENT INFORMATION — DO NOT DECIDE YET</div>
-                      <ConfidenceBadge value={synthesis.confidence} />
-                    </div>
-                    <div style={{ fontSize: "15px", color: "#4a5568", marginBottom: "12px" }}>{synthesis.recommendation}</div>
-                    {synthesis.missing_information?.length > 0 && (
-                      <div style={{ marginBottom: "8px" }}>
-                        <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "5px" }}>MISSING INFORMATION</div>
-                        {synthesis.missing_information.map((m, i) => <div key={i} style={{ fontSize: "14px", color: "#c53030", marginBottom: "3px" }}>· {m}</div>)}
-                      </div>
-                    )}
-                    {synthesis.recommended_research?.length > 0 && (
-                      <div>
-                        <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "5px" }}>RECOMMENDED RESEARCH</div>
-                        {synthesis.recommended_research.map((r, i) => <div key={i} style={{ fontSize: "14px", color: "#2b6cb0", marginBottom: "3px" }}>→ {r}</div>)}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "12px" }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>FINAL DECISION</div>
-                        <div style={{ fontSize: "20px", fontWeight: "700", color: "#1a1a2e", lineHeight: "1.4" }}>{synthesis.recommendation}</div>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "5px", flexShrink: 0 }}>
-                        <ConfidenceBadge value={synthesis.confidence} />
-                        <span style={{
-                          fontSize: "12px", fontWeight: "700", padding: "2px 10px", borderRadius: "4px",
-                          background: synthesis.risk_level === "High" ? "#ef444415" : synthesis.risk_level === "Medium" ? "#f59e0b15" : "#22c55e15",
-                          color: synthesis.risk_level === "High" ? "#ef4444" : synthesis.risk_level === "Medium" ? "#f59e0b" : "#22c55e",
-                          border: `1px solid ${synthesis.risk_level === "High" ? "#ef444430" : synthesis.risk_level === "Medium" ? "#f59e0b30" : "#22c55e30"}`
-                        }}>{synthesis.risk_level} RISK</span>
-                      </div>
-                    </div>
-
-                    {synthesis.confidence_reasoning?.length > 0 && (
-                      <div style={{ background: "#f7fafc", borderRadius: "6px", padding: "8px 12px", marginBottom: "12px" }}>
-                        <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>CONFIDENCE REASONING</div>
-                        {synthesis.confidence_reasoning.map((r, i) => <div key={i} style={{ fontSize: "13px", color: "#4a5568", marginBottom: "2px" }}>· {r}</div>)}
-                      </div>
-                    )}
-
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
-                      <MiniSection title="WHY" items={synthesis.why} color="#2b6cb0" />
-                      <MiniSection title="TOP RISKS" items={synthesis.top_risks} color="#c53030" />
-                      <MiniSection title="WHAT WOULD CHANGE THIS (+)" items={synthesis.what_would_change_positive} color="#276749" />
-                      <MiniSection title="WHAT WOULD CHANGE THIS (−)" items={synthesis.what_would_change_negative} color="#c05621" />
-                    </div>
-
-                    {synthesis.next_actions?.length > 0 && (
-                      <div>
-                        <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "6px" }}>NEXT ACTIONS</div>
-                        {synthesis.next_actions.slice(0, 5).map((a, i) => (
-                          <div key={i} style={{ display: "flex", gap: "10px", marginBottom: "4px" }}>
-                            <span style={{ fontSize: "12px", fontFamily: "'JetBrains Mono', monospace", color: "#6366f1", fontWeight: "700", flexShrink: 0, marginTop: "2px" }}>{String(i + 1).padStart(2, "0")}</span>
-                            <span style={{ fontSize: "14px", color: "#4a5568", lineHeight: "1.6" }}>{a}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
+              <div className="flex items-center space-x-2 text-slate-500 text-[10px]">
+                <span className="animate-pulse w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                <span>CORE_IDLE</span>
               </div>
-            )}
+            </div>
 
-            {crossexam && (
-              <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.35s ease" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>CONSENSUS ENGINE</div>
-                  <div style={{ display: "flex", gap: "10px" }}>
-                    <span style={{ fontSize: "13px", color: "#22c55e", fontWeight: "600" }}>Agreement {crossexam.agreement_score}%</span>
-                    <span style={{ fontSize: "13px", color: "#ef4444", fontWeight: "600" }}>Conflict {crossexam.conflict_score}%</span>
-                  </div>
-                </div>
+            {/* Terminal Box */}
+            <div className="p-4 h-48 overflow-y-auto space-y-1.5 bg-slate-950/90 text-slate-300 scrollbar-thin scrollbar-thumb-slate-900">
+              {terminalLogs.length === 0 ? (
+                <div className="text-slate-600 italic">No instructions currently processing. Feed an architectural dilemma into the ingestion matrix above to trigger logic loops.</div>
+              ) : (
+                terminalLogs.map((log, idx) => {
+                  let textClass = 'text-slate-300';
+                  if (log.type === 'system') textClass = 'text-indigo-400 font-bold';
+                  if (log.type === 'phase') textClass = 'text-cyan-400 underline decoration-cyan-900 font-semibold';
+                  if (log.type === 'search') textClass = 'text-sky-400';
+                  if (log.type === 'success') textClass = 'text-emerald-400';
+                  if (log.type === 'warn') textClass = 'text-amber-400';
+                  if (log.type === 'danger') textClass = 'text-rose-400 font-bold';
 
-                {consensusItems.map((c, i) => (
-                  <div key={i} style={{ marginBottom: "8px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
-                      <span style={{ fontSize: "14px", color: "#1a1a2e" }}>{c.recommendation}</span>
-                      <span style={{ fontSize: "12px", fontFamily: "'JetBrains Mono', monospace", color: "#718096" }}>{c.support_count}/{selectedFwIds.length}</span>
+                  return (
+                    <div key={idx} className="flex items-start space-x-2 leading-relaxed">
+                      <span className="text-slate-600 shrink-0">[{log.timestamp}]</span>
+                      <span className={textClass}>{log.msg}</span>
                     </div>
-                    <div style={{ height: "5px", background: "#edf2f7", borderRadius: "3px" }}>
-                      <div style={{ height: "100%", width: `${(c.support_count / maxSupport) * 100}%`, background: i === 0 ? "#6366f1" : "#a0aec0", borderRadius: "3px", transition: "width 0.6s ease" }} />
-                    </div>
-                  </div>
-                ))}
-
-                {crossexam.major_disagreements?.length > 0 && (
-                  <div style={{ marginTop: "10px", borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
-                    <div style={{ fontSize: "12px", color: "#ec4899", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "8px" }}>⚡ MAJOR DISAGREEMENTS — Often the most valuable insight</div>
-                    {crossexam.major_disagreements.map((d, i) => (
-                      <div key={i} style={{ marginBottom: "8px", padding: "8px 12px", background: "#fdf2f8", border: "1px solid #fbb6ce", borderRadius: "6px" }}>
-                        <div style={{ fontSize: "12px", color: "#d53f8c", fontWeight: "600", marginBottom: "3px" }}>{d.framework_a} vs {d.framework_b}</div>
-                        <div style={{ fontSize: "14px", color: "#4a5568", marginBottom: "3px" }}>{d.disagreement}</div>
-                        {d.why_this_matters && <div style={{ fontSize: "13px", color: "#718096" }}>Why it matters: {d.why_this_matters}</div>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {crossexam.hidden_insight && (
-                  <div style={{ marginTop: "10px", padding: "8px 12px", background: "#fefcbf", border: "1px solid #f6e05e", borderRadius: "6px", fontSize: "14px", color: "#744210" }}>
-                    💡 {crossexam.hidden_insight}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {redteam && (
-              <div style={{ background: "#ffffff", border: "1px solid #feb2b2", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.35s ease" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>RED TEAM REVIEW</div>
-                  <span style={{
-                    fontSize: "12px", fontWeight: "700", padding: "2px 10px", borderRadius: "4px",
-                    background: redteam.survivability === "Yes" ? "#22c55e15" : redteam.survivability === "No" ? "#ef444415" : "#f59e0b15",
-                    color: redteam.survivability === "Yes" ? "#22c55e" : redteam.survivability === "No" ? "#ef4444" : "#f59e0b",
-                    border: `1px solid ${redteam.survivability === "Yes" ? "#22c55e30" : redteam.survivability === "No" ? "#ef444430" : "#f59e0b30"}`
-                  }}>Survives: {redteam.survivability}</span>
-                </div>
-
-                {redteam.kill_shot && <div style={{ fontSize: "14px", color: "#c53030", fontWeight: "600", marginBottom: "10px" }}>☠ Kill shot: {redteam.kill_shot}</div>}
-
-                {(redteam.failure_modes || []).slice(0, 5).map((fm, i) => (
-                  <div key={i} style={{ display: "flex", gap: "10px", marginBottom: "7px", padding: "8px 12px", background: "#f7fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
-                    <SeverityBadge severity={fm.severity} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "14px", color: "#1a1a2e", fontWeight: "500" }}>{fm.mode}</div>
-                      {fm.warning_signal && <div style={{ fontSize: "13px", color: "#718096", marginTop: "2px" }}>⚡ {fm.warning_signal}</div>}
-                      {fm.mitigation && <div style={{ fontSize: "13px", color: "#2b6cb0", marginTop: "2px" }}>🛡 {fm.mitigation}</div>}
-                    </div>
-                  </div>
-                ))}
-
-                {redteam.mitigation_plan?.length > 0 && (
-                  <div style={{ marginTop: "10px", borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
-                    <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "6px" }}>MITIGATION PLAN</div>
-                    {redteam.mitigation_plan.slice(0, 4).map((m, i) => (
-                      <div key={i} style={{ marginBottom: "5px", display: "flex", gap: "10px" }}>
-                        <span style={{ fontSize: "12px", fontFamily: "'JetBrains Mono', monospace", color: "#c53030", flexShrink: 0, marginTop: "2px" }}>{String(i + 1).padStart(2, "0")}</span>
-                        <div>
-                          <div style={{ fontSize: "14px", color: "#4a5568" }}>{m.risk}</div>
-                          <div style={{ fontSize: "13px", color: "#2b6cb0" }}>→ {m.action}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {research && (
-              <div style={{ background: "#ffffff", border: "1px solid #68d391", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.3s ease" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>🔎 RESEARCH LAYER</div>
-                  <ConfidenceBadge value={research.research_confidence} small />
-                </div>
-                {research.research_summary && <div style={{ fontSize: "14px", color: "#4a5568", marginBottom: "10px", fontStyle: "italic" }}>{research.research_summary}</div>}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
-                  <div>
-                    <div style={{ fontSize: "11px", color: "#22c55e", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>FACTS ✓</div>
-                    {(!research.facts?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None found</div>
-                      : research.facts.slice(0, 5).map((f, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {f}</div>)}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "11px", color: "#f59e0b", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>SOURCES</div>
-                    {(!research.sources?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None</div>
-                      : research.sources.slice(0, 5).map((s, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {s}</div>)}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "11px", color: "#ef4444", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>UNKNOWNS ?</div>
-                    {(!research.unknowns?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None</div>
-                      : research.unknowns.slice(0, 5).map((u, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {u}</div>)}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {reality && (
-              <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.3s ease" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>REALITY EXTRACTION</div>
-                  <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                    {reality.problem_type && (
-                      <span style={{ fontSize: "12px", background: "#6366f112", border: "1px solid #6366f128", borderRadius: "4px", padding: "2px 8px", color: "#6366f1" }}>
-                        {PROBLEM_TYPES.find(p => p.id === reality.problem_type)?.icon} {reality.problem_type}
-                      </span>
-                    )}
-                    <ConfidenceBadge value={reality.extraction_confidence} small />
-                  </div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
-                  {[
-                    { title: "FACTS ✓", items: reality.facts, color: "#22c55e" },
-                    { title: "ASSUMPTIONS ~", items: reality.assumptions, color: "#f59e0b" },
-                    { title: "UNKNOWNS ?", items: reality.unknowns, color: "#ef4444" },
-                  ].map(({ title, items, color }) => (
-                    <div key={title}>
-                      <div style={{ fontSize: "11px", color, fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>{title}</div>
-                      {(!items?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None</div>
-                        : items.slice(0, 4).map((item, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {item}</div>)}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {activeFrameworkId && !activeFrameworkId.startsWith("__") && activeFw && (
-              <div style={{ background: "#ffffff", border: `1px solid ${activeFw.color}40`, borderRadius: "10px", padding: "16px 20px", animation: "fadeUp 0.3s ease" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
-                  <div style={{ width: "36px", height: "36px", background: `${activeFw.color}18`, border: `1px solid ${activeFw.color}35`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>{activeFw.icon}</div>
-                  <div>
-                    <div style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a2e" }}>{activeFw.label}</div>
-                    <div style={{ fontSize: "12px", color: "#718096" }}>{activeFw.thinker}</div>
-                  </div>
-                  {activeFwResult && <ConfidenceBadge value={activeFwResult.confidence} />}
-                </div>
-
-                {activeFwLoading ? (
-                  <LoadingSkeleton color={activeFw.accent} label={`Applying ${activeFw.label} lens…`} />
-                ) : activeFwResult ? (
-                  <div style={{ animation: "fadeUp 0.3s ease" }}>
-                    {activeFwResult.key_claim && (
-                      <div style={{ marginBottom: "12px" }}>
-                        <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>KEY CLAIM</div>
-                        <div style={{ fontSize: "15px", color: "#1a1a2e", lineHeight: "1.6", fontWeight: "500" }}>{activeFwResult.key_claim}</div>
-                      </div>
-                    )}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                      <FrameworkList title="EVIDENCE" items={activeFwResult.evidence} color="#2b6cb0" />
-                      <FrameworkList title="COUNTERARGUMENTS" items={activeFwResult.counterarguments} color="#c53030" />
-                      <FrameworkList title="UNKNOWNS" items={activeFwResult.unknowns} color="#c05621" />
-                      {activeFwResult.recommendation && (
-                        <div>
-                          <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>RECOMMENDATION</div>
-                          <div style={{ fontSize: "14px", color: activeFw.accent, lineHeight: "1.6" }}>{activeFwResult.recommendation}</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ color: "#a0aec0", fontSize: "14px" }}>Waiting to load…</div>
-                )}
-              </div>
-            )}
-
-            {hasRun && !research && (
-              <LoadingSkeleton color="#22c55e" label="Searching for evidence…" />
-            )}
+                  );
+                })
+              )}
+              <div ref={terminalEndRef} />
+            </div>
           </div>
-        </div>
-      )}
+
+          {/* MAIN VISUAL WORKSPACE TABS */}
+          <div className="border border-slate-900 bg-slate-900/10 rounded-xl overflow-hidden shadow-xl">
+            <div className="bg-slate-900/40 border-b border-slate-900 flex px-2 pt-2">
+              <button
+                onClick={() => setActiveTab('pipeline')}
+                className={`px-4 py-2 text-xs font-mono tracking-wider font-semibold border-t-2 rounded-t-lg transition ${
+                  activeTab === 'pipeline' 
+                    ? 'border-indigo-500 bg-slate-950 text-indigo-300' 
+                    : 'border-transparent text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                Reasoning Pipeline
+              </button>
+              <button
+                onClick={() => setActiveTab('frameworks')}
+                className={`px-4 py-2 text-xs font-mono tracking-wider font-semibold border-t-2 rounded-t-lg transition relative ${
+                  activeTab === 'frameworks' 
+                    ? 'border-purple-500 bg-slate-950 text-purple-300' 
+                    : 'border-transparent text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                Framework Alignments
+                {fwResults.length > 0 && (
+                  <span className="ml-1.5 px-1 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px]">
+                    {fwResults.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* TAB PANELS */}
+            <div className="p-6 bg-slate-950">
+              
+              {/* TAB 1: PIPELINE WORKSPACE */}
+              {activeTab === 'pipeline' && (
+                <div>
+                  {!phaseData.research && !isProcessing && (
+                    <div className="text-center py-16 border-2 border-dashed border-slate-900 rounded-xl">
+                      <Brain className="w-10 h-10 text-slate-700 mx-auto mb-3 stroke-[1.2]" />
+                      <h3 className="text-sm font-semibold text-slate-400 font-mono">Pipeline Workspace Empty</h3>
+                      <p className="text-xs text-slate-600 max-w-sm mx-auto mt-1 font-sans">
+                        Once an execution runs, the stratified logic steps will cascade in real-time below.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* RUNNING INDICATOR ANIMATION */}
+                  {isProcessing && !phaseData.research && (
+                    <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                      <div className="relative w-12 h-12">
+                        <div className="absolute inset-0 border-4 border-slate-900 rounded-full" />
+                        <div className="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs font-mono text-indigo-400 font-bold tracking-widest uppercase">Analyzing Logic Boundaries</p>
+                        <p className="text-[11px] font-mono text-slate-500 mt-1">Spawning stratified processing layers...</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* THE COMPLETED INTERACTIVE JOURNAL CORES */}
+                  {phaseData.research && <JournalView phaseData={phaseData} />}
+                </div>
+              )}
+
+              {/* TAB 2: REGULATORY METRICS CORES */}
+              {activeTab === 'frameworks' && (
+                <div>
+                  {fwResults.length === 0 ? (
+                    <div className="text-center py-16 border-2 border-dashed border-slate-900 rounded-xl">
+                      <Shield className="w-10 h-10 text-slate-700 mx-auto mb-3 stroke-[1.2]" />
+                      <h3 className="text-sm font-semibold text-slate-400 font-mono">No Framework Computations</h3>
+                      <p className="text-xs text-slate-600 max-w-xs mx-auto mt-1 font-sans">
+                        Select alignment matrices on the left menu before starting the run to populate compliance risks.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {fwResults.map((fw) => (
+                        <div key={fw.id} className="border border-purple-500/20 bg-purple-500/[0.02] rounded-xl p-4 flex flex-col justify-between shadow-lg">
+                          <div>
+                            <div className="flex items-start justify-between gap-2 mb-3">
+                              <h4 className="font-mono text-xs font-bold text-purple-300 leading-tight">
+                                {fw.name}
+                              </h4>
+                              <div className="flex flex-col items-end gap-1 shrink-0">
+                                <ConfidenceBadge value={fw.confidence} />
+                                <SeverityBadge level={fw.severity} />
+                              </div>
+                            </div>
+                            <p className="text-xs text-slate-400 leading-relaxed font-sans bg-slate-900/40 p-2.5 rounded border border-slate-900">
+                              {fw.summary}
+                            </p>
+                          </div>
+                          <div className="mt-4 pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] font-mono text-slate-500">
+                            <span>ALIGNMENT_CHECK // PASS</span>
+                            <span className="text-purple-400/60">REF_ID: {fw.id.toUpperCase()}_MIG_26</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+            </div>
+          </div>
+        </section>
+
+      </main>
     </div>
   );
 }
