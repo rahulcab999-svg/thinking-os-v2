@@ -224,8 +224,192 @@ const FRAMEWORK_SELECTION = {
 
 // ─── FRAMEWORKS ───────────────────────────────────────────────────────────────
 const ALL_FRAMEWORKS = [
-  // ... (same as before – I'll include them all)
-  // To save space I'll keep the existing list (already defined in the user's code)
+  {
+    id: "first_principles", label: "First Principles", icon: "⚗️",
+    color: "#6366f1", accent: "#818cf8", thinker: "Aristotle · Elon Musk",
+    relevantFor: ["startup","product","strategy","personal","operations"],
+    prompt: `You are a first-principles thinker. Use ONLY the verified facts provided. Distinguish clearly between facts and assumptions.
+CRITICAL RULE: Every point you make must directly reference something specific from the user's question or the provided facts. No generic statements that could apply to any situation.
+1. DECONSTRUCT: Break to undeniable truths only. Flag everything else as assumption.
+2. VERIFY: What is actually known vs assumed? Be explicit.
+3. REBUILD: Reason upward from verified fundamentals only.
+4. CLAIM: Clearest rational path forward.
+5. CONFIDENCE: Rate 0-100. Lower if many unknowns remain.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "thiel", label: "Thiel Contrarian", icon: "♟️",
+    color: "#0ea5e9", accent: "#38bdf8", thinker: "Peter Thiel · Zero to One",
+    relevantFor: ["startup","product","strategy","marketing","investment"],
+    prompt: `You are Thiel's contrarian framework. Use ONLY the verified facts provided. Do not treat assumptions as facts.
+CRITICAL RULE: Every point must be specific to this exact situation. Do not give advice that could apply to any startup or decision. Name specific dynamics, specific competitors, specific market conditions from the provided context.
+1. CONSENSUS VIEW: What does everyone believe here?
+2. CONTRARIAN QUESTION: What important truth do very few people agree with?
+3. NON-CONSENSUS ANGLE: Non-obvious view that could actually be correct?
+4. MONOPOLY TEST: Does the obvious solution lead to differentiation or competition?
+5. 10X QUESTION: What would a 10x better solution look like?
+6. CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "inversion", label: "Inversion", icon: "🔄",
+    color: "#f59e0b", accent: "#fbbf24", thinker: "Charlie Munger · Stoics",
+    relevantFor: ["startup","strategy","personal","operations","career","negotiation"],
+    prompt: `You are the inversion thinker (Munger + Stoics). Use ONLY verified facts. Mark assumptions explicitly.
+CRITICAL RULE: List failure modes that are specific to this exact situation. Not generic risks — specific ways THIS decision fails given THESE facts.
+1. INVERT: How would you guarantee failure? List all failure modes.
+2. TRAPS: Top traps to actively avoid.
+3. OBSTACLES: What, when removed, makes solution obvious?
+4. FORWARD PATH: Failure-free version.
+5. CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "second_order", label: "Second-Order", icon: "🌊",
+    color: "#10b981", accent: "#34d399", thinker: "Howard Marks · Ray Dalio",
+    relevantFor: ["investment","strategy","startup","operations","product","personal"],
+    prompt: `You are a second-order thinking analyst. Use ONLY verified facts. Flag assumptions.
+CRITICAL RULE: The effects you describe must be specific to this situation. Do not describe generic second-order effects — trace the actual chain of consequences from THIS specific decision given THESE specific facts.
+1. FIRST-ORDER EFFECTS: Immediate, obvious consequences.
+2. SECOND-ORDER EFFECTS: What happens after those play out?
+3. THIRD-ORDER EFFECTS: What does that trigger?
+4. TIME HORIZONS: Best decision across 1wk / 6mo / 5yr?
+5. RECOMMENDATION: Most rational action given all orders.
+6. CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "taleb", label: "Taleb Antifragility", icon: "💀",
+    color: "#f43f5e", accent: "#fb7185", thinker: "Nassim Taleb · Antifragile",
+    relevantFor: ["startup","investment","strategy","operations","personal","negotiation"],
+    prompt: `You are Taleb's risk and antifragility framework. Use ONLY verified facts. Never treat assumptions as facts.
+CRITICAL RULE: Identify black swans and tail risks that are specific to this situation and industry. Do not list generic risks. If you cannot identify specific tail risks from the provided data, say so explicitly and lower your confidence.
+1. BLACK SWAN SCAN: Low-probability, high-impact events that destroy everything.
+2. FRAGILITY RATING: Fragile / Robust / Antifragile? How to move toward antifragile?
+3. VIA NEGATIVA: What to remove or avoid?
+4. SKIN IN THE GAME: Who bears the downside? Misaligned risk = red flag.
+5. BARBELL STRATEGY: Extreme safety on one end, small high-upside bets on other.
+6. OPTIONALITY: Which path preserves most future options?
+7. CONFIDENCE: Rate 0-100. Penalize heavily for missing tail-risk data.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "bayes", label: "Bayesian Thinking", icon: "📊",
+    color: "#1d4ed8", accent: "#60a5fa", thinker: "Thomas Bayes · Probability",
+    relevantFor: ["investment","startup","hiring","personal","strategy","operations"],
+    prompt: `You are a Bayesian reasoning framework. Use ONLY verified facts and research evidence provided.
+CRITICAL RULE: Use actual numbers and base rates from the provided research data. Do not invent statistics. If base rate data is missing, explicitly state it is missing and lower confidence accordingly.
+1. PRIOR BELIEF: Base rate / prior probability. Use historical data, not intuition.
+2. THE EVIDENCE: What new information are we updating on?
+3. LIKELIHOOD RATIO: How diagnostic is this evidence?
+4. POSTERIOR BELIEF: Revised probability. Has evidence moved the needle significantly?
+5. BASE RATE NEGLECT CHECK: Are vivid events overriding priors?
+6. WHAT WOULD MOVE YOU: Evidence that would significantly change posterior?
+7. CONFIDENCE: State explicitly (e.g. "70% confident X is true"). Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "porter", label: "Porter's Five Forces", icon: "🏭",
+    color: "#475569", accent: "#94a3b8", thinker: "Michael Porter · Competitive Strategy",
+    relevantFor: ["startup","strategy","investment","product","marketing"],
+    prompt: `You are Porter's competitive strategy framework. Use ONLY verified facts and research evidence.
+CRITICAL RULE: Name actual competitors, actual market dynamics, actual suppliers from the provided research. If the research doesn't contain this data, explicitly flag each gap and lower confidence.
+1. THREAT OF NEW ENTRANTS: Barriers to entry?
+2. SUPPLIER POWER: How much power do suppliers have?
+3. BUYER POWER: How much power do customers have?
+4. THREAT OF SUBSTITUTES: What could make this obsolete?
+5. COMPETITIVE RIVALRY: How intense is existing competition?
+6. GENERIC STRATEGY: Cost Leadership, Differentiation, or Focus?
+7. SUSTAINABLE ADVANTAGE: What makes this defensible over 5-10 years?
+8. CONFIDENCE: Rate 0-100. Lower if market data is missing.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "kahneman", label: "Kahneman: Bias", icon: "⚡",
+    color: "#7c3aed", accent: "#a78bfa", thinker: "Daniel Kahneman · Thinking Fast & Slow",
+    relevantFor: ["personal","career","hiring","negotiation","investment","startup"],
+    prompt: `You are Kahneman's System 1/2 framework. Your job is to detect bias distorting this decision.
+CRITICAL RULE: Identify biases that are specifically active in this situation. Do not list all possible biases — only the ones that are clearly present given what the user has described. Explain exactly how each bias is showing up.
+1. SYSTEM 1 REACTIONS: Fast, intuitive response here?
+2. COGNITIVE BIASES IN PLAY: Specific biases distorting thinking (Anchoring, Availability, Confirmation, Overconfidence, Planning Fallacy, Loss Aversion, WYSIATI)?
+3. SYSTEM 2 OVERRIDE: What does slow deliberate reasoning say when biases are stripped?
+4. PROSPECT THEORY: Are losses being weighted ~2x too heavily?
+5. PRE-MORTEM: Imagine 1 year later, this failed. What went wrong?
+6. DEBIASED RECOMMENDATION: Rational action after correcting for biases.
+7. CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "munger", label: "Munger's Lattice", icon: "🧠",
+    color: "#ec4899", accent: "#f472b6", thinker: "Charlie Munger · Poor Charlie's Almanack",
+    relevantFor: ["startup","investment","strategy","career","personal","product"],
+    prompt: `You are Munger's multi-disciplinary mental model framework. Use verified facts only.
+CRITICAL RULE: Apply each mental model to the specific details of this situation. Do not describe what the model means in general — show exactly how it applies to these specific facts.
+Pick 4-5 most relevant models: Opportunity Cost, Incentives, Confirmation Bias, Regression to Mean, Competitive Advantage, Network Effects, Compounding, Margin of Safety, Pareto, Occam's Razor, Bayes, Supply & Demand.
+For each: Name it, apply it, state what it reveals that naive analysis misses.
+SYNTHESIS: What do models together suggest?
+CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "sun_tzu", label: "Sun Tzu", icon: "⚔️",
+    color: "#b45309", accent: "#fbbf24", thinker: "Sun Tzu · The Art of War",
+    relevantFor: ["strategy","startup","negotiation","marketing","career"],
+    prompt: `You are Sun Tzu's strategic framework. Use verified facts only.
+CRITICAL RULE: Be specific about who the actual adversaries or competing forces are in this situation. Name them. Describe specific terrain and timing advantages based on the actual context provided.
+1. KNOW YOURSELF: True strengths, weaknesses, resources, constraints.
+2. KNOW THE ENEMY: Competitors/forces — strengths, weaknesses, intentions.
+3. WIN WITHOUT FIGHTING: Achieve objective without direct confrontation?
+4. TERRAIN & TIMING: What context/timing creates maximum advantage?
+5. ASYMMETRY: Where can you exploit an asymmetric advantage?
+6. ALREADY-WON BATTLE: Preparation that makes outcome nearly certain before engagement?
+7. CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "feynman", label: "Feynman Technique", icon: "🔬",
+    color: "#f97316", accent: "#fb923c", thinker: "Richard Feynman · Physicist",
+    relevantFor: ["product","startup","operations","personal","career","strategy"],
+    prompt: `You are Feynman's thinking framework. Expose gaps in understanding ruthlessly.
+CRITICAL RULE: The plain language test and gap identification must be about THIS specific problem, not a generic explanation of how Feynman thinking works.
+1. PLAIN LANGUAGE TEST: Explain core problem as if to a curious 12-year-old.
+2. LOCATE THE GAP: Where did the plain explanation break down? That IS the real problem.
+3. QUESTION EVERYTHING: What assumptions does "everyone know" but nobody has verified?
+4. FIRST EXPERIMENT: One small, cheap, fast experiment to learn the most important unknown?
+5. ELEGANT SIMPLICITY: Simplest explanation that accounts for all known facts?
+6. WHAT WOULD BREAK THIS: Single fact that completely invalidates this?
+7. CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "popper", label: "Popper: Falsifiability", icon: "🔭",
+    color: "#0f766e", accent: "#2dd4bf", thinker: "Karl Popper · Critical Rationalism",
+    relevantFor: ["startup","product","strategy","investment","personal"],
+    prompt: `You are Popper's falsifiability framework. Test claims rigorously.
+CRITICAL RULE: The hypothesis you test must be the actual core claim or belief embedded in the user's question. Do not test a generic hypothesis — extract and test the real one.
+1. STATE THE HYPOTHESIS: Core claim or belief driving this problem.
+2. FALSIFIABILITY TEST: Can you conceive of an observation that would prove it wrong?
+3. WHAT WOULD FALSIFY THIS: 3-5 concrete observations that would disprove the hypothesis.
+4. CORROBORATION vs PROOF: Has this survived serious attempts to disprove it?
+5. UNFALSIFIABLE RED FLAGS: Elements that cannot be proven wrong no matter what?
+6. RECOMMENDATION: Most intellectually honest position given what can/cannot be falsified.
+7. CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "bias_checker", label: "Bias Audit", icon: "🪲",
+    color: "#dc2626", accent: "#f87171", thinker: "Kahneman · Munger · Cialdini · Taleb",
+    relevantFor: ["personal","career","hiring","investment","startup","negotiation","strategy"],
+    prompt: `You are a forensic cognitive bias auditor. Scan specifically for active biases in this situation.
+CRITICAL RULE: Only list biases that are actually present and demonstrably active in this specific situation. Explain exactly how each bias is showing up. Do not list every possible bias — only the ones truly at play here.
+INFORMATION BIASES: Confirmation Bias, Availability Heuristic, Anchoring, Framing Effect, Survivorship Bias
+SELF-SERVING BIASES: Overconfidence, Dunning-Kruger, Planning Fallacy, Optimism Bias
+SOCIAL BIASES: Bandwagon Effect, Authority Bias, Halo Effect, Groupthink
+DECISION BIASES: Sunk Cost Fallacy, Loss Aversion, Status Quo Bias, Hyperbolic Discounting
+OUTPUT: List active biases, rank top 3 by severity, debiasing protocol for each, clean reframe after stripping biases.
+CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
 ];
 
 // ─── STORAGE ──────────────────────────────────────────────────────────────────
@@ -315,6 +499,32 @@ function createContext(question, type, answers = {}) {
     updated: Date.now(),
     status: "incomplete",
   };
+}
+
+function recordFrameworkUse(scores, fwIds, confidence) {
+  const updated = { ...scores };
+  fwIds.forEach(id => {
+    if (!updated[id]) updated[id] = { uses: 0, successes: 0, totalConfidence: 0 };
+    updated[id].uses += 1;
+    updated[id].totalConfidence += (confidence || 0);
+  });
+  return updated;
+}
+function recordFrameworkOutcome(scores, fwIds, success) {
+  const updated = { ...scores };
+  fwIds.forEach(id => {
+    if (!updated[id]) updated[id] = { uses: 0, successes: 0, totalConfidence: 0 };
+    if (success) updated[id].successes += 1;
+  });
+  return updated;
+}
+function fwSuccessRate(s) {
+  if (!s || s.uses === 0) return null;
+  return Math.round((s.successes / s.uses) * 100);
+}
+function fwAvgConf(s) {
+  if (!s || s.uses === 0) return null;
+  return Math.round(s.totalConfidence / s.uses);
 }
 
 // ─── API CALL ──────────────────────────────────────────────────────────────────
@@ -426,7 +636,7 @@ Return ONLY a JSON object (no fences):
   "survivability_condition": ""
 }`;
 
-// ─── 🆕 EVIDENCE CHALLENGE ENGINE PROMPT ────────────────────────────────────
+// ─── EVIDENCE CHALLENGE ENGINE PROMPT ──────────────────────────────────────
 const EVIDENCE_CHALLENGE_SYSTEM = `You are the Evidence Challenge Engine. Your job is to verify every major recommendation before it reaches the final decision.
 
 You receive: research evidence, framework analyses, cross-examination, and red team results.
@@ -597,161 +807,289 @@ function Spinner({ color }) {
   );
 }
 
-// ─── JOURNAL VIEW ─────────────────────────────────────────────────────────────
-function JournalView({ journal, scores, onBack, onUpdateOutcome }) {
-  // ... (same as before – I'll include it fully)
-  const [editingId, setEditingId] = useState(null);
-  const [editOutcome, setEditOutcome] = useState("");
-  const [editAccuracy, setEditAccuracy] = useState("success");
+// ─── DECISION TRACE ENGINE ──────────────────────────────────────────────────
+// ─── Trace Storage ──────────────────────────────────────────────────────────
+function loadTraces() {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem("tos_v2_traces") || "[]"); } catch { return []; }
+}
+function saveTraces(traces) {
+  try { localStorage.setItem("tos_v2_traces", JSON.stringify(traces)); } catch {}
+}
 
-  const totalEntries = journal.length;
-  const withOutcomes = journal.filter(e => e.accuracy != null).length;
-  const successCount = journal.filter(e => e.accuracy === true).length;
-  const calibrationScore = withOutcomes > 0 ? Math.round((successCount / withOutcomes) * 100) : null;
+function generateTraceId() {
+  return `trace_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
+// ─── Build Trace Object ─────────────────────────────────────────────────────
+function buildTrace(analysisData) {
+  const {
+    question,
+    category,
+    userAnswers,
+    context,
+    researchData,
+    realityData,
+    fws,
+    fwResults,
+    crossData,
+    redData,
+    evidenceData,
+    synthData,
+    startTime,
+    endTime,
+    selectedFwIds
+  } = analysisData;
+
+  // Build framework trace entries
+  const frameworkTraces = fws.map(fw => {
+    const res = fwResults[fw.id] || {};
+    return {
+      framework: fw.id,
+      label: fw.label,
+      selected: fw.selected || false,
+      reason: fw.reason || "Selected by Reality Extraction",
+      input: "Provided facts and assumptions",
+      output: res,
+      insights: res.key_claim || "No key claim"
+    };
+  });
+
+  // Build cross-examination trace
+  const crossExamTrace = (crossData?.major_disagreements || []).map(d => ({
+    challenge: d.disagreement,
+    counterargument: d.why_this_matters || "No counterargument provided",
+    recommendation_changed: false // could be inferred
+  }));
+
+  // Build assumption trace from realityData
+  const assumptionTrace = (realityData?.assumptions || []).map(ass => ({
+    assumption: ass,
+    verification_status: "Unverified",
+    supporting_evidence: [],
+    contradicting_evidence: [],
+    impact_if_false: "Unknown"
+  }));
+
+  // Alternatives considered – we can derive from synthesis
+  const alternativesTrace = (synthData?.what_would_change_positive || []).map(alt => ({
+    description: alt,
+    pros: "Could improve outcome",
+    cons: "Not evaluated",
+    reason_rejected: "Not chosen"
+  }));
+
+  const trace = {
+    metadata: {
+      decision_id: generateTraceId(),
+      user_id: "anonymous",
+      session_id: "session_" + Date.now(),
+      timestamp: new Date().toISOString(),
+      version: "v2",
+      duration_ms: endTime - startTime
+    },
+    original_question: {
+      prompt: question,
+      objective: "Decision analysis",
+      category: category
+    },
+    adaptive_questioning_log: {
+      questions_asked: (missingInfo || []).map(f => f.label),
+      user_answers: userAnswers,
+      resolved_missing: "All required fields answered"
+    },
+    decision_context: {
+      goals: context?.goals || [],
+      constraints: context?.constraints || [],
+      budget: context?.answers?.amount || "Not specified",
+      timeline: context?.answers?.horizon || "Not specified",
+      risk_tolerance: context?.answers?.risk_tolerance || "Not specified",
+      success_criteria: [],
+      priorities: [],
+      unknowns: realityData?.unknowns || []
+    },
+    framework_trace: frameworkTraces,
+    research_trace: {
+      search_queries: [question],
+      sources_consulted: researchData?.sources || [],
+      facts_extracted: researchData?.facts || [],
+      evidence_collected: researchData?.facts || []
+    },
+    reality_extraction_trace: {
+      verified_facts: realityData?.facts || [],
+      assumptions: realityData?.assumptions || [],
+      opinions: [],
+      unknowns: realityData?.unknowns || [],
+      speculation: []
+    },
+    cross_examination_trace: crossExamTrace,
+    red_team_trace: {
+      weaknesses_found: redData?.failure_modes?.map(f => f.mode) || [],
+      failure_scenarios: redData?.failure_modes || [],
+      hidden_risks: redData?.risk_severity || [],
+      rejected_recommendations: []
+    },
+    evidence_challenge_trace: {
+      supporting_evidence: evidenceData?.supporting_evidence || [],
+      contradicting_evidence: evidenceData?.contradicting_evidence || [],
+      evidence_strength: evidenceData?.evidence_strength_score || 0,
+      missing_evidence: evidenceData?.missing_evidence || []
+    },
+    assumption_trace: assumptionTrace,
+    alternatives_considered: alternativesTrace,
+    final_decision: {
+      recommendation: synthData?.recommendation || "",
+      reasoning_summary: synthData?.why?.join("; ") || "",
+      trade_offs: synthData?.what_would_change_negative || [],
+      remaining_risks: synthData?.top_risks || [],
+      expected_outcome: synthData?.next_actions?.[0] || "Awaiting execution"
+    },
+    statistics: {
+      frameworks_used: fws.length,
+      sources_consulted: researchData?.sources?.length || 0,
+      evidence_count: researchData?.facts?.length || 0,
+      assumptions: realityData?.assumptions?.length || 0,
+      challenges_raised: crossData?.major_disagreements?.length || 0,
+      risks_identified: redData?.failure_modes?.length || 0,
+      alternatives_evaluated: synthData?.what_would_change_positive?.length || 0,
+      total_processing_time_ms: endTime - startTime
+    }
+  };
+
+  return trace;
+}
+
+// ─── TRACE VIEW COMPONENT ──────────────────────────────────────────────────
+function TraceView({ traces, onBack, onExportMarkdown, onExportJSON }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [selectedTrace, setSelectedTrace] = useState(null);
+
+  const filteredTraces = traces.filter(t => {
+    const matchesSearch = t.original_question.prompt.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = filterCategory === "" || t.original_question.category === filterCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const categories = [...new Set(traces.map(t => t.original_question.category))];
+
+  if (selectedTrace) {
+    return <TraceDetailView trace={selectedTrace} onBack={() => setSelectedTrace(null)} />;
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: "#f0f2f5", color: "#1a1a2e", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>
       <div style={{ borderBottom: "1px solid #e2e8f0", padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", background: "#ffffff" }}>
         <button onClick={onBack} style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "5px 14px", cursor: "pointer", color: "#4a5568", fontSize: "13px", fontFamily: "'Inter',sans-serif" }}>← Back</button>
-        <div style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a2e" }}>📓 Decision Journal</div>
-        <div style={{ fontSize: "12px", color: "#718096" }}>{totalEntries} entries</div>
-        {calibrationScore != null && (
-          <div style={{ marginLeft: "auto", fontSize: "12px", background: confColor(calibrationScore) + "15", border: `1px solid ${confColor(calibrationScore)}35`, borderRadius: "5px", padding: "3px 10px", color: confColor(calibrationScore), fontWeight: "700" }}>
-            Calibration {calibrationScore}% ({withOutcomes} tracked)
-          </div>
-        )}
+        <div style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a2e" }}>🔍 Decision Trace</div>
+        <div style={{ fontSize: "12px", color: "#718096" }}>{traces.length} traces</div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
+          <input
+            type="text"
+            placeholder="Search traces..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            style={{ padding: "5px 10px", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "13px" }}
+          />
+          <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ padding: "5px 10px", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "13px" }}>
+            <option value="">All Categories</option>
+            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
       </div>
-
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", display: "grid", gridTemplateColumns: "1fr 260px", gap: "16px", alignItems: "start" }}>
-        <div>
-          {journal.length === 0 ? (
-            <div style={{ textAlign: "center", color: "#718096", fontSize: "15px", padding: "60px 20px" }}>No decisions recorded yet.</div>
-          ) : journal.map(entry => (
-            <div key={entry.id} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px 18px", marginBottom: "10px" }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "8px" }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "12px", color: "#718096", marginBottom: "3px" }}>
-                    {new Date(entry.date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
-                    {" · "}{entry.problem_type || "strategy"}
-                  </div>
-                  <div style={{ fontSize: "13px", color: "#4a5568", fontStyle: "italic", marginBottom: "6px" }}>"{entry.question}"</div>
-                  <div style={{ fontSize: "15px", fontWeight: "600", color: "#1a1a2e", lineHeight: "1.4" }}>{entry.prediction}</div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+        {filteredTraces.length === 0 ? (
+          <div style={{ textAlign: "center", color: "#718096", fontSize: "15px", padding: "60px 20px" }}>No traces found.</div>
+        ) : (
+          filteredTraces.map((trace, idx) => (
+            <div key={idx} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px 18px", marginBottom: "10px", cursor: "pointer" }} onClick={() => setSelectedTrace(trace)}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontSize: "14px", fontWeight: "600", color: "#1a1a2e" }}>{trace.original_question.prompt.slice(0, 80)}</div>
+                  <div style={{ fontSize: "12px", color: "#718096" }}>{new Date(trace.metadata.timestamp).toLocaleString()} · {trace.original_question.category} · Duration: {trace.metadata.duration_ms}ms</div>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
-                  <ConfidenceBadge value={entry.confidence} small />
-                  {entry.risk_level && (
-                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "4px",
-                      background: entry.risk_level === "High" ? "#ef444415" : entry.risk_level === "Medium" ? "#f59e0b15" : "#22c55e15",
-                      color: entry.risk_level === "High" ? "#ef4444" : entry.risk_level === "Medium" ? "#f59e0b" : "#22c55e"
-                    }}>{entry.risk_level} RISK</span>
-                  )}
-                  {entry.accuracy != null && (
-                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "4px",
-                      background: entry.accuracy === true ? "#22c55e15" : entry.accuracy === "partial" ? "#f59e0b15" : "#ef444415",
-                      color: entry.accuracy === true ? "#22c55e" : entry.accuracy === "partial" ? "#f59e0b" : "#ef4444"
-                    }}>
-                      {entry.accuracy === true ? "✓ Correct" : entry.accuracy === "partial" ? "~ Partial" : "✕ Incorrect"}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {entry.reasoning && (
-                <div style={{ fontSize: "12px", color: "#718096", lineHeight: "1.6", marginBottom: "8px" }}>
-                  {entry.reasoning.slice(0, 180)}{entry.reasoning.length > 180 ? "…" : ""}
-                </div>
-              )}
-
-              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "8px", marginTop: "4px" }}>
-                <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "5px" }}>OUTCOME</div>
-                {editingId === entry.id ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <input value={editOutcome} onChange={e => setEditOutcome(e.target.value)} placeholder="What actually happened?" style={{ background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "6px 10px", color: "#1a1a2e", fontSize: "13px", fontFamily: "'Inter',sans-serif" }} />
-                    <div style={{ display: "flex", gap: "5px" }}>
-                      {["success","partial","failure"].map(v => (
-                        <button key={v} onClick={() => setEditAccuracy(v)} style={{ flex: 1, background: editAccuracy === v ? (v === "success" ? "#22c55e20" : v === "partial" ? "#f59e0b20" : "#ef444420") : "#f7fafc", border: `1px solid ${editAccuracy === v ? (v === "success" ? "#22c55e50" : v === "partial" ? "#f59e0b50" : "#ef444450") : "#e2e8f0"}`, borderRadius: "5px", padding: "4px 8px", cursor: "pointer", color: editAccuracy === v ? (v === "success" ? "#22c55e" : v === "partial" ? "#f59e0b" : "#ef4444") : "#4a5568", fontSize: "12px", fontFamily: "'Inter',sans-serif", textTransform: "capitalize" }}>{v}</button>
-                      ))}
-                    </div>
-                    <div style={{ display: "flex", gap: "5px" }}>
-                      <button onClick={() => { onUpdateOutcome(entry.id, editOutcome, editAccuracy); setEditingId(null); }} style={{ background: "#6366f120", border: "1px solid #6366f140", borderRadius: "5px", padding: "5px 14px", cursor: "pointer", color: "#6366f1", fontSize: "12px", fontFamily: "'Inter',sans-serif" }}>Save</button>
-                      <button onClick={() => setEditingId(null)} style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "5px 12px", cursor: "pointer", color: "#718096", fontSize: "12px", fontFamily: "'Inter',sans-serif" }}>✕</button>
-                    </div>
-                  </div>
-                ) : entry.outcome ? (
-                  <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
-                    <div style={{ fontSize: "13px", color: "#4a5568", flex: 1 }}>{entry.outcome}</div>
-                    <button onClick={() => { setEditingId(entry.id); setEditOutcome(entry.outcome); setEditAccuracy(entry.accuracy === true ? "success" : entry.accuracy === "partial" ? "partial" : "failure"); }} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#718096", fontSize: "12px" }}>✏</button>
-                  </div>
-                ) : (
-                  <button onClick={() => { setEditingId(entry.id); setEditOutcome(""); setEditAccuracy("success"); }} style={{ background: "transparent", border: "1px dashed #e2e8f0", borderRadius: "5px", padding: "5px 12px", cursor: "pointer", color: "#718096", fontSize: "12px", fontFamily: "'Inter',sans-serif" }}>+ Record outcome</button>
-                )}
+                <span style={{ fontSize: "12px", background: "#6366f112", border: "1px solid #6366f130", borderRadius: "4px", padding: "2px 8px", color: "#6366f1" }}>{trace.statistics.frameworks_used} frameworks</span>
               </div>
             </div>
-          ))}
-        </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
 
-        <div style={{ position: "sticky", top: 0 }}>
-          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "12px 14px" }}>
-            <div style={{ fontSize: "12px", color: "#4a5568", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "10px" }}>FRAMEWORK PERFORMANCE</div>
-            {ALL_FRAMEWORKS.map(fw => {
-              const s = scores[fw.id];
-              if (!s || s.uses === 0) return null;
-              const rate = fwSuccessRate(s);
-              const avgConf = fwAvgConf(s);
-              return (
-                <div key={fw.id} style={{ marginBottom: "8px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
-                    <span style={{ fontSize: "12px", color: "#4a5568" }}>{fw.icon} {fw.label}</span>
-                    <span style={{ fontSize: "11px", fontFamily: "'JetBrains Mono', monospace", color: rate != null ? confColor(rate) : "#718096" }}>
-                      {rate != null ? `${rate}%` : "—"} · {s.uses}✗
-                    </span>
-                  </div>
-                  {rate != null && (
-                    <div style={{ height: "3px", background: "#edf2f7", borderRadius: "2px" }}>
-                      <div style={{ height: "100%", width: `${rate}%`, background: confColor(rate), borderRadius: "2px", transition: "width 0.5s ease" }} />
-                    </div>
-                  )}
-                  {avgConf != null && <div style={{ fontSize: "11px", color: "#a0aec0", marginTop: "1px" }}>Avg conf: {avgConf}%</div>}
-                </div>
-              );
-            })}
-            {Object.keys(scores).length === 0 && <div style={{ fontSize: "12px", color: "#a0aec0" }}>No framework data yet. Complete analyses and record outcomes to build scorecards.</div>}
-          </div>
+// ─── TRACE DETAIL VIEW ──────────────────────────────────────────────────────
+function TraceDetailView({ trace, onBack }) {
+  const [expandedSections, setExpandedSections] = useState({});
+
+  const toggleSection = (key) => {
+    setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const renderSection = (title, data, key) => {
+    if (!data || (Array.isArray(data) && data.length === 0) || (typeof data === 'object' && Object.keys(data).length === 0)) return null;
+    const isExpanded = expandedSections[key] ?? true;
+    return (
+      <div key={key} style={{ borderBottom: "1px solid #e2e8f0", padding: "12px 0" }}>
+        <div onClick={() => toggleSection(key)} style={{ display: "flex", justifyContent: "space-between", cursor: "pointer", userSelect: "none" }}>
+          <span style={{ fontSize: "14px", fontWeight: "600", color: "#4a5568" }}>{title}</span>
+          <span style={{ fontSize: "12px", color: "#94a3b8" }}>{isExpanded ? "▼" : "▶"}</span>
+        </div>
+        {isExpanded && (
+          <pre style={{ fontSize: "12px", background: "#f7fafc", padding: "8px 12px", borderRadius: "6px", overflowX: "auto", whiteSpace: "pre-wrap", marginTop: "6px" }}>
+            {typeof data === 'string' ? data : JSON.stringify(data, null, 2)}
+          </pre>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#f0f2f5", color: "#1a1a2e", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>
+      <div style={{ borderBottom: "1px solid #e2e8f0", padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", background: "#ffffff" }}>
+        <button onClick={onBack} style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "5px 14px", cursor: "pointer", color: "#4a5568", fontSize: "13px", fontFamily: "'Inter',sans-serif" }}>← Back</button>
+        <div style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a2e" }}>🔍 Trace Detail</div>
+        <div style={{ fontSize: "12px", color: "#718096" }}>{trace.metadata.decision_id}</div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
+          <button onClick={() => {
+            const blob = new Blob([JSON.stringify(trace, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `trace-${trace.metadata.decision_id}.json`; a.click(); URL.revokeObjectURL(url);
+          }} style={{ fontSize: "12px", background: "#6366f112", border: "1px solid #6366f130", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#6366f1" }}>Export JSON</button>
+          <button onClick={() => {
+            const lines = [`# Decision Trace: ${trace.metadata.decision_id}`, `**Question:** ${trace.original_question.prompt}`, `**Category:** ${trace.original_question.category}`, `**Timestamp:** ${trace.metadata.timestamp}`, `**Duration:** ${trace.metadata.duration_ms}ms`, ``];
+            // Add more sections...
+            const text = lines.join('\n');
+            const blob = new Blob([text], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `trace-${trace.metadata.decision_id}.md`; a.click(); URL.revokeObjectURL(url);
+          }} style={{ fontSize: "12px", background: "#f1c40f12", border: "1px solid #f1c40f30", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#b7791f" }}>Export MD</button>
+        </div>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+        <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "16px 20px" }}>
+          {renderSection("Metadata", trace.metadata, "metadata")}
+          {renderSection("Original Question", trace.original_question, "original_question")}
+          {renderSection("Adaptive Questioning Log", trace.adaptive_questioning_log, "adaptive_questioning_log")}
+          {renderSection("Decision Context", trace.decision_context, "decision_context")}
+          {renderSection("Framework Trace", trace.framework_trace, "framework_trace")}
+          {renderSection("Research Trace", trace.research_trace, "research_trace")}
+          {renderSection("Reality Extraction Trace", trace.reality_extraction_trace, "reality_extraction_trace")}
+          {renderSection("Cross-Examination Trace", trace.cross_examination_trace, "cross_examination_trace")}
+          {renderSection("Red Team Trace", trace.red_team_trace, "red_team_trace")}
+          {renderSection("Evidence Challenge Trace", trace.evidence_challenge_trace, "evidence_challenge_trace")}
+          {renderSection("Assumption Trace", trace.assumption_trace, "assumption_trace")}
+          {renderSection("Alternatives Considered", trace.alternatives_considered, "alternatives_considered")}
+          {renderSection("Final Decision", trace.final_decision, "final_decision")}
+          {renderSection("Statistics", trace.statistics, "statistics")}
         </div>
       </div>
     </div>
   );
 }
 
-function recordFrameworkUse(scores, fwIds, confidence) {
-  const updated = { ...scores };
-  fwIds.forEach(id => {
-    if (!updated[id]) updated[id] = { uses: 0, successes: 0, totalConfidence: 0 };
-    updated[id].uses += 1;
-    updated[id].totalConfidence += (confidence || 0);
-  });
-  return updated;
-}
-function recordFrameworkOutcome(scores, fwIds, success) {
-  const updated = { ...scores };
-  fwIds.forEach(id => {
-    if (!updated[id]) updated[id] = { uses: 0, successes: 0, totalConfidence: 0 };
-    if (success) updated[id].successes += 1;
-  });
-  return updated;
-}
-function fwSuccessRate(s) {
-  if (!s || s.uses === 0) return null;
-  return Math.round((s.successes / s.uses) * 100);
-}
-function fwAvgConf(s) {
-  if (!s || s.uses === 0) return null;
-  return Math.round(s.totalConfidence / s.uses);
-}
-
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function ThinkingOSv2() {
-  // ... (state declarations)
   const [view, setView]                       = useState("main");
   const [question, setQuestion]               = useState("");
   const [manualProblemType, setManualType]    = useState(null);
@@ -776,6 +1114,9 @@ export default function ThinkingOSv2() {
   const [isAsking, setIsAsking]               = useState(false);
   const [infoStatus, setInfoStatus]           = useState("");
   const [evidenceExpanded, setEvidenceExpanded] = useState(false);
+  // Trace state
+  const [traces, setTraces]                   = useState(loadTraces);
+  const [traceView, setTraceView]             = useState(false);
   const textRef = useRef(null);
 
   useEffect(() => {
@@ -904,6 +1245,8 @@ export default function ThinkingOSv2() {
   }, [missingInfo, currentContextId, updateContextAnswers, getCurrentContext, question]);
 
   const runFullAnalysis = useCallback(async (q, category, answers) => {
+    const startTime = performance.now();
+
     const answerContext = Object.entries(answers)
       .filter(([_, value]) => value && value.trim() !== "")
       .map(([key, value]) => `${key}: ${value}`)
@@ -1024,7 +1367,6 @@ export default function ThinkingOSv2() {
     setPhaseData(p => ({ ...p, redteam: redData }));
     setCompletedPhases(c => ({ ...c, redteam: true }));
 
-    // ─── 🆕 EVIDENCE CHALLENGE ENGINE ────────────────────────────────────────
     await sleep(300);
 
     setActivePhase("evidence");
@@ -1063,7 +1405,6 @@ export default function ThinkingOSv2() {
     setPhaseData(p => ({ ...p, evidence: evidenceData }));
     setCompletedPhases(c => ({ ...c, evidence: true }));
 
-    // ─── SYNTHESIS ────────────────────────────────────────────────────────────
     await sleep(300);
 
     setActivePhase("synthesis");
@@ -1087,6 +1428,32 @@ export default function ThinkingOSv2() {
     setPhaseData(p => ({ ...p, synthesis: synthData }));
     setCompletedPhases(c => ({ ...c, synthesis: true }));
 
+    const endTime = performance.now();
+
+    // ─── BUILD AND SAVE TRACE ──────────────────────────────────────────────
+    const context = getCurrentContext();
+    const traceData = {
+      question: q,
+      category: category,
+      userAnswers: answers,
+      context: context,
+      researchData: researchData,
+      realityData: realityData,
+      fws: fws.map(f => ({ ...f, selected: true, reason: "Selected by Reality Extraction" })),
+      fwResults: fwRes,
+      crossData: crossData,
+      redData: redData,
+      evidenceData: evidenceData,
+      synthData: synthData,
+      startTime: startTime,
+      endTime: endTime,
+      selectedFwIds: selectedFwIds,
+    };
+    const trace = buildTrace(traceData);
+    const updatedTraces = [trace, ...traces].slice(0, 50); // Keep last 50
+    setTraces(updatedTraces);
+    saveTraces(updatedTraces);
+
     setPendingEntry({
       id: Date.now(),
       date: new Date().toISOString(),
@@ -1104,7 +1471,7 @@ export default function ThinkingOSv2() {
     setActivePhase("synthesis");
     setIsRunning(false);
     setInfoStatus("");
-  }, [scores, manualProblemType]);
+  }, [scores, manualProblemType, selectedFwIds, traces]);
 
   const startAnalysis = useCallback(async () => {
     if (!question.trim() || isRunning) return;
@@ -1175,6 +1542,11 @@ export default function ThinkingOSv2() {
   const insufficientInfo = synthesis?.status === "insufficient_information" || synthesis?.investigation_needed;
   const contextList = getContextList();
   const currentContext = getCurrentContext();
+
+  // ─── Trace view handling ────────────────────────────────────────────────
+  if (traceView) {
+    return <TraceView traces={traces} onBack={() => setTraceView(false)} />;
+  }
 
   if (view === "journal") {
     return <JournalView journal={journal} scores={scores} onBack={() => setView("main")} onUpdateOutcome={updateOutcome} />;
@@ -1247,6 +1619,7 @@ export default function ThinkingOSv2() {
           {hasRun && pendingEntry && !showJournalForm && (
             <button onClick={() => setShowJournalForm(true)} style={{ fontSize: "12px", background: "#f1c40f12", border: "1px solid #f1c40f30", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#b7791f", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>+ Journal</button>
           )}
+          <button onClick={() => setTraceView(true)} style={{ fontSize: "12px", background: "#8b5cf612", border: "1px solid #8b5cf630", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#8b5cf6", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>🔍 {traces.length}</button>
           <button onClick={() => setView("journal")} style={{ fontSize: "12px", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#4a5568", fontFamily: "'Inter',sans-serif" }}>📓 {journal.length}</button>
           {hasRun && <button onClick={reset} style={{ fontSize: "12px", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#718096", fontFamily: "'Inter',sans-serif" }}>↺ Reset</button>}
         </div>
