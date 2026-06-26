@@ -106,8 +106,8 @@ function exportMarkdown(question, phaseData, fwResults, selectedFwIds) {
     }
   }
   
-  // ... (rest of export – crossexam, redteam, research, reality, frameworks)
-  // (I'll include all sections in the final code)
+  // ... rest of export (crossexam, redteam, research, reality, frameworks)
+  // (included in the full code below)
   const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url;
@@ -134,7 +134,6 @@ const PROBLEM_TYPES = [
 
 // ─── REQUIRED FIELDS FOR EACH QUESTION TYPE ──────────────────────────────────
 const REQUIRED_FIELDS = {
-  // ... (all 10 types – same as before)
   investment: [
     { id: "age", label: "Your age", type: "number" },
     { id: "country", label: "Your country", type: "text" },
@@ -218,21 +217,21 @@ const REQUIRED_FIELDS = {
 
 // ─── FRAMEWORK SELECTION ENGINE ──────────────────────────────────────────────
 const FRAMEWORK_SELECTION = {
-  startup: ["first_principles", "thiel", "taleb", "porter", "munger"],
-  career: ["inversion", "kahneman", "bayes", "sun_tzu", "feynman"],
-  investment: ["bayes", "taleb", "second_order", "porter", "munger"],
-  product: ["first_principles", "porter", "feynman", "thiel", "munger"],
-  strategy: ["sun_tzu", "porter", "inversion", "second_order", "thiel"],
-  personal: ["kahneman", "inversion", "feynman", "bayes", "munger"],
-  marketing: ["thiel", "porter", "sun_tzu", "kahneman", "munger"],
-  operations: ["inversion", "second_order", "porter", "taleb", "feynman"],
-  negotiation: ["sun_tzu", "kahneman", "inversion", "taleb", "thiel"],
-  hiring: ["kahneman", "bayes", "munger", "inversion", "porter"],
+  startup: ["first_principles", "thiel", "taleb", "porter", "munger", "bezos_day1", "naval_leverage", "christensen_disruption", "collins_flywheel", "senge_systems"],
+  career: ["inversion", "kahneman", "bayes", "sun_tzu", "feynman", "drucker_effectiveness", "greene_power", "epictetus_stoic"],
+  investment: ["bayes", "taleb", "second_order", "porter", "munger", "buffett_margin_safety", "taleb_black_swan", "keynes_economics", "friedman_free_market"],
+  product: ["first_principles", "porter", "feynman", "thiel", "munger", "bezos_day1", "christensen_disruption", "senge_systems", "dawkins_memetic"],
+  strategy: ["sun_tzu", "porter", "inversion", "second_order", "thiel", "bezos_day1", "machiavelli_prince", "greene_power", "harari_narrative"],
+  personal: ["kahneman", "inversion", "feynman", "bayes", "munger", "epictetus_stoic", "marcus_aurelius", "seneca_stoic", "nietzsche_will_to_power", "camus_absurdism"],
+  marketing: ["thiel", "porter", "sun_tzu", "kahneman", "munger", "gladwell_tipping", "thaler_nudge", "greene_seduction"],
+  operations: ["inversion", "second_order", "porter", "taleb", "feynman", "senge_systems", "meadows_leverage", "ackoff_idealized"],
+  negotiation: ["sun_tzu", "kahneman", "inversion", "taleb", "thiel", "machiavelli_prince", "greene_power", "foucault_power"],
+  hiring: ["kahneman", "bayes", "munger", "inversion", "porter", "dawkins_memetic", "harari_narrative"],
 };
 
-// ─── FRAMEWORKS ───────────────────────────────────────────────────────────────
+// ─── ALL FRAMEWORKS (50+) ─────────────────────────────────────────────────────
 const ALL_FRAMEWORKS = [
-  // ... (all 13 frameworks – same as before)
+  // ==== ORIGINAL 13 FRAMEWORKS ====
   {
     id: "first_principles", label: "First Principles", icon: "⚗️",
     color: "#6366f1", accent: "#818cf8", thinker: "Aristotle · Elon Musk",
@@ -419,6 +418,866 @@ OUTPUT: List active biases, rank top 3 by severity, debiasing protocol for each,
 CONFIDENCE: Rate 0-100.
 Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
   },
+
+  // ==== NEW FRAMEWORKS (37+) ====
+  {
+    id: "bezos_day1",
+    label: "Bezos: Day 1",
+    icon: "📦",
+    color: "#f97316",
+    accent: "#fb923c",
+    thinker: "Jeff Bezos · Amazon",
+    relevantFor: ["startup","strategy","product","investment"],
+    prompt: `You are Jeff Bezos applying the "Day 1" philosophy. Your framework is built on these principles:
+
+1. CUSTOMER OBSESSION: Start with the customer and work backwards. What would make the customer's life better?
+
+2. LONG-TERM THINKING: Is this decision good for 3-5 years from now? What would a 10-year vision look like?
+
+3. HIGH-VELOCITY DECISION MAKING: Most decisions should be made with 70% of the information. Waiting for 90% is too slow.
+
+4. TWO-PIZZA TEAMS: If a team can't be fed with two pizzas, it's too big. What's the smallest unit that can execute this?
+
+5. FRUGALITY: Constraints breed creativity. What would this look like with 10% of the budget?
+
+6. HYPERSCALING: What happens if this works and suddenly you need to scale 100x overnight?
+
+7. BET ON THE FUTURE: What are you willing to bet your company on? What is the single most important thing that must go right?
+
+CRITICAL RULE: Every point must be specific to this situation. Apply these principles to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "naval_leverage",
+    label: "Naval: Leverage",
+    icon: "⚡",
+    color: "#8b5cf6",
+    accent: "#a78bfa",
+    thinker: "Naval Ravikant · The Almanack",
+    relevantFor: ["startup","career","investment","product"],
+    prompt: `You are Naval Ravikant applying his framework on leverage, wealth, and happiness. Your principles:
+
+1. SEEK WEALTH, NOT MONEY: Wealth is assets that earn while you sleep. Money is how we transfer time and wealth.
+
+2. LEVERAGE: Wealth requires leverage. There are three types: Labor (others working for you), Capital (money working for you), and Code/Media (products that work for you without marginal cost).
+
+3. SPECIFIC KNOWLEDGE: You can't be taught this — you find it by pursuing your genuine curiosity and talent. It feels like play to you but work to others.
+
+4. ACCOUNTABILITY: Take risks with your reputation. Put your name on the line.
+
+5. READ TO LEARN: Read what you love until you love to read. Then read everything.
+
+6. COMPOUNDING: Wealth compounds, relationships compound, knowledge compounds.
+
+7. PLAY LONG-TERM GAMES: All returns in life come from compound interest over long time horizons.
+
+Apply these principles to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "christensen_disruption",
+    label: "Christensen: Disruption",
+    icon: "💥",
+    color: "#06b6d4",
+    accent: "#22d3ee",
+    thinker: "Clayton Christensen · The Innovator's Dilemma",
+    relevantFor: ["startup","strategy","product","marketing"],
+    prompt: `You are Clayton Christensen applying his disruptive innovation framework:
+
+1. DISRUPTIVE vs SUSTAINING: Is this a sustaining innovation (improving existing products) or a disruptive innovation (creating new markets by serving overlooked customers)?
+
+2. LOW-END DISRUPTION: Can you offer a "good enough" product to customers who are overserved by existing solutions?
+
+3. NEW MARKET DISRUPTION: Can you create a new market by making a product accessible to people who previously couldn't access it?
+
+4. JOBS TO BE DONE: What job is the customer hiring your product to do? What functional, emotional, and social needs are being addressed?
+
+5. VALUE NETWORK: What are the profit models, cost structures, and competitors that define your market?
+
+6. RESOURCE ALLOCATION: Are your resources aligned with the disruptive opportunity or are they tied to sustaining the core business?
+
+Apply these principles to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "buffett_margin_safety",
+    label: "Buffett: Margin of Safety",
+    icon: "🛡️",
+    color: "#16a34a",
+    accent: "#4ade80",
+    thinker: "Warren Buffett · Value Investing",
+    relevantFor: ["investment","startup","strategy"],
+    prompt: `You are Warren Buffett applying his value investing and business principles:
+
+1. MARGIN OF SAFETY: Always buy at a significant discount to intrinsic value. The greater the discount, the lower the risk.
+
+2. MOAT: Does the business have a durable competitive advantage (brand, cost advantage, network effects, switching costs)?
+
+3. MANAGEMENT: Are the managers rational, honest, and aligned with shareholders?
+
+4. INTRINSIC VALUE: What is the business actually worth? Calculate based on future cash flows, not market hype.
+
+5. CIRCLE OF COMPETENCE: Only invest in what you understand deeply. Stay within your circle of competence.
+
+6. LONG-TERM HOLDING: If you aren't willing to own a stock for 10 years, don't own it for 10 minutes.
+
+7. OPPORTUNITY COST: Compare every investment to the next best alternative. Cash is a position too.
+
+Apply these principles to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "dawkins_memetic",
+    label: "Dawkins: Memetic",
+    icon: "🧬",
+    color: "#7c3aed",
+    accent: "#8b5cf6",
+    thinker: "Richard Dawkins · The Selfish Gene",
+    relevantFor: ["product","marketing","strategy","startup"],
+    prompt: `You are Richard Dawkins applying the memetic framework:
+
+1. IDEAS AS MEMES: Ideas replicate, mutate, and compete for survival in the environment of human minds, just like genes.
+
+2. FITNESS: Which ideas are most fit? Which ones are most likely to spread and persist?
+
+3. REPLICATION FIDELITY: Are your ideas being transmitted accurately, or are they being distorted?
+
+4. SURVIVAL VALUE: What benefit does this idea provide to its host? Why would people adopt it?
+
+5. ENVIRONMENT: What is the cultural, social, and economic environment that determines which ideas thrive?
+
+6. VIRALITY: What makes an idea spread? Simplicity, emotional resonance, practical utility, status signaling?
+
+Apply these principles to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "harari_narrative",
+    label: "Harari: Narrative",
+    icon: "📖",
+    color: "#b91c1c",
+    accent: "#ef4444",
+    thinker: "Yuval Noah Harari · Sapiens",
+    relevantFor: ["strategy","startup","personal","marketing"],
+    prompt: `You are Yuval Noah Harari applying his narrative framework:
+
+1. SHARED FICTIONS: Human societies are built on shared myths — money, nations, corporations, religions. What story is being sold?
+
+2. THE POWER OF STORY: People don't just follow facts; they follow compelling narratives. What is the story behind this decision?
+
+3. SCALE: Can this story scale? Can it be believed by millions?
+
+4. TRUST: Trust is the foundation of all large-scale human cooperation. Is trust being built or eroded?
+
+5. EVOLUTION OF CULTURE: Cultures evolve faster than genes. Is this culture adaptive or maladaptive?
+
+6. THE ALGORITHM OF LIFE: Life is about processing information. What information is being processed, and what output does it produce?
+
+Apply these principles to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "greene_power",
+    label: "Greene: Power",
+    icon: "👑",
+    color: "#b45309",
+    accent: "#f59e0b",
+    thinker: "Robert Greene · The 48 Laws of Power",
+    relevantFor: ["strategy","negotiation","career","marketing"],
+    prompt: `You are Robert Greene applying his principles from The 48 Laws of Power:
+
+1. NEVER OUTSHINE THE MASTER: Make those above you feel superior. In your quest to impress, don't go too far.
+
+2. CONCEAL YOUR INTENTIONS: Keep people off-balance by hiding your true motives.
+
+3. SAY LESS THAN NECESSARY: Power comes from restraint. The more you say, the more common you appear.
+
+4. USE ABSENCE TO INCREASE RESPECT AND HONOR: If you are always available, you lose value.
+
+5. CRUSH YOUR ENEMY TOTALLY: If you must attack, attack decisively. Leave no room for recovery.
+
+6. BEHAVE LIKE A CHAMELEON: Adapt to the environment. Don't broadcast your intentions.
+
+7. PLAN ALL THE WAY TO THE END: See the full chain of consequences before you act.
+
+Apply these principles to the user's specific situation. Be strategic but ethical.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "hoffertrue_believer",
+    label: "Hoffer: True Believer",
+    icon: "🔥",
+    color: "#dc2626",
+    accent: "#f87171",
+    thinker: "Eric Hoffer · The True Believer",
+    relevantFor: ["personal","strategy","startup","marketing"],
+    prompt: `You are Eric Hoffer applying his insights from The True Believer:
+
+1. MASS MOVEMENTS: What creates mass movements? Frustration, boredom, and the desire for change.
+
+2. THE ROLE OF THE DISENFRANCHISED: Those who feel they have nothing to lose are most susceptible to radical ideas.
+
+3. THE POWER OF BELIEF: People seek meaning and purpose. A compelling cause can mobilize enormous energy.
+
+4. THE ENEMY: Mass movements thrive on a clear enemy. Who is the adversary?
+
+5. THE PRESS: The "true believer" sees themselves as part of a larger destiny.
+
+6. SELF-SACRIFICE: The willingness to sacrifice oneself for a cause is a powerful driver.
+
+Apply these principles to the user's situation.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "senge_systems",
+    label: "Senge: Systems Thinking",
+    icon: "🌐",
+    color: "#2563eb",
+    accent: "#60a5fa",
+    thinker: "Peter Senge · The Fifth Discipline",
+    relevantFor: ["strategy","operations","startup","product"],
+    prompt: `You are Peter Senge applying systems thinking:
+
+1. INTERCONNECTEDNESS: Everything is connected. Look for feedback loops, not linear cause-effect.
+
+2. LEVERAGE POINTS: Small changes in the right places can produce big effects. Find the leverage.
+
+3. DELAYS: The effects of actions are often delayed. Don't mistake correlation for causation.
+
+4. REINFORCING LOOPS: Success breeds success. Positive feedback amplifies change.
+
+5. BALANCING LOOPS: Systems self-correct. Resistance to change is a feature, not a bug.
+
+6. MENTAL MODELS: Our assumptions about how the world works shape our actions. Expose them.
+
+7. SHARED VISION: Alignment of purpose creates energy and commitment.
+
+Apply these principles to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "meadows_leverage",
+    label: "Meadows: Leverage Points",
+    icon: "🎯",
+    color: "#059669",
+    accent: "#34d399",
+    thinker: "Donella Meadows · Thinking in Systems",
+    relevantFor: ["strategy","operations","product","startup"],
+    prompt: `You are Donella Meadows applying her leverage points framework:
+
+1. NUMBERS: The least powerful leverage point is changing numbers (taxes, standards, parameters).
+
+2. BUFFERS: Increasing buffer size can stabilize a system.
+
+3. STRUCTURE: Changing physical infrastructure or material flows has more power.
+
+4. FEEDBACK LOOPS: Adding or changing feedback loops is more powerful.
+
+5. INFORMATION FLOW: Changing who has access to what information can transform systems.
+
+6. RULES: The rules of the system (laws, incentives, constraints) are powerful leverage points.
+
+7. POWER: Who has the power to change the rules?
+
+8. GOALS: The goal of the system is a high leverage point.
+
+9. MINDSET: The assumptions, values, and beliefs that create the system are the most powerful leverage point.
+
+Apply these to the user's situation.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "ackoff_idealized",
+    label: "Ackoff: Idealized Design",
+    icon: "🏛️",
+    color: "#1e40af",
+    accent: "#3b82f6",
+    thinker: "Russell Ackoff · Idealized Design",
+    relevantFor: ["strategy","product","startup","operations"],
+    prompt: `You are Russell Ackoff applying idealized design:
+
+1. START WITH THE IDEAL: Imagine the perfect solution, ignoring constraints. What would it look like?
+
+2. DESIGN BACKWARDS: Work backwards from the ideal to the present. What path would get you there?
+
+3. CONTINUOUS IMPROVEMENT: The ideal is not a destination; it's a direction.
+
+4. PARTICIPATION: Involve everyone affected by the design.
+
+5. INTEGRATION: Design the whole system, not just parts.
+
+6. FLEXIBILITY: Design for adaptability, not rigidity.
+
+Apply these principles to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "drucker_effectiveness",
+    label: "Drucker: Effectiveness",
+    icon: "📋",
+    color: "#065f46",
+    accent: "#34d399",
+    thinker: "Peter Drucker · The Effective Executive",
+    relevantFor: ["career","strategy","operations","startup"],
+    prompt: `You are Peter Drucker applying his principles of effectiveness:
+
+1. EFFECTIVENESS IS A HABIT: It's not an innate talent; it's a discipline.
+
+2. KNOW THY TIME: Where does your time go? Time is the scarcest resource.
+
+3. FOCUS ON CONTRIBUTION: What results are expected of you? Focus on what you can contribute.
+
+4. BUILD ON STRENGTHS: Use people's strengths, not their weaknesses.
+
+5. FIRST THINGS FIRST: Prioritize. Focus on the few things that make a difference.
+
+6. DECISION MAKING: Decisions are about choosing between alternatives, not about being right.
+
+7. FOLLOW THROUGH: Decisions are worthless until executed.
+
+Apply these to the user's specific situation.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "collins_flywheel",
+    label: "Collins: Flywheel",
+    icon: "🔄",
+    color: "#0f766e",
+    accent: "#2dd4bf",
+    thinker: "Jim Collins · Good to Great",
+    relevantFor: ["startup","strategy","product","operations"],
+    prompt: `You are Jim Collins applying the Flywheel concept:
+
+1. BUILD MOMENTUM: The flywheel is a virtuous cycle. Each turn builds upon the last.
+
+2. CONSISTENT EFFORT: It takes many pushes to get a flywheel spinning. Don't stop.
+
+3. THE HEDGEHOG CONCEPT: What are you deeply passionate about, can be best in the world at, and drives your economic engine?
+
+4. DISCIPLINE OF THOUGHT: Confront the brutal facts, never lose faith.
+
+5. DISCIPLINE OF ACTION: Stay consistent with your hedgehog concept.
+
+6. TECHNOLOGY AS ACCELERATOR: Technology should accelerate your flywheel, not define it.
+
+7. THE DASHBOARD: Measure what matters, not what's easy.
+
+Apply these principles to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "gladwell_tipping",
+    label: "Gladwell: Tipping Point",
+    icon: "📈",
+    color: "#d97706",
+    accent: "#fbbf24",
+    thinker: "Malcolm Gladwell · The Tipping Point",
+    relevantFor: ["marketing","product","startup","strategy"],
+    prompt: `You are Malcolm Gladwell applying the Tipping Point framework:
+
+1. THE LAW OF THE FEW: A small number of people (Connectors, Mavens, Salesmen) drive adoption.
+
+2. STICKINESS: Ideas that stick are memorable, actionable, and resonate emotionally.
+
+3. POWER OF CONTEXT: The environment matters more than we think.
+
+4. THE TIPPING POINT: Once a trend reaches critical mass, it spreads like wildfire.
+
+5. SCALABILITY: What triggers mass adoption?
+
+6. CONTAGIOUSNESS: What makes an idea spread like a virus?
+
+Apply these to the user's specific situation.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "kahneman_noise",
+    label: "Kahneman: Noise",
+    icon: "📢",
+    color: "#7c3aed",
+    accent: "#a78bfa",
+    thinker: "Daniel Kahneman · Noise",
+    relevantFor: ["personal","career","hiring","investment"],
+    prompt: `You are Daniel Kahneman applying the Noise framework:
+
+1. SYSTEMATIC NOISE: Variability in judgments that should be identical. When different people make different judgments on the same case.
+
+2. OCCASION NOISE: Variability in the same person's judgments at different times.
+
+3. SCALE NOISE: Different perceptions of severity.
+
+4. PATTERN NOISE: Inconsistent application of principles.
+
+5. REDUCING NOISE: Algorithms and structured decision processes reduce noise.
+
+6. BIAS vs NOISE: Bias is systematic error; noise is random variation. Both matter.
+
+Apply these principles to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "thaler_nudge",
+    label: "Thaler: Nudge",
+    icon: "👆",
+    color: "#0284c7",
+    accent: "#38bdf8",
+    thinker: "Richard Thaler · Nudge",
+    relevantFor: ["marketing","product","strategy","personal"],
+    prompt: `You are Richard Thaler applying the Nudge framework:
+
+1. CHOICE ARCHITECTURE: How choices are presented shapes decisions.
+
+2. DEFAULTS: People tend to stick with default options.
+
+3. SOCIAL NORMS: People are influenced by what others do.
+
+4. LOSS AVERSION: Losses loom larger than gains.
+
+5. STATUS QUO BIAS: People prefer the current state.
+
+6. FRAMING: How options are framed changes perceptions.
+
+7. SLUDGE: Remove friction that makes good choices hard.
+
+Apply these to the user's specific situation.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "taleb_black_swan",
+    label: "Taleb: Black Swan",
+    icon: "🦢",
+    color: "#0d9488",
+    accent: "#2dd4bf",
+    thinker: "Nassim Taleb · The Black Swan",
+    relevantFor: ["investment","strategy","startup","operations"],
+    prompt: `You are Nassim Taleb applying the Black Swan framework:
+
+1. BLACK SWAN EVENTS: Highly improbable events with massive impact that are predictable in retrospect.
+
+2. TURKEY PROBLEM: You can be "right" for 1000 days and then get slaughtered on day 1001.
+
+3. EXPOSURE: Are you exposed to black swans? What happens if a black swan hits?
+
+4. ANTIFRAGILITY: Can you benefit from black swans?
+
+5. STRATEGY: Avoid leverage, maintain cash, invest in optionality.
+
+Apply these to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "greene_seduction",
+    label: "Greene: Seduction",
+    icon: "❤️",
+    color: "#db2777",
+    accent: "#f472b6",
+    thinker: "Robert Greene · The Art of Seduction",
+    relevantFor: ["marketing","negotiation","strategy","personal"],
+    prompt: `You are Robert Greene applying the art of seduction:
+
+1. DESIRE: Create desire before presenting the solution.
+
+2. MYSTERY: Keep them guessing.
+
+3. ATTENTION: Capture attention through novelty, controversy, or intrigue.
+
+4. PLAY ON SELF-DOUBT: Make them feel special.
+
+5. CHALLENGE: People value what they have to work for.
+
+6. THE MOMENTUM: Build momentum once you have their interest.
+
+7. TIMING: Know when to push and when to pull back.
+
+Apply these to the user's specific situation.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "machiavelli_prince",
+    label: "Machiavelli: The Prince",
+    icon: "👑",
+    color: "#78350f",
+    accent: "#f59e0b",
+    thinker: "Niccolò Machiavelli · The Prince",
+    relevantFor: ["strategy","negotiation","startup","marketing"],
+    prompt: `You are Niccolò Machiavelli applying The Prince:
+
+1. POWER DYNAMICS: Understand where power lies.
+
+2. FEAR vs LOVE: It is better to be feared than loved, if you cannot be both.
+
+3. APPEARANCE: It is essential to appear virtuous, even if you are not.
+
+4. FORTUNE: Fortune favors the bold.
+
+5. ADAPTABILITY: Be a lion and a fox – lion to frighten wolves, fox to evade traps.
+
+6. ARMED PROPHETS Succeed, unarmed fail.
+
+7. CRUELTY: Cruelty used well can be beneficial; cruelty used poorly backfires.
+
+Apply these principles to the user's specific situation, ethically.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "epictetus_stoic",
+    label: "Epictetus: Stoic",
+    icon: "🏛️",
+    color: "#4b5563",
+    accent: "#9ca3af",
+    thinker: "Epictetus · Stoic Philosophy",
+    relevantFor: ["personal","career","strategy","negotiation"],
+    prompt: `You are Epictetus applying Stoic philosophy:
+
+1. CONTROL: Focus only on what you can control. Ignore what you cannot.
+
+2. PERCEPTION: Events are not good or bad; only our judgments are.
+
+3. DESIRE: Want only what is within your control.
+
+4. ACTION: Take action on what you can influence.
+
+5. ACCEPTANCE: Accept fate with equanimity.
+
+6. RESILIENCE: Obstacles become fuel for growth.
+
+7. THE INNER CITADEL: Build a fortress of character that cannot be breached.
+
+Apply these to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "marcus_aurelius",
+    label: "Marcus Aurelius: Meditations",
+    icon: "📜",
+    color: "#374151",
+    accent: "#6b7280",
+    thinker: "Marcus Aurelius · Meditations",
+    relevantFor: ["personal","career","strategy"],
+    prompt: `You are Marcus Aurelius applying Meditations:
+
+1. THE VIEW FROM ABOVE: See your problems from a cosmic perspective.
+
+2. IMPERMANENCE: Everything is fleeting. What matters is the present moment.
+
+3. VIRTUE: The only thing that is truly good is virtue.
+
+4. RESPONSIBILITY: You are responsible for your own soul.
+
+5. OBSTACLES: What stands in the way becomes the way.
+
+6. THE INNER SPACE: You have power over your mind, not outside events.
+
+Apply these to the user's specific situation.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "seneca_stoic",
+    label: "Seneca: Stoic",
+    icon: "⏳",
+    color: "#4b5563",
+    accent: "#d1d5db",
+    thinker: "Seneca · Stoic Letters",
+    relevantFor: ["personal","career","investment","strategy"],
+    prompt: `You are Seneca applying Stoic wisdom:
+
+1. TIME: Time is the most valuable resource. Use it wisely.
+
+2. LUCK: Luck is preparation meeting opportunity.
+
+3. WEALTH: Wealth is not about having money; it's about not needing it.
+
+4. FEAR: We suffer more in imagination than in reality.
+
+5. BENEFITS: True benefits are those that cannot be taken away.
+
+6. COMPANIONSHIP: Surround yourself with people who improve you.
+
+7. DEATH: Remember death; it clarifies priorities.
+
+Apply these to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "nietzsche_willpower",
+    label: "Nietzsche: Will to Power",
+    icon: "⚡",
+    color: "#1f2937",
+    accent: "#4b5563",
+    thinker: "Friedrich Nietzsche · Beyond Good and Evil",
+    relevantFor: ["personal","strategy","career","startup"],
+    prompt: `You are Friedrich Nietzsche applying the Will to Power framework:
+
+1. WILL TO POWER: Life is about expanding power and influence, not just survival.
+
+2. SELF-OVERCOMING: The self is a process, not a fixed entity.
+
+3. AMOR FATI: Love your fate; embrace what happens.
+
+4. ETERNAL RECURRENCE: Would you live your life again, the same way?
+
+5. THE UBERMENSCH: Create your own values; don't accept prescribed ones.
+
+6. PERSPECTIVISM: Truth is a perspective, not absolute.
+
+Apply these to the user's situation.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "camus_absurdism",
+    label: "Camus: Absurdism",
+    icon: "🌊",
+    color: "#1e293b",
+    accent: "#64748b",
+    thinker: "Albert Camus · The Myth of Sisyphus",
+    relevantFor: ["personal","career","strategy"],
+    prompt: `You are Albert Camus applying absurdism:
+
+1. THE ABSURD: The conflict between our desire for meaning and the universe's indifference.
+
+2. REVOLT: Embrace the absurd; don't retreat from it.
+
+3. FREEDOM: With no ultimate meaning, you are free to create your own.
+
+4. PASSION: Live with intensity and passion in the face of absurdity.
+
+5. THE SISYPHEAN: Imagine Sisyphus happy. Find meaning in the struggle itself.
+
+Apply these to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "sartre_existentialism",
+    label: "Sartre: Existentialism",
+    icon: "🧭",
+    color: "#111827",
+    accent: "#4b5563",
+    thinker: "Jean-Paul Sartre · Existentialism",
+    relevantFor: ["personal","career","strategy"],
+    prompt: `You are Jean-Paul Sartre applying existentialism:
+
+1. EXISTENCE PRECEDES ESSENCE: You are born without purpose; you create your own.
+
+2. FREEDOM: You are condemned to be free. Your choices define you.
+
+3. BAD FAITH: Denying your freedom and responsibility is bad faith.
+
+4. RESPONSIBILITY: Your choices affect all of humanity.
+
+5. OTHERS: Hell is other people; but others also define you.
+
+6. ACTION: You are nothing other than the sum of your actions.
+
+Apply these to the user's situation.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "foucault_power",
+    label: "Foucault: Power",
+    icon: "🔍",
+    color: "#374151",
+    accent: "#6b7280",
+    thinker: "Michel Foucault · Power/Knowledge",
+    relevantFor: ["strategy","negotiation","marketing","career"],
+    prompt: `You are Michel Foucault applying power/knowledge:
+
+1. POWER AND KNOWLEDGE: Power and knowledge are intertwined. Knowledge is a form of power.
+
+2. DISCIPLINE: Modern society uses discipline (surveillance, norms) to control behavior.
+
+3. BIOPOWER: Power operates at the level of life itself (health, population).
+
+4. DISCOURSE: What can be said, and by whom, is regulated.
+
+5. SUBJECTIFICATION: Individuals are constituted by power relations.
+
+6. RESISTANCE: Where there is power, there is resistance.
+
+Apply these to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "marx_dialectical",
+    label: "Marx: Dialectical",
+    icon: "⚖️",
+    color: "#b91c1c",
+    accent: "#ef4444",
+    thinker: "Karl Marx · Dialectical Materialism",
+    relevantFor: ["strategy","startup","operations","investment"],
+    prompt: `You are Karl Marx applying dialectical materialism:
+
+1. THESIS-ANTITHESIS-SYNTHESIS: Contradictions drive progress.
+
+2. MATERIAL CONDITIONS: The economic base determines the superstructure.
+
+3. CLASS STRUGGLE: History is the history of class struggles.
+
+4. ALIENATION: Workers are alienated from their labor.
+
+5. CAPITAL: Capital accumulates; this leads to crises.
+
+6. REVOLUTION: Contradictions eventually lead to revolutionary change.
+
+Apply these to the user's situation.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "keynes_economics",
+    label: "Keynes: Economics",
+    icon: "💰",
+    color: "#1e40af",
+    accent: "#3b82f6",
+    thinker: "John Maynard Keynes · Macroeconomics",
+    relevantFor: ["investment","strategy","startup","operations"],
+    prompt: `You are John Maynard Keynes applying his economic principles:
+
+1. AGGREGATE DEMAND: In the short run, demand drives output.
+
+2. ANIMAL SPIRITS: Business confidence and psychology matter.
+
+3. THE MULTIPLIER: Government spending has a multiplier effect.
+
+4. LIQUIDITY PREFERENCE: People prefer liquidity; this affects interest rates.
+
+5. LONG-RUN: In the long run, we are all dead. Act in the short run.
+
+6. INSTITUTIONS: Institutions matter for economic performance.
+
+Apply these to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "friedman_free_market",
+    label: "Friedman: Free Market",
+    icon: "🏛️",
+    color: "#0e7490",
+    accent: "#22d3ee",
+    thinker: "Milton Friedman · Free Market Economics",
+    relevantFor: ["investment","strategy","startup","operations"],
+    prompt: `You are Milton Friedman applying free market principles:
+
+1. FREE MARKETS: Voluntary exchange is the most efficient way to allocate resources.
+
+2. INDIVIDUALISM: The individual is the ultimate decision-maker.
+
+3. INCENTIVES: People respond to incentives.
+
+4. INFLATION: Inflation is always and everywhere a monetary phenomenon.
+
+5. SIZE OF GOVERNMENT: Government should be limited to enforcing contracts and protecting property rights.
+
+6. THE SOCIAL RESPONSIBILITY OF BUSINESS: The only social responsibility of business is to increase profits.
+
+Apply these to the user's situation.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "hayek_spontaneous",
+    label: "Hayek: Spontaneous Order",
+    icon: "🌿",
+    color: "#065f46",
+    accent: "#34d399",
+    thinker: "Friedrich Hayek · Spontaneous Order",
+    relevantFor: ["strategy","startup","investment","operations"],
+    prompt: `You are Friedrich Hayek applying spontaneous order:
+
+1. SPONTANEOUS ORDER: Order emerges from individual action, not central planning.
+
+2. LOCAL KNOWLEDGE: Knowledge is dispersed; no one has all the information.
+
+3. THE PRICE SYSTEM: Prices convey information and coordinate action.
+
+4. EVOLUTION: Institutions evolve; they are not designed.
+
+5. THE ROAD TO SERFDOM: Central planning leads to tyranny.
+
+6. UNCERTAINTY: The future is inherently uncertain; markets handle it.
+
+Apply these to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "smith_invisible_hand",
+    label: "Smith: Invisible Hand",
+    icon: "🖐️",
+    color: "#1e293b",
+    accent: "#64748b",
+    thinker: "Adam Smith · The Wealth of Nations",
+    relevantFor: ["investment","strategy","startup","marketing"],
+    prompt: `You are Adam Smith applying the invisible hand:
+
+1. SELF-INTEREST: Individuals pursuing self-interest often benefit society more than when they intend to.
+
+2. DIVISION OF LABOR: Specialization increases productivity.
+
+3. MARKETS: Free markets allocate resources efficiently.
+
+4. COMPETITION: Competition protects consumers.
+
+5. THE INVISIBLE HAND: The unintentional consequence of self-interested action.
+
+6. SYMPATHY: Human beings are capable of sympathy and empathy.
+
+Apply these to the user's situation.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "darwin_evolution",
+    label: "Darwin: Evolution",
+    icon: "🧬",
+    color: "#0f766e",
+    accent: "#2dd4bf",
+    thinker: "Charles Darwin · Evolution by Natural Selection",
+    relevantFor: ["strategy","product","startup","marketing"],
+    prompt: `You are Charles Darwin applying evolutionary thinking:
+
+1. VARIATION: Diversity of approaches is essential.
+
+2. SELECTION: The environment selects for fitness.
+
+3. ADAPTATION: Organisms adapt to survive.
+
+4. SURVIVAL OF THE FITTEST: Fitness is about reproductive success.
+
+5. COMMON DESCENT: All life is connected.
+
+6. PUNCTUATED EQUILIBRIUM: Evolution happens in fits and starts.
+
+Apply these to the user's specific decision.
+
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
 ];
 
 // ─── STORAGE ──────────────────────────────────────────────────────────────────
@@ -503,14 +1362,10 @@ function classifyProblemType(question) {
     negotiation: ["negotiate", "deal", "contract", "term", "price", "discount", "partner"],
     hiring: ["hire", "recruit", "interview", "candidate", "team", "talent", "role"],
   };
-
   const scores = {};
   Object.keys(keywords).forEach(type => {
-    scores[type] = keywords[type].filter(word => 
-      question.toLowerCase().includes(word)
-    ).length;
+    scores[type] = keywords[type].filter(word => question.toLowerCase().includes(word)).length;
   });
-
   const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
   return sorted[0][1] > 0 ? sorted[0][0] : "strategy";
 }
@@ -574,9 +1429,7 @@ function confLabel(c) {
   if (c >= 70) return "HIGH";
   if (c >= 45) return "MEDIUM";
   return "LOW";
-}
-
-// ─── SYSTEM PROMPTS ───────────────────────────────────────────────────────────
+}// ─── SYSTEM PROMPTS ───────────────────────────────────────────────────────────
 
 const RESEARCH_SYSTEM = `You are an evidence collection engine. Your job: gather real, verifiable information about the question before any analysis begins. Use web search to collect:
 - Market size and trends (if applicable)
@@ -603,7 +1456,7 @@ const REALITY_SYSTEM = `You are a reality extraction engine. You receive raw res
 2. Separate verified facts from assumptions from unknowns
 3. Select 4-6 frameworks most relevant to this specific problem type
 
-Available frameworks: first_principles, thiel, inversion, second_order, taleb, bayes, porter, kahneman, munger, sun_tzu, feynman, popper, bias_checker
+Available frameworks: first_principles, thiel, inversion, second_order, taleb, bayes, porter, kahneman, munger, sun_tzu, feynman, popper, bias_checker, bezos_day1, naval_leverage, christensen_disruption, buffett_margin_safety, dawkins_memetic, harari_narrative, greene_power, hoffertrue_believer, senge_systems, meadows_leverage, ackoff_idealized, drucker_effectiveness, collins_flywheel, gladwell_tipping, kahneman_noise, thaler_nudge, taleb_black_swan, greene_seduction, machiavelli_prince, epictetus_stoic, marcus_aurelius, seneca_stoic, nietzsche_willpower, camus_absurdism, sartre_existentialism, foucault_power, marx_dialectical, keynes_economics, friedman_free_market, hayek_spontaneous, smith_invisible_hand, darwin_evolution
 
 Return ONLY a JSON object (no fences):
 {
@@ -652,7 +1505,7 @@ const EVIDENCE_CHALLENGE_SYSTEM = `You are the Evidence Challenge Engine. Your j
 You receive: research evidence, framework analyses, cross-examination, and red team results.
 
 Your job:
-1. IDENTIFY MAJOR CLAIMS: Extract every important recommendation from the analysis (e.g., "Launch now", "Raise prices", "Hire more employees", "Expand into a new market").
+1. IDENTIFY MAJOR CLAIMS: Extract every important recommendation from the analysis.
 2. VALIDATE EVERY CLAIM: For each claim, determine:
    - What evidence supports this claim?
    - What evidence contradicts this claim?
@@ -665,22 +1518,18 @@ Your job:
    - Assumption (not verified)
    - Speculation (no basis)
 4. DETECT MISSING EVIDENCE: Identify information that is missing but would materially improve confidence.
-5. SCORE EVIDENCE STRENGTH: Give a score 0-100 based on:
-   - Quantity of supporting evidence (weight: 25%)
-   - Quality of supporting evidence (weight: 25%)
-   - Amount of contradictory evidence (weight: 25%)
-   - Amount of missing information (weight: 25%)
+5. SCORE EVIDENCE STRENGTH: Give a score 0-100.
 6. ADJUST LANGUAGE: If score < 40, use cautious language. If score > 70, use decisive language.
 
 Return ONLY a JSON object (no fences):
 {
-  "major_recommendations": ["Launch now", "Hire 5 employees"],
-  "supporting_evidence": [{"recommendation":"Launch now","evidence":"Market research shows demand","classification":"Strong Evidence"}],
-  "contradicting_evidence": [{"recommendation":"Launch now","evidence":"Limited capital","classification":"Verified Fact"}],
-  "missing_evidence": ["Customer interviews", "Financial projections"],
-  "remaining_assumptions": ["Market will continue growing", "Competitors won't respond"],
-  "evidence_strength_score": 68,
-  "evidence_summary": "The recommendation to launch now is moderately supported. Key evidence includes market research data (Strong Evidence). However, contradictory evidence shows limited capital (Verified Fact). Missing customer interviews significantly reduces confidence."
+  "major_recommendations": [],
+  "supporting_evidence": [],
+  "contradicting_evidence": [],
+  "missing_evidence": [],
+  "remaining_assumptions": [],
+  "evidence_strength_score": 0,
+  "evidence_summary": ""
 }`;
 
 const SCENARIO_SYSTEM = `You are the Scenario Simulation Engine. Your job is to stress-test the recommendation by simulating multiple plausible futures.
@@ -692,72 +1541,32 @@ Your job:
    - Best Case: Everything goes well.
    - Most Likely: Realistic outcome.
    - Worst Case: Major failure.
-
-2. SENSITIVITY ANALYSIS: Identify which variables have the greatest impact on the recommendation.
-
+2. SENSITIVITY ANALYSIS: Identify which variables have the greatest impact.
 3. RISK ANALYSIS: For every identified risk, include: description, impact, likelihood, severity, mitigation, early warning signs.
-
 4. OPPORTUNITY ANALYSIS: For every opportunity, include: description, expected upside, requirements, risks.
-
 5. RECOMMENDATION STABILITY: Does the recommendation stay the same across all scenarios?
-
 6. DECISION ROBUSTNESS: How robust is this recommendation?
-
-7. MONITORING INDICATORS: Generate a list of metrics the user should monitor after making the decision.
+7. MONITORING INDICATORS: Generate a list of metrics to monitor after making the decision.
 
 Return ONLY a JSON object (no fences):
 {
-  "best_case": {
-    "outcome": "Optimal outcome description",
-    "conditions": "Conditions that create this scenario",
-    "benefits": "Expected benefits",
-    "probability_drivers": "Key drivers of probability",
-    "indicators": "Signals this scenario is occurring"
-  },
-  "most_likely": {
-    "outcome": "Realistic outcome",
-    "challenges": "Expected challenges",
-    "trade_offs": "Key trade-offs",
-    "indicators": "Reality check signals"
-  },
-  "worst_case": {
-    "outcome": "Failure outcome",
-    "risks": "Major risks",
-    "downside": "Financial/strategic downside",
-    "conditions": "Conditions that create failure",
-    "early_warnings": "Warning signals"
-  },
+  "best_case": {"outcome":"","conditions":"","benefits":"","probability_drivers":"","indicators":""},
+  "most_likely": {"outcome":"","challenges":"","trade_offs":"","indicators":""},
+  "worst_case": {"outcome":"","risks":"","downside":"","conditions":"","early_warnings":""},
   "sensitive_variables": [],
   "risk_analysis": [],
   "opportunities": [],
-  "recommendation_stability": {
-    "stable": true,
-    "when_to_change": ""
-  },
-  "decision_robustness": {
-    "rating": "High|Medium|Low",
-    "valid_under": "",
-    "invalid_under": ""
-  },
+  "recommendation_stability": {"stable":true,"when_to_change":""},
+  "decision_robustness": {"rating":"Medium","valid_under":"","invalid_under":""},
   "monitoring_indicators": []
 }`;
 
-// ─── 🆕 ASSUMPTION MANAGER ENGINE PROMPT ──────────────────────────────────
 const ASSUMPTION_SYSTEM = `You are the Assumption Manager Engine. Your job is to detect, validate, track, and manage every assumption used throughout the decision-making process.
 
 You receive: research evidence, reality extraction, framework analyses, cross-examination, red team results, evidence challenge results, scenario simulation results, and the synthesis recommendation.
 
 Your job:
-1. DETECT ASSUMPTIONS: Automatically identify assumptions from:
-   - User inputs (context, goals, constraints)
-   - Research layer (market trends, competitor behavior)
-   - Reality extraction (facts, assumptions, unknowns)
-   - Framework analyses (each framework's underlying assumptions)
-   - Cross-examination (assumptions being challenged)
-   - Red team (assumptions that could lead to failure)
-   - Evidence challenge (assumptions about evidence quality)
-   - Scenario simulation (assumptions about future conditions)
-
+1. DETECT ASSUMPTIONS: Automatically identify assumptions from all previous engines.
 2. CREATE ASSUMPTION REGISTRY: For every assumption record:
    - Assumption statement
    - Source (which engine created it)
@@ -768,47 +1577,14 @@ Your job:
    - Confidence (0-100)
    - Business impact (what happens if false)
    - Criticality (Low, Medium, High, Critical)
-
 3. IDENTIFY CONFLICTS: Find contradictory assumptions and explain their impact.
-
-4. GENERATE SUMMARY: Create summary statistics:
-   - Total assumptions
-   - Verified assumptions
-   - Unverified assumptions
-   - Critical assumptions
-   - Contradictions detected
+4. GENERATE SUMMARY: Create summary statistics.
 
 Return ONLY a JSON object (no fences):
 {
-  "assumptions": [
-    {
-      "statement": "Market growth will continue at 8% annually",
-      "source": "Research Layer",
-      "category": "Market",
-      "supporting_evidence": ["Industry reports show 8% growth"],
-      "contradicting_evidence": ["Economic indicators suggest slowdown"],
-      "verification_status": "Unverified",
-      "confidence": 65,
-      "business_impact": "If false, revenue projections will be 30% lower",
-      "criticality": "High",
-      "impact_if_false": "Recommendation changes to conservative investment"
-    }
-  ],
-  "conflicts": [
-    {
-      "assumption_a": "Market growth will continue at 8% annually",
-      "assumption_b": "Market will decline due to economic factors",
-      "conflict": "Conflicting market projections",
-      "impact": "Uncertainty in revenue forecasting"
-    }
-  ],
-  "summary": {
-    "total": 12,
-    "verified": 3,
-    "unverified": 7,
-    "critical": 2,
-    "contradictions": 1
-  }
+  "assumptions": [],
+  "conflicts": [],
+  "summary": {"total":0,"verified":0,"unverified":0,"critical":0,"contradictions":0}
 }`;
 
 const SYNTHESIS_SYSTEM = `You are the final decision synthesizer. You have: research evidence, reality extraction, framework analyses, cross-examination, red team results, evidence challenge results, scenario simulation results, and assumption manager results.
@@ -1013,7 +1789,6 @@ function Spinner({ color }) {
 
 // ─── JOURNAL VIEW ─────────────────────────────────────────────────────────────
 function JournalView({ journal, scores, onBack, onUpdateOutcome }) {
-  // ... (same as before – full journal view)
   const [editingId, setEditingId] = useState(null);
   const [editOutcome, setEditOutcome] = useState("");
   const [editAccuracy, setEditAccuracy] = useState("success");
@@ -1036,8 +1811,9 @@ function JournalView({ journal, scores, onBack, onUpdateOutcome }) {
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", display: "grid", gridTemplateColumns: "1fr 260px", gap: "16px", alignItems: "start" }}>
         <div>
-          {journal.length === 0 ? <div style={{ textAlign: "center", color: "#718096", fontSize: "15px", padding: "60px 20px" }}>No decisions recorded yet.</div>
-          : journal.map(entry => (
+          {journal.length === 0 ? (
+            <div style={{ textAlign: "center", color: "#718096", fontSize: "15px", padding: "60px 20px" }}>No decisions recorded yet.</div>
+          ) : journal.map(entry => (
             <div key={entry.id} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px 18px", marginBottom: "10px" }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "8px" }}>
                 <div style={{ flex: 1 }}>
@@ -1050,11 +1826,27 @@ function JournalView({ journal, scores, onBack, onUpdateOutcome }) {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
                   <ConfidenceBadge value={entry.confidence} small />
-                  {entry.risk_level && <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "4px", background: entry.risk_level === "High" ? "#ef444415" : entry.risk_level === "Medium" ? "#f59e0b15" : "#22c55e15", color: entry.risk_level === "High" ? "#ef4444" : entry.risk_level === "Medium" ? "#f59e0b" : "#22c55e" }}>{entry.risk_level} RISK</span>}
-                  {entry.accuracy != null && <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "4px", background: entry.accuracy === true ? "#22c55e15" : entry.accuracy === "partial" ? "#f59e0b15" : "#ef444415", color: entry.accuracy === true ? "#22c55e" : entry.accuracy === "partial" ? "#f59e0b" : "#ef4444" }}>{entry.accuracy === true ? "✓ Correct" : entry.accuracy === "partial" ? "~ Partial" : "✕ Incorrect"}</span>}
+                  {entry.risk_level && (
+                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "4px",
+                      background: entry.risk_level === "High" ? "#ef444415" : entry.risk_level === "Medium" ? "#f59e0b15" : "#22c55e15",
+                      color: entry.risk_level === "High" ? "#ef4444" : entry.risk_level === "Medium" ? "#f59e0b" : "#22c55e"
+                    }}>{entry.risk_level} RISK</span>
+                  )}
+                  {entry.accuracy != null && (
+                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "4px",
+                      background: entry.accuracy === true ? "#22c55e15" : entry.accuracy === "partial" ? "#f59e0b15" : "#ef444415",
+                      color: entry.accuracy === true ? "#22c55e" : entry.accuracy === "partial" ? "#f59e0b" : "#ef4444"
+                    }}>
+                      {entry.accuracy === true ? "✓ Correct" : entry.accuracy === "partial" ? "~ Partial" : "✕ Incorrect"}
+                    </span>
+                  )}
                 </div>
               </div>
-              {entry.reasoning && <div style={{ fontSize: "12px", color: "#718096", lineHeight: "1.6", marginBottom: "8px" }}>{entry.reasoning.slice(0, 180)}{entry.reasoning.length > 180 ? "…" : ""}</div>}
+              {entry.reasoning && (
+                <div style={{ fontSize: "12px", color: "#718096", lineHeight: "1.6", marginBottom: "8px" }}>
+                  {entry.reasoning.slice(0, 180)}{entry.reasoning.length > 180 ? "…" : ""}
+                </div>
+              )}
               <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "8px", marginTop: "4px" }}>
                 <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "5px" }}>OUTCOME</div>
                 {editingId === entry.id ? (
@@ -1094,9 +1886,15 @@ function JournalView({ journal, scores, onBack, onUpdateOutcome }) {
                 <div key={fw.id} style={{ marginBottom: "8px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
                     <span style={{ fontSize: "12px", color: "#4a5568" }}>{fw.icon} {fw.label}</span>
-                    <span style={{ fontSize: "11px", fontFamily: "'JetBrains Mono', monospace", color: rate != null ? confColor(rate) : "#718096" }}>{rate != null ? `${rate}%` : "—"} · {s.uses}✗</span>
+                    <span style={{ fontSize: "11px", fontFamily: "'JetBrains Mono', monospace", color: rate != null ? confColor(rate) : "#718096" }}>
+                      {rate != null ? `${rate}%` : "—"} · {s.uses}✗
+                    </span>
                   </div>
-                  {rate != null && <div style={{ height: "3px", background: "#edf2f7", borderRadius: "2px" }}><div style={{ height: "100%", width: `${rate}%`, background: confColor(rate), borderRadius: "2px", transition: "width 0.5s ease" }} /></div>}
+                  {rate != null && (
+                    <div style={{ height: "3px", background: "#edf2f7", borderRadius: "2px" }}>
+                      <div style={{ height: "100%", width: `${rate}%`, background: confColor(rate), borderRadius: "2px", transition: "width 0.5s ease" }} />
+                    </div>
+                  )}
                   {avgConf != null && <div style={{ fontSize: "11px", color: "#a0aec0", marginTop: "1px" }}>Avg conf: {avgConf}%</div>}
                 </div>
               );
@@ -1694,7 +2492,6 @@ export default function ThinkingOSv2() {
     setPhaseData(p => ({ ...p, scenario: scenarioData }));
     setCompletedPhases(c => ({ ...c, scenario: true }));
 
-    // ─── 🆕 ASSUMPTION MANAGER ──────────────────────────────────────────────
     await sleep(300);
 
     setActivePhase("assumptions");
@@ -1757,26 +2554,6 @@ export default function ThinkingOSv2() {
 
     // ─── BUILD AND SAVE TRACE ──────────────────────────────────────────────
     const context = getCurrentContext();
-    const traceData = {
-      question: q,
-      category: category,
-      userAnswers: answers,
-      context: context,
-      researchData: researchData,
-      realityData: realityData,
-      fws: fws.map(f => ({ ...f, selected: true, reason: "Selected by Reality Extraction" })),
-      fwResults: fwRes,
-      crossData: crossData,
-      redData: redData,
-      evidenceData: evidenceData,
-      scenarioData: scenarioData,
-      assumptionData: assumptionData,
-      synthData: synthData,
-      startTime: startTime,
-      endTime: endTime,
-      selectedFwIds: selectedFwIds,
-    };
-    // Build trace (similar to before, but include assumptionData)
     const trace = {
       metadata: {
         decision_id: `trace_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
@@ -2218,7 +2995,6 @@ export default function ThinkingOSv2() {
               </div>
             )}
 
-            {/* ─── EVIDENCE CHALLENGE ─────────────────────────────────────────── */}
             {evidence && (
               <div style={{ background: "#ffffff", border: "1px solid #8b5cf6", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.35s ease" }}>
                 <div onClick={() => setEvidenceExpanded(!evidenceExpanded)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", userSelect: "none" }}>
@@ -2251,7 +3027,6 @@ export default function ThinkingOSv2() {
               </div>
             )}
 
-            {/* ─── SCENARIO SIMULATION ────────────────────────────────────────── */}
             {scenario && (
               <div style={{ background: "#ffffff", border: "1px solid #06b6d4", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.35s ease" }}>
                 <div onClick={() => setScenarioExpanded(!scenarioExpanded)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", userSelect: "none" }}>
@@ -2281,7 +3056,6 @@ export default function ThinkingOSv2() {
               </div>
             )}
 
-            {/* ─── 🆕 ASSUMPTION MANAGER ────────────────────────────────────── */}
             {assumptionsData && (
               <div style={{ background: "#ffffff", border: "1px solid #f97316", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.35s ease" }}>
                 <div onClick={() => setAssumptionExpanded(!assumptionExpanded)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", userSelect: "none" }}>
@@ -2301,7 +3075,6 @@ export default function ThinkingOSv2() {
                 </div>
                 {assumptionExpanded && (
                   <div style={{ marginTop: "14px", borderTop: "1px solid #e2e8f0", paddingTop: "14px" }}>
-                    {/* Summary */}
                     {assumptionsData.summary && (
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px", marginBottom: "12px", padding: "8px 12px", background: "#f7fafc", borderRadius: "6px" }}>
                         <div><span style={{ fontWeight: "600", fontSize: "12px" }}>Total:</span> <span style={{ fontSize: "13px" }}>{assumptionsData.summary.total || 0}</span></div>
@@ -2311,7 +3084,6 @@ export default function ThinkingOSv2() {
                       </div>
                     )}
 
-                    {/* Assumptions list */}
                     {assumptionsData.assumptions?.length > 0 && (
                       <div style={{ marginBottom: "12px" }}>
                         <div style={{ fontSize: "11px", fontWeight: "600", color: "#4a5568", marginBottom: "6px" }}>📋 All Assumptions</div>
@@ -2331,7 +3103,6 @@ export default function ThinkingOSv2() {
                       </div>
                     )}
 
-                    {/* Conflicts */}
                     {assumptionsData.conflicts?.length > 0 && (
                       <div>
                         <div style={{ fontSize: "11px", fontWeight: "600", color: "#ec4899", marginBottom: "6px" }}>⚡ Conflicts Detected</div>
