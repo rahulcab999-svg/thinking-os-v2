@@ -2,6 +2,88 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 
+// ─── MARKDOWN EXPORT ──────────────────────────────────────────────────────────
+function exportMarkdown(question, phaseData, fwResults, selectedFwIds) {
+  const { research, reality, crossexam, redteam, synthesis } = phaseData;
+  const lines = [];
+  lines.push(`# Thinking OS — Decision Analysis`);
+  lines.push(`**Question:** ${question}`);
+  lines.push(`**Date:** ${new Date().toLocaleString()}`);
+  lines.push(``);
+  if (synthesis) {
+    lines.push(`## Final Decision`);
+    lines.push(`**${synthesis.recommendation}**`);
+    lines.push(`Confidence: ${synthesis.confidence}% · Risk: ${synthesis.risk_level}`);
+    lines.push(``);
+    if (synthesis.why?.length) { lines.push(`### Why`); synthesis.why.forEach(w => lines.push(`- ${w}`)); lines.push(``); }
+    if (synthesis.top_risks?.length) { lines.push(`### Top Risks`); synthesis.top_risks.forEach(r => lines.push(`- ${r}`)); lines.push(``); }
+    if (synthesis.next_actions?.length) { lines.push(`### Next Actions`); synthesis.next_actions.forEach((a,i) => lines.push(`${i+1}. ${a}`)); lines.push(``); }
+    if (synthesis.confidence_reasoning?.length) { lines.push(`### Confidence Reasoning`); synthesis.confidence_reasoning.forEach(r => lines.push(`- ${r}`)); lines.push(``); }
+  }
+  if (crossexam) {
+    lines.push(`## Cross-Examination`);
+    lines.push(`Agreement: ${crossexam.agreement_score}% · Conflict: ${crossexam.conflict_score}%`);
+    if (crossexam.hidden_insight) lines.push(`**Hidden Insight:** ${crossexam.hidden_insight}`);
+    if (crossexam.major_disagreements?.length) {
+      lines.push(``); lines.push(`### Major Disagreements`);
+      crossexam.major_disagreements.forEach(d => { lines.push(`**${d.framework_a} vs ${d.framework_b}:** ${d.disagreement}`); if (d.why_this_matters) lines.push(`*Why it matters: ${d.why_this_matters}*`); });
+    }
+    lines.push(``);
+  }
+  if (redteam) {
+    lines.push(`## Red Team`);
+    lines.push(`Survivability: **${redteam.survivability}**`);
+    if (redteam.kill_shot) lines.push(`Kill Shot: ${redteam.kill_shot}`);
+    if (redteam.failure_modes?.length) {
+      lines.push(``); lines.push(`### Failure Modes`);
+      redteam.failure_modes.forEach(fm => { lines.push(`- **[${fm.severity}]** ${fm.mode}`); if (fm.mitigation) lines.push(`  - Mitigation: ${fm.mitigation}`); });
+    }
+    lines.push(``);
+  }
+  if (selectedFwIds?.length) {
+    lines.push(`## Framework Analysis`);
+    // We need ALL_FRAMEWORKS here – it's defined outside this function
+    const ALL_FRAMEWORKS = [
+      {id:"first_principles",label:"First Principles",icon:"⚗️"},
+      {id:"thiel",label:"Thiel Contrarian",icon:"♟️"},
+      {id:"inversion",label:"Inversion",icon:"🔄"},
+      {id:"second_order",label:"Second-Order",icon:"🌊"},
+      {id:"taleb",label:"Taleb Antifragility",icon:"💀"},
+      {id:"bayes",label:"Bayesian Thinking",icon:"📊"},
+      {id:"porter",label:"Porter's Five Forces",icon:"🏭"},
+      {id:"kahneman",label:"Kahneman: Bias",icon:"⚡"},
+      {id:"munger",label:"Munger's Lattice",icon:"🧠"},
+      {id:"sun_tzu",label:"Sun Tzu",icon:"⚔️"},
+      {id:"feynman",label:"Feynman Technique",icon:"🔬"},
+      {id:"popper",label:"Popper: Falsifiability",icon:"🔭"},
+      {id:"bias_checker",label:"Bias Audit",icon:"🪲"},
+    ];
+    selectedFwIds.forEach(fid => {
+      const fw = ALL_FRAMEWORKS.find(f => f.id === fid);
+      const res = fwResults[fid];
+      if (!fw || !res) return;
+      lines.push(``); lines.push(`### ${fw.icon} ${fw.label} (${fw.thinker || ''})`);
+      if (res.key_claim) lines.push(`**Key Claim:** ${res.key_claim}`);
+      lines.push(`Confidence: ${res.confidence}%`);
+      if (res.evidence?.length) { lines.push(`**Evidence:**`); res.evidence.forEach(e => lines.push(`- ${e}`)); }
+      if (res.recommendation) lines.push(`**Recommendation:** ${res.recommendation}`);
+    });
+    lines.push(``);
+  }
+  if (research) {
+    lines.push(`## Research Layer (confidence: ${research.research_confidence}%)`);
+    if (research.research_summary) lines.push(research.research_summary);
+    if (research.facts?.length) { lines.push(``); lines.push(`**Facts:**`); research.facts.forEach(f => lines.push(`- ${f}`)); }
+    if (research.sources?.length) { lines.push(``); lines.push(`**Sources:**`); research.sources.forEach(s => lines.push(`- ${s}`)); }
+    if (research.unknowns?.length) { lines.push(``); lines.push(`**Unknowns:**`); research.unknowns.forEach(u => lines.push(`- ${u}`)); }
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `decision-${Date.now()}.md`; a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ─── WEB SEARCH MASTER SWITCH ──────────────────────────────────────────────────
 const ENABLE_WEB_SEARCH = true;
 
@@ -394,17 +476,6 @@ function detectMissingInfo(category, userAnswers) {
 
 function generateQuestions(missing) {
   return missing.slice(0, 5).map(field => field.label);
-}
-
-function checkInfoComplete(question, userAnswers) {
-  const category = classifyProblemType(question);
-  const missing = detectMissingInfo(category, userAnswers);
-  return {
-    category,
-    isComplete: missing.length === 0,
-    missing,
-    questions: generateQuestions(missing)
-  };
 }
 
 // ─── API CALL ──────────────────────────────────────────────────────────────────
@@ -823,7 +894,6 @@ export default function ThinkingOSv2() {
   }, []);
 
   const submitAnswers = useCallback(() => {
-    // Save the current answers to state
     const currentAnswers = {};
     missingInfo?.forEach(field => {
       const input = document.getElementById(`answer_${field.id}`);
@@ -835,7 +905,6 @@ export default function ThinkingOSv2() {
     setUserAnswers(updatedAnswers);
     saveUserAnswers(updatedAnswers);
 
-    // Check if we have enough info
     const category = classifyProblemType(question);
     const missing = detectMissingInfo(category, updatedAnswers);
 
@@ -843,7 +912,6 @@ export default function ThinkingOSv2() {
       setMissingInfo(null);
       setIsAsking(false);
       setInfoStatus("✅ All information collected! Running analysis...");
-      // Continue to run the analysis
       runFullAnalysis(question, category, updatedAnswers);
     } else {
       setMissingInfo(missing);
@@ -852,13 +920,11 @@ export default function ThinkingOSv2() {
   }, [missingInfo, userAnswers, question]);
 
   const runFullAnalysis = useCallback(async (q, category, answers) => {
-    // Build context from answers
     const answerContext = Object.entries(answers)
       .map(([key, value]) => `${key}: ${value}`)
       .join("\n");
     const fullQuestion = `${q}\n\nUser context:\n${answerContext}`;
 
-    // Reset and run the full analysis pipeline
     setIsRunning(true);
     setHasRun(true);
     const col = {};
@@ -1015,16 +1081,13 @@ export default function ThinkingOSv2() {
     const category = classifyProblemType(q);
     const currentAnswers = loadUserAnswers();
 
-    // Check for missing info
     const missing = detectMissingInfo(category, currentAnswers);
 
     if (missing.length > 0) {
-      // We need to ask questions first
       setMissingInfo(missing);
       setIsAsking(true);
       setInfoStatus(`📋 To give you a reliable recommendation, I need some information:`);
     } else {
-      // We have all info, run full analysis
       setInfoStatus("✅ All information collected! Running analysis...");
       await runFullAnalysis(q, category, currentAnswers);
     }
@@ -1100,6 +1163,12 @@ export default function ThinkingOSv2() {
         )}
 
         <div style={{ marginLeft: "auto", display: "flex", gap: "6px", alignItems: "center" }}>
+          {isRunning && (
+            <button onClick={() => setIsRunning(false)} style={{ fontSize: "12px", background: "#ef444412", border: "1px solid #ef444435", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#ef4444", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>⏹ Cancel</button>
+          )}
+          {hasRun && !isRunning && synthesis && (
+            <button onClick={() => exportMarkdown(question, phaseData, fwResults, selectedFwIds)} style={{ fontSize: "12px", background: "#6366f112", border: "1px solid #6366f130", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#6366f1", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>↓ Export MD</button>
+          )}
           {hasRun && pendingEntry && !showJournalForm && (
             <button onClick={() => setShowJournalForm(true)} style={{ fontSize: "12px", background: "#f1c40f12", border: "1px solid #f1c40f30", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#b7791f", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>+ Journal</button>
           )}
@@ -1304,8 +1373,8 @@ export default function ThinkingOSv2() {
                           fontSize: "12px", fontWeight: "700", padding: "2px 10px", borderRadius: "4px",
                           background: synthesis.risk_level === "High" ? "#ef444415" : synthesis.risk_level === "Medium" ? "#f59e0b15" : "#22c55e15",
                           color: synthesis.risk_level === "High" ? "#ef4444" : synthesis.risk_level === "Medium" ? "#f59e0b" : "#22c55e",
-                          border: `1px solid ${synthesis.risk_level === "High" ? "#ef444430" : synthesis.risk_level === "Medium" ? "#f59e0b30" : "#22c55e30"}`>
-                        </span>
+                          border: `1px solid ${synthesis.risk_level === "High" ? "#ef444430" : synthesis.risk_level === "Medium" ? "#f59e0b30" : "#22c55e30"}`
+                        }}>{synthesis.risk_level} RISK</span>
                       </div>
                     </div>
 
