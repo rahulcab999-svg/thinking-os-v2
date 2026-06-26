@@ -10,220 +10,1402 @@ function exportMarkdown(question, phaseData, fwResults, selectedFwIds) {
   lines.push(`**Question:** ${question}`);
   lines.push(`**Date:** ${new Date().toLocaleString()}`);
   lines.push(``);
-  
   if (synthesis) {
     lines.push(`## Final Decision`);
-    lines.push(`**${synthesis.recommendation || 'N/A'}**`);
-    lines.push(`Confidence: ${synthesis.confidence || 0}% · Risk: ${synthesis.risk_level || 'UNKNOWN'}`);
+    lines.push(`**${synthesis.recommendation}**`);
+    lines.push(`Confidence: ${synthesis.confidence}% · Risk: ${synthesis.risk_level}`);
     lines.push(``);
     if (synthesis.why?.length) { lines.push(`### Why`); synthesis.why.forEach(w => lines.push(`- ${w}`)); lines.push(``); }
     if (synthesis.top_risks?.length) { lines.push(`### Top Risks`); synthesis.top_risks.forEach(r => lines.push(`- ${r}`)); lines.push(``); }
-    if (synthesis.next_actions?.length) { lines.push(`### Next Actions`); synthesis.next_actions.forEach((a, i) => lines.push(`${i + 1}. ${a}`)); lines.push(``); }
-    if (synthesis.confidence_reasoning) { lines.push(`### Confidence Reasoning`); lines.push(synthesis.confidence_reasoning); lines.push(``); }
+    if (synthesis.next_actions?.length) { lines.push(`### Next Actions`); synthesis.next_actions.forEach((a,i) => lines.push(`${i+1}. ${a}`)); lines.push(``); }
+    if (synthesis.confidence_reasoning?.length) { lines.push(`### Confidence Reasoning`); synthesis.confidence_reasoning.forEach(r => lines.push(`- ${r}`)); lines.push(``); }
   }
-
-  // 1. Research Phase
-  if (research) {
-    lines.push(`## 1. Research Phase`);
-    lines.push(research.output || '');
-    lines.push(``);
-  }
-
-  // 2. Reality Check Phase
-  if (reality) {
-    lines.push(`## 2. Reality Check Phase`);
-    lines.push(reality.output || '');
-    lines.push(``);
-  }
-
-  // 3. Cross-Examination Phase
   if (crossexam) {
-    lines.push(`## 3. Cross-Examination Phase`);
-    lines.push(crossexam.output || '');
+    lines.push(`## Cross-Examination`);
+    lines.push(`Agreement: ${crossexam.agreement_score}% · Conflict: ${crossexam.conflict_score}%`);
+    if (crossexam.hidden_insight) lines.push(`**Hidden Insight:** ${crossexam.hidden_insight}`);
+    if (crossexam.major_disagreements?.length) {
+      lines.push(``); lines.push(`### Major Disagreements`);
+      crossexam.major_disagreements.forEach(d => { lines.push(`**${d.framework_a} vs ${d.framework_b}:** ${d.disagreement}`); if (d.why_this_matters) lines.push(`*Why it matters: ${d.why_this_matters}*`); });
+    }
     lines.push(``);
   }
-
-  // 4. Red Team Phase
   if (redteam) {
-    lines.push(`## 4. Red Team Phase`);
-    lines.push(redteam.output || '');
+    lines.push(`## Red Team`);
+    lines.push(`Survivability: **${redteam.survivability}**`);
+    if (redteam.kill_shot) lines.push(`Kill Shot: ${redteam.kill_shot}`);
+    if (redteam.failure_modes?.length) {
+      lines.push(``); lines.push(`### Failure Modes`);
+      redteam.failure_modes.forEach(fm => { lines.push(`- **[${fm.severity}]** ${fm.mode}`); if (fm.mitigation) lines.push(`  - Mitigation: ${fm.mitigation}`); });
+    }
     lines.push(``);
   }
-
-  if (fwResults && fwResults.length > 0) {
-    lines.push(`## Framework References & Evidence`);
-    fwResults.forEach(fw => {
-      if (selectedFwIds.includes(fw.id)) {
-        lines.push(`### ${fw.name}`);
-        if (fw.key_claim) lines.push(`*Key Claim:* ${fw.key_claim}\n`);
-        if (fw.recommendation) lines.push(`*Recommendation:* ${fw.recommendation}\n`);
-      }
+  if (selectedFwIds?.length) {
+    lines.push(`## Framework Analysis`);
+    selectedFwIds.forEach(fid => {
+      const fw = ALL_FRAMEWORKS.find(f => f.id === fid);
+      const res = fwResults[fid];
+      if (!fw || !res) return;
+      lines.push(``); lines.push(`### ${fw.icon} ${fw.label} (${fw.thinker})`);
+      if (res.key_claim) lines.push(`**Key Claim:** ${res.key_claim}`);
+      lines.push(`Confidence: ${res.confidence}%`);
+      if (res.evidence?.length) { lines.push(`**Evidence:**`); res.evidence.forEach(e => lines.push(`- ${e}`)); }
+      if (res.recommendation) lines.push(`**Recommendation:** ${res.recommendation}`);
     });
+    lines.push(``);
   }
-
-  return lines.join('\n');
+  if (research) {
+    lines.push(`## Research Layer (confidence: ${research.research_confidence}%)`);
+    if (research.research_summary) lines.push(research.research_summary);
+    if (research.facts?.length) { lines.push(``); lines.push(`**Facts:**`); research.facts.forEach(f => lines.push(`- ${f}`)); }
+    if (research.sources?.length) { lines.push(``); lines.push(`**Sources:**`); research.sources.forEach(s => lines.push(`- ${s}`)); }
+    if (research.unknowns?.length) { lines.push(``); lines.push(`**Unknowns:**`); research.unknowns.forEach(u => lines.push(`- ${u}`)); }
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `decision-${Date.now()}.md`; a.click();
+  URL.revokeObjectURL(url);
 }
 
-// ─── MASTER SWITCH ────────────────────────────────────────────────────────────
-const ENABLE_WEB_SEARCH = true;
+// ─── WEB SEARCH MASTER SWITCH ──────────────────────────────────────────────────
+const ENABLE_WEB_SEARCH = true;  // 👈 Real-time web search enabled via Tavily
 
-// ─── SUB COMPONENTS ───────────────────────────────────────────────────────────
-function FrameworkList({ title, items, color }) {
-  if (!items || items.length === 0) return null;
+// ─── PROBLEM TYPES ────────────────────────────────────────────────────────────
+const PROBLEM_TYPES = [
+  { id: "startup",     label: "Startup",     icon: "🚀" },
+  { id: "career",      label: "Career",      icon: "🧭" },
+  { id: "investment",  label: "Investment",  icon: "📈" },
+  { id: "product",     label: "Product",     icon: "📦" },
+  { id: "hiring",      label: "Hiring",      icon: "🤝" },
+  { id: "strategy",    label: "Strategy",    icon: "♟️" },
+  { id: "personal",    label: "Personal",    icon: "🪞" },
+  { id: "marketing",   label: "Marketing",   icon: "📣" },
+  { id: "operations",  label: "Operations",  icon: "⚙️" },
+  { id: "negotiation", label: "Negotiation", icon: "⚖️" },
+];
+
+// ─── FRAMEWORKS ───────────────────────────────────────────────────────────────
+const ALL_FRAMEWORKS = [
+  {
+    id: "first_principles", label: "First Principles", icon: "⚗️",
+    color: "#6366f1", accent: "#818cf8", thinker: "Aristotle · Elon Musk",
+    relevantFor: ["startup","product","strategy","personal","operations"],
+    prompt: `You are a first-principles thinker. Use ONLY the verified facts provided. Distinguish clearly between facts and assumptions.
+CRITICAL RULE: Every point you make must directly reference something specific from the user's question or the provided facts. No generic statements that could apply to any situation.
+1. DECONSTRUCT: Break to undeniable truths only. Flag everything else as assumption.
+2. VERIFY: What is actually known vs assumed? Be explicit.
+3. REBUILD: Reason upward from verified fundamentals only.
+4. CLAIM: Clearest rational path forward.
+5. CONFIDENCE: Rate 0-100. Lower if many unknowns remain.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "thiel", label: "Thiel Contrarian", icon: "♟️",
+    color: "#0ea5e9", accent: "#38bdf8", thinker: "Peter Thiel · Zero to One",
+    relevantFor: ["startup","product","strategy","marketing","investment"],
+    prompt: `You are Thiel's contrarian framework. Use ONLY the verified facts provided. Do not treat assumptions as facts.
+CRITICAL RULE: Every point must be specific to this exact situation. Do not give advice that could apply to any startup or decision. Name specific dynamics, specific competitors, specific market conditions from the provided context.
+1. CONSENSUS VIEW: What does everyone believe here?
+2. CONTRARIAN QUESTION: What important truth do very few people agree with?
+3. NON-CONSENSUS ANGLE: Non-obvious view that could actually be correct?
+4. MONOPOLY TEST: Does the obvious solution lead to differentiation or competition?
+5. 10X QUESTION: What would a 10x better solution look like?
+6. CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "inversion", label: "Inversion", icon: "🔄",
+    color: "#f59e0b", accent: "#fbbf24", thinker: "Charlie Munger · Stoics",
+    relevantFor: ["startup","strategy","personal","operations","career","negotiation"],
+    prompt: `You are the inversion thinker (Munger + Stoics). Use ONLY verified facts. Mark assumptions explicitly.
+CRITICAL RULE: List failure modes that are specific to this exact situation. Not generic risks — specific ways THIS decision fails given THESE facts.
+1. INVERT: How would you guarantee failure? List all failure modes.
+2. TRAPS: Top traps to actively avoid.
+3. OBSTACLES: What, when removed, makes solution obvious?
+4. FORWARD PATH: Failure-free version.
+5. CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "second_order", label: "Second-Order", icon: "🌊",
+    color: "#10b981", accent: "#34d399", thinker: "Howard Marks · Ray Dalio",
+    relevantFor: ["investment","strategy","startup","operations","product","personal"],
+    prompt: `You are a second-order thinking analyst. Use ONLY verified facts. Flag assumptions.
+CRITICAL RULE: The effects you describe must be specific to this situation. Do not describe generic second-order effects — trace the actual chain of consequences from THIS specific decision given THESE specific facts.
+1. FIRST-ORDER EFFECTS: Immediate, obvious consequences.
+2. SECOND-ORDER EFFECTS: What happens after those play out?
+3. THIRD-ORDER EFFECTS: What does that trigger?
+4. TIME HORIZONS: Best decision across 1wk / 6mo / 5yr?
+5. RECOMMENDATION: Most rational action given all orders.
+6. CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "taleb", label: "Taleb Antifragility", icon: "💀",
+    color: "#f43f5e", accent: "#fb7185", thinker: "Nassim Taleb · Antifragile",
+    relevantFor: ["startup","investment","strategy","operations","personal","negotiation"],
+    prompt: `You are Taleb's risk and antifragility framework. Use ONLY verified facts. Never treat assumptions as facts.
+CRITICAL RULE: Identify black swans and tail risks that are specific to this situation and industry. Do not list generic risks. If you cannot identify specific tail risks from the provided data, say so explicitly and lower your confidence.
+1. BLACK SWAN SCAN: Low-probability, high-impact events that destroy everything.
+2. FRAGILITY RATING: Fragile / Robust / Antifragile? How to move toward antifragile?
+3. VIA NEGATIVA: What to remove or avoid?
+4. SKIN IN THE GAME: Who bears the downside? Misaligned risk = red flag.
+5. BARBELL STRATEGY: Extreme safety on one end, small high-upside bets on other.
+6. OPTIONALITY: Which path preserves most future options?
+7. CONFIDENCE: Rate 0-100. Penalize heavily for missing tail-risk data.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "bayes", label: "Bayesian Thinking", icon: "📊",
+    color: "#1d4ed8", accent: "#60a5fa", thinker: "Thomas Bayes · Probability",
+    relevantFor: ["investment","startup","hiring","personal","strategy","operations"],
+    prompt: `You are a Bayesian reasoning framework. Use ONLY verified facts and research evidence provided.
+CRITICAL RULE: Use actual numbers and base rates from the provided research data. Do not invent statistics. If base rate data is missing, explicitly state it is missing and lower confidence accordingly.
+1. PRIOR BELIEF: Base rate / prior probability. Use historical data, not intuition.
+2. THE EVIDENCE: What new information are we updating on?
+3. LIKELIHOOD RATIO: How diagnostic is this evidence?
+4. POSTERIOR BELIEF: Revised probability. Has evidence moved the needle significantly?
+5. BASE RATE NEGLECT CHECK: Are vivid events overriding priors?
+6. WHAT WOULD MOVE YOU: Evidence that would significantly change posterior?
+7. CONFIDENCE: State explicitly (e.g. "70% confident X is true"). Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "porter", label: "Porter's Five Forces", icon: "🏭",
+    color: "#475569", accent: "#94a3b8", thinker: "Michael Porter · Competitive Strategy",
+    relevantFor: ["startup","strategy","investment","product","marketing"],
+    prompt: `You are Porter's competitive strategy framework. Use ONLY verified facts and research evidence.
+CRITICAL RULE: Name actual competitors, actual market dynamics, actual suppliers from the provided research. If the research doesn't contain this data, explicitly flag each gap and lower confidence.
+1. THREAT OF NEW ENTRANTS: Barriers to entry?
+2. SUPPLIER POWER: How much power do suppliers have?
+3. BUYER POWER: How much power do customers have?
+4. THREAT OF SUBSTITUTES: What could make this obsolete?
+5. COMPETITIVE RIVALRY: How intense is existing competition?
+6. GENERIC STRATEGY: Cost Leadership, Differentiation, or Focus?
+7. SUSTAINABLE ADVANTAGE: What makes this defensible over 5-10 years?
+8. CONFIDENCE: Rate 0-100. Lower if market data is missing.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "kahneman", label: "Kahneman: Bias", icon: "⚡",
+    color: "#7c3aed", accent: "#a78bfa", thinker: "Daniel Kahneman · Thinking Fast & Slow",
+    relevantFor: ["personal","career","hiring","negotiation","investment","startup"],
+    prompt: `You are Kahneman's System 1/2 framework. Your job is to detect bias distorting this decision.
+CRITICAL RULE: Identify biases that are specifically active in this situation. Do not list all possible biases — only the ones that are clearly present given what the user has described. Explain exactly how each bias is showing up.
+1. SYSTEM 1 REACTIONS: Fast, intuitive response here?
+2. COGNITIVE BIASES IN PLAY: Specific biases distorting thinking (Anchoring, Availability, Confirmation, Overconfidence, Planning Fallacy, Loss Aversion, WYSIATI)?
+3. SYSTEM 2 OVERRIDE: What does slow deliberate reasoning say when biases are stripped?
+4. PROSPECT THEORY: Are losses being weighted ~2x too heavily?
+5. PRE-MORTEM: Imagine 1 year later, this failed. What went wrong?
+6. DEBIASED RECOMMENDATION: Rational action after correcting for biases.
+7. CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "munger", label: "Munger's Lattice", icon: "🧠",
+    color: "#ec4899", accent: "#f472b6", thinker: "Charlie Munger · Poor Charlie's Almanack",
+    relevantFor: ["startup","investment","strategy","career","personal","product"],
+    prompt: `You are Munger's multi-disciplinary mental model framework. Use verified facts only.
+CRITICAL RULE: Apply each mental model to the specific details of this situation. Do not describe what the model means in general — show exactly how it applies to these specific facts.
+Pick 4-5 most relevant models: Opportunity Cost, Incentives, Confirmation Bias, Regression to Mean, Competitive Advantage, Network Effects, Compounding, Margin of Safety, Pareto, Occam's Razor, Bayes, Supply & Demand.
+For each: Name it, apply it, state what it reveals that naive analysis misses.
+SYNTHESIS: What do models together suggest?
+CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "sun_tzu", label: "Sun Tzu", icon: "⚔️",
+    color: "#b45309", accent: "#fbbf24", thinker: "Sun Tzu · The Art of War",
+    relevantFor: ["strategy","startup","negotiation","marketing","career"],
+    prompt: `You are Sun Tzu's strategic framework. Use verified facts only.
+CRITICAL RULE: Be specific about who the actual adversaries or competing forces are in this situation. Name them. Describe specific terrain and timing advantages based on the actual context provided.
+1. KNOW YOURSELF: True strengths, weaknesses, resources, constraints.
+2. KNOW THE ENEMY: Competitors/forces — strengths, weaknesses, intentions.
+3. WIN WITHOUT FIGHTING: Achieve objective without direct confrontation?
+4. TERRAIN & TIMING: What context/timing creates maximum advantage?
+5. ASYMMETRY: Where can you exploit an asymmetric advantage?
+6. ALREADY-WON BATTLE: Preparation that makes outcome nearly certain before engagement?
+7. CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "feynman", label: "Feynman Technique", icon: "🔬",
+    color: "#f97316", accent: "#fb923c", thinker: "Richard Feynman · Physicist",
+    relevantFor: ["product","startup","operations","personal","career","strategy"],
+    prompt: `You are Feynman's thinking framework. Expose gaps in understanding ruthlessly.
+CRITICAL RULE: The plain language test and gap identification must be about THIS specific problem, not a generic explanation of how Feynman thinking works.
+1. PLAIN LANGUAGE TEST: Explain core problem as if to a curious 12-year-old.
+2. LOCATE THE GAP: Where did the plain explanation break down? That IS the real problem.
+3. QUESTION EVERYTHING: What assumptions does "everyone know" but nobody has verified?
+4. FIRST EXPERIMENT: One small, cheap, fast experiment to learn the most important unknown?
+5. ELEGANT SIMPLICITY: Simplest explanation that accounts for all known facts?
+6. WHAT WOULD BREAK THIS: Single fact that completely invalidates this?
+7. CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "popper", label: "Popper: Falsifiability", icon: "🔭",
+    color: "#0f766e", accent: "#2dd4bf", thinker: "Karl Popper · Critical Rationalism",
+    relevantFor: ["startup","product","strategy","investment","personal"],
+    prompt: `You are Popper's falsifiability framework. Test claims rigorously.
+CRITICAL RULE: The hypothesis you test must be the actual core claim or belief embedded in the user's question. Do not test a generic hypothesis — extract and test the real one.
+1. STATE THE HYPOTHESIS: Core claim or belief driving this problem.
+2. FALSIFIABILITY TEST: Can you conceive of an observation that would prove it wrong?
+3. WHAT WOULD FALSIFY THIS: 3-5 concrete observations that would disprove the hypothesis.
+4. CORROBORATION vs PROOF: Has this survived serious attempts to disprove it?
+5. UNFALSIFIABLE RED FLAGS: Elements that cannot be proven wrong no matter what?
+6. RECOMMENDATION: Most intellectually honest position given what can/cannot be falsified.
+7. CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+  {
+    id: "bias_checker", label: "Bias Audit", icon: "🪲",
+    color: "#dc2626", accent: "#f87171", thinker: "Kahneman · Munger · Cialdini · Taleb",
+    relevantFor: ["personal","career","hiring","investment","startup","negotiation","strategy"],
+    prompt: `You are a forensic cognitive bias auditor. Scan specifically for active biases in this situation.
+CRITICAL RULE: Only list biases that are actually present and demonstrably active in this specific situation. Explain exactly how each bias is showing up. Do not list every possible bias — only the ones truly at play here.
+INFORMATION BIASES: Confirmation Bias, Availability Heuristic, Anchoring, Framing Effect, Survivorship Bias
+SELF-SERVING BIASES: Overconfidence, Dunning-Kruger, Planning Fallacy, Optimism Bias
+SOCIAL BIASES: Bandwagon Effect, Authority Bias, Halo Effect, Groupthink
+DECISION BIASES: Sunk Cost Fallacy, Loss Aversion, Status Quo Bias, Hyperbolic Discounting
+OUTPUT: List active biases, rank top 3 by severity, debiasing protocol for each, clean reframe after stripping biases.
+CONFIDENCE: Rate 0-100.
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+  },
+];
+
+// ─── STORAGE ──────────────────────────────────────────────────────────────────
+function loadJournal() {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem("tos_v2_journal") || "[]"); } catch { return []; }
+}
+function saveJournal(e) {
+  try { localStorage.setItem("tos_v2_journal", JSON.stringify(e)); } catch {}
+}
+function loadScores() {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem("tos_v2_scores") || "{}"); } catch { return {}; }
+}
+function saveScores(s) {
+  try { localStorage.setItem("tos_v2_scores", JSON.stringify(s)); } catch {}
+}
+
+function recordFrameworkUse(scores, fwIds, confidence) {
+  const updated = { ...scores };
+  fwIds.forEach(id => {
+    if (!updated[id]) updated[id] = { uses: 0, successes: 0, totalConfidence: 0 };
+    updated[id].uses += 1;
+    updated[id].totalConfidence += (confidence || 0);
+  });
+  return updated;
+}
+function recordFrameworkOutcome(scores, fwIds, success) {
+  const updated = { ...scores };
+  fwIds.forEach(id => {
+    if (!updated[id]) updated[id] = { uses: 0, successes: 0, totalConfidence: 0 };
+    if (success) updated[id].successes += 1;
+  });
+  return updated;
+}
+function fwSuccessRate(s) {
+  if (!s || s.uses === 0) return null;
+  return Math.round((s.successes / s.uses) * 100);
+}
+function fwAvgConf(s) {
+  if (!s || s.uses === 0) return null;
+  return Math.round(s.totalConfidence / s.uses);
+}
+
+// ─── API CALL ──────────────────────────────────────────────────────────────────
+async function callClaude(systemPrompt, userContent, maxTokens = 1200, useWebSearch = false) {
+  const response = await fetch("/api/analyze", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      question: userContent,
+      systemPrompt,
+      maxTokens,
+      useWebSearch
+    })
+  });
+  const result = await response.json();
+  if (!result.success) throw new Error(result.error || "API call failed");
+  return result.data.content?.map(c => c.text || "").join("") || "";
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function parseJSON(raw) {
+  try { return JSON.parse(raw.replace(/```json|```/g, "").trim()); } catch { return null; }
+}
+function safeJSON(raw, fallback) {
+  return parseJSON(raw) || fallback;
+}
+function confColor(c) {
+  if (c >= 70) return "#22c55e";
+  if (c >= 45) return "#f59e0b";
+  return "#ef4444";
+}
+function confLabel(c) {
+  if (c >= 70) return "HIGH";
+  if (c >= 45) return "MEDIUM";
+  return "LOW";
+}
+
+// ─── SYSTEM PROMPTS ───────────────────────────────────────────────────────────
+
+const RESEARCH_SYSTEM = `You are an evidence collection engine. Your job: gather real, verifiable information about the question before any analysis begins. Use web search to collect:
+- Market size and trends (if applicable)
+- Industry statistics and benchmarks
+- Competitor information (if applicable)
+- Regulatory context (if applicable)
+- Base rates for similar decisions
+- Any publicly available data directly relevant to this question
+
+Be rigorous. Distinguish what you found from what you're inferring. Do not treat inferences as facts.
+
+Return ONLY a JSON object (no markdown fences):
+{
+  "facts": [],
+  "sources": [],
+  "assumptions": [],
+  "unknowns": [],
+  "research_confidence": 0,
+  "research_summary": ""
+}`;
+
+const REALITY_SYSTEM = `You are a reality extraction engine. You receive raw research data. Your job:
+1. Classify the problem type
+2. Separate verified facts from assumptions from unknowns
+3. Select 4-6 frameworks most relevant to this specific problem type
+
+Available frameworks: first_principles, thiel, inversion, second_order, taleb, bayes, porter, kahneman, munger, sun_tzu, feynman, popper, bias_checker
+
+Return ONLY a JSON object (no fences):
+{
+  "facts": [],
+  "assumptions": [],
+  "unknowns": [],
+  "problem_type": "startup|career|investment|product|hiring|strategy|personal|marketing|operations|negotiation",
+  "recommended_frameworks": [],
+  "extraction_confidence": 0
+}`;
+
+const CROSS_EXAM_SYSTEM = `You are the cross-examination engine. Frameworks challenge each other. Your job:
+1. ATTACKS: Find contradictions between frameworks. Have Bayes attack overconfident claims. Taleb attacks anything that ignores tail risk. Kahneman flags anything that reeks of bias.
+2. UPGRADES: Claims that survive attack get MORE weight.
+3. DOWNGRADES: Claims that crumble under scrutiny get LESS weight.
+4. CONSENSUS TALLY: Count framework support for each recommended action.
+5. MAJOR DISAGREEMENTS: Where do frameworks fundamentally conflict? This often contains the most valuable insight.
+
+Return ONLY a JSON object (no fences):
+{
+  "attacks": [{"attacker":"","target":"","attack":"","verdict":"upgraded|downgraded|neutral"}],
+  "upgraded_claims": [],
+  "downgraded_claims": [],
+  "consensus": [{"recommendation":"","support_count":0,"framework_names":[]}],
+  "major_disagreements": [{"framework_a":"","framework_b":"","disagreement":"","why_this_matters":""}],
+  "agreement_score": 0,
+  "conflict_score": 0,
+  "hidden_insight": ""
+}`;
+
+const RED_TEAM_SYSTEM = `You are a red team auditor. Assume the final recommendation FAILS. Attack it ruthlessly.
+
+Return ONLY a JSON object (no fences):
+{
+  "failure_modes": [{"mode":"","severity":"Critical|High|Medium|Low","warning_signal":"","mitigation":""}],
+  "early_warning_signals": [],
+  "risk_severity": [{"risk":"","severity":"Critical|High|Medium|Low","probability":"High|Medium|Low"}],
+  "mitigation_plan": [{"risk":"","action":"","owner":"","timeline":""}],
+  "kill_shot": "",
+  "survivability": "Yes|Conditional|No",
+  "survivability_condition": ""
+}`;
+
+const SYNTHESIS_SYSTEM = `You are the final decision synthesizer. You have: research evidence, reality extraction, framework analyses, cross-examination, and red team results.
+
+CRITICAL RULE: If evidence is insufficient for a reliable decision, set investigation_needed=true and return status="insufficient_information". Do NOT manufacture a confident recommendation when the evidence doesn't support one. Prefer uncertainty over false certainty.
+
+Confidence calibration — penalize for:
+- Many unknowns remaining
+- Framework disagreement (high conflict_score)
+- Missing critical data
+- Red team finding survivability=No
+
+Return ONLY a JSON object (no fences):
+{
+  "status": "ready|insufficient_information",
+  "recommendation": "",
+  "confidence": 0,
+  "confidence_reasoning": [],
+  "risk_level": "Low|Medium|High",
+  "why": [],
+  "top_risks": [],
+  "what_would_change_positive": [],
+  "what_would_change_negative": [],
+  "next_actions": [],
+  "missing_information": [],
+  "recommended_research": [],
+  "investigation_needed": false
+}`;
+
+// ─── PHASES ───────────────────────────────────────────────────────────────────
+const PHASES = [
+  { id: "research",  label: "Research",           icon: "🔎", color: "#22c55e"  },
+  { id: "reality",   label: "Reality Extraction", icon: "🔍", color: "#f59e0b"  },
+  { id: "analysis",  label: "Framework Analysis", icon: "⚙️", color: "#6366f1"  },
+  { id: "crossexam", label: "Cross-Examination",  icon: "⚔️", color: "#ec4899"  },
+  { id: "redteam",   label: "Red Team",           icon: "🛡️", color: "#ef4444"  },
+  { id: "synthesis", label: "Decision Synthesis", icon: "✦",  color: "#f1c40f"  },
+];
+
+// ─── CONFIDENCE BADGE ─────────────────────────────────────────────────────────
+function ConfidenceBadge({ value, small }) {
+  if (value == null) return null;
+  const color = confColor(value);
   return (
-    <div style={{ marginBottom: "12px" }}>
-      <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>{title}</div>
-      <ul style={{ margin: 0, paddingLeft: "16px", color: "#4a5568", fontSize: "13px", lineHeight: "1.5" }}>
-        {items.map((item, idx) => (
-          <li key={idx} style={{ marginBottom: "2px" }}>{item}</li>
-        ))}
-      </ul>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
+      <div style={{ fontSize: small ? "11px" : "13px", fontWeight: "700", color, letterSpacing: "0.06em" }}>
+        {confLabel(value)} {value}%
+      </div>
+      <div style={{ width: small ? "48px" : "60px", height: "3px", background: "#e2e8f0", borderRadius: "2px" }}>
+        <div style={{ height: "100%", width: `${value}%`, background: color, borderRadius: "2px", transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)" }} />
+      </div>
     </div>
   );
 }
 
+// ─── SEVERITY BADGE ───────────────────────────────────────────────────────────
+function SeverityBadge({ severity }) {
+  const map = { Critical: "#ef4444", High: "#f97316", Medium: "#f59e0b", Low: "#64748b" };
+  const c = map[severity] || "#64748b";
+  return (
+    <div style={{ fontSize: "11px", fontWeight: "700", color: c, background: `${c}18`, border: `1px solid ${c}35`, borderRadius: "4px", padding: "2px 8px", flexShrink: 0, whiteSpace: "nowrap" }}>
+      {severity}
+    </div>
+  );
+}
+
+// ─── MINI SECTION ─────────────────────────────────────────────────────────────
+function MiniSection({ title, items, color }) {
+  if (!items?.length) return null;
+  return (
+    <div style={{ background: "#f7fafc", borderRadius: "7px", padding: "8px 12px" }}>
+      <div style={{ fontSize: "11px", fontWeight: "600", color: "#4a5568", letterSpacing: "0.08em", marginBottom: "6px" }}>{title}</div>
+      {items.slice(0, 3).map((item, i) => (
+        <div key={i} style={{ fontSize: "14px", color, lineHeight: "1.6", marginBottom: "3px" }}>· {item}</div>
+      ))}
+    </div>
+  );
+}
+
+// ─── FRAMEWORK LIST ───────────────────────────────────────────────────────────
+function FrameworkList({ title, items, color }) {
+  if (!items?.length) return null;
+  return (
+    <div>
+      <div style={{ fontSize: "11px", fontWeight: "600", color: "#4a5568", letterSpacing: "0.08em", marginBottom: "5px" }}>{title}</div>
+      {items.slice(0, 4).map((item, i) => (
+        <div key={i} style={{ fontSize: "14px", color, lineHeight: "1.6", marginBottom: "3px" }}>· {item}</div>
+      ))}
+    </div>
+  );
+}
+
+// ─── LOADING SKELETON ─────────────────────────────────────────────────────────
 function LoadingSkeleton({ color, label }) {
   return (
-    <div style={{ padding: "20px", background: "#f7fafc", borderRadius: "8px", border: "1px dashed #e2e8f0", marginBottom: "15px", display: "flex", alignItems: "center", gap: "10px" }}>
-      <div className="spinner" style={{ width: "16px", height: "16px", borderRadius: "50%", border: `2px solid ${color}`, borderTopColor: "transparent", animation: "spin 1s linear infinite" }} />
-      <span style={{ fontSize: "13px", color: "#4a5568", fontFamily: "monospace" }}>{label}</span>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", color, fontSize: "14px" }}>
+        <div style={{ width: "12px", height: "12px", border: `2px solid ${color}33`, borderTop: `2px solid ${color}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        {label}
+      </div>
+      {[75, 55, 65, 45, 60].map((w, i) => (
+        <div key={i} style={{ height: "12px", width: `${w}%`, background: "#edf2f7", borderRadius: "4px", animation: "pulse 1.5s ease infinite", animationDelay: `${i * 0.1}s` }} />
+      ))}
+    </div>
+  );
+}
+
+// ─── SPINNER ──────────────────────────────────────────────────────────────────
+function Spinner({ color }) {
+  return (
+    <div style={{ width: "10px", height: "10px", border: `2px solid ${color}44`, borderTop: `2px solid ${color}`, borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
+  );
+}
+
+// ─── JOURNAL VIEW ─────────────────────────────────────────────────────────────
+function JournalView({ journal, scores, onBack, onUpdateOutcome }) {
+  const [editingId, setEditingId] = useState(null);
+  const [editOutcome, setEditOutcome] = useState("");
+  const [editAccuracy, setEditAccuracy] = useState("success");
+
+  const totalEntries = journal.length;
+  const withOutcomes = journal.filter(e => e.accuracy != null).length;
+  const successCount = journal.filter(e => e.accuracy === true).length;
+  const calibrationScore = withOutcomes > 0 ? Math.round((successCount / withOutcomes) * 100) : null;
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#f0f2f5", color: "#1a1a2e", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>
+      <div style={{ borderBottom: "1px solid #e2e8f0", padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", background: "#ffffff" }}>
+        <button onClick={onBack} style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "5px 14px", cursor: "pointer", color: "#4a5568", fontSize: "13px", fontFamily: "'Inter',sans-serif" }}>← Back</button>
+        <div style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a2e" }}>📓 Decision Journal</div>
+        <div style={{ fontSize: "12px", color: "#718096" }}>{totalEntries} entries</div>
+        {calibrationScore != null && (
+          <div style={{ marginLeft: "auto", fontSize: "12px", background: confColor(calibrationScore) + "15", border: `1px solid ${confColor(calibrationScore)}35`, borderRadius: "5px", padding: "3px 10px", color: confColor(calibrationScore), fontWeight: "700" }}>
+            Calibration {calibrationScore}% ({withOutcomes} tracked)
+          </div>
+        )}
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", display: "grid", gridTemplateColumns: "1fr 260px", gap: "16px", alignItems: "start" }}>
+        <div>
+          {journal.length === 0 ? (
+            <div style={{ textAlign: "center", color: "#718096", fontSize: "15px", padding: "60px 20px" }}>No decisions recorded yet.</div>
+          ) : journal.map(entry => (
+            <div key={entry.id} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px 18px", marginBottom: "10px" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "8px" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: "12px", color: "#718096", marginBottom: "3px" }}>
+                    {new Date(entry.date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                    {" · "}{entry.problem_type || "strategy"}
+                  </div>
+                  <div style={{ fontSize: "13px", color: "#4a5568", fontStyle: "italic", marginBottom: "6px" }}>"{entry.question}"</div>
+                  <div style={{ fontSize: "15px", fontWeight: "600", color: "#1a1a2e", lineHeight: "1.4" }}>{entry.prediction}</div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
+                  <ConfidenceBadge value={entry.confidence} small />
+                  {entry.risk_level && (
+                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "4px",
+                      background: entry.risk_level === "High" ? "#ef444415" : entry.risk_level === "Medium" ? "#f59e0b15" : "#22c55e15",
+                      color: entry.risk_level === "High" ? "#ef4444" : entry.risk_level === "Medium" ? "#f59e0b" : "#22c55e"
+                    }}>{entry.risk_level} RISK</span>
+                  )}
+                  {entry.accuracy != null && (
+                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "4px",
+                      background: entry.accuracy === true ? "#22c55e15" : entry.accuracy === "partial" ? "#f59e0b15" : "#ef444415",
+                      color: entry.accuracy === true ? "#22c55e" : entry.accuracy === "partial" ? "#f59e0b" : "#ef4444"
+                    }}>
+                      {entry.accuracy === true ? "✓ Correct" : entry.accuracy === "partial" ? "~ Partial" : "✕ Incorrect"}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {entry.reasoning && (
+                <div style={{ fontSize: "12px", color: "#718096", lineHeight: "1.6", marginBottom: "8px" }}>
+                  {entry.reasoning.slice(0, 180)}{entry.reasoning.length > 180 ? "…" : ""}
+                </div>
+              )}
+
+              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "8px", marginTop: "4px" }}>
+                <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "5px" }}>OUTCOME</div>
+                {editingId === entry.id ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <input value={editOutcome} onChange={e => setEditOutcome(e.target.value)} placeholder="What actually happened?" style={{ background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "6px 10px", color: "#1a1a2e", fontSize: "13px", fontFamily: "'Inter',sans-serif" }} />
+                    <div style={{ display: "flex", gap: "5px" }}>
+                      {["success","partial","failure"].map(v => (
+                        <button key={v} onClick={() => setEditAccuracy(v)} style={{ flex: 1, background: editAccuracy === v ? (v === "success" ? "#22c55e20" : v === "partial" ? "#f59e0b20" : "#ef444420") : "#f7fafc", border: `1px solid ${editAccuracy === v ? (v === "success" ? "#22c55e50" : v === "partial" ? "#f59e0b50" : "#ef444450") : "#e2e8f0"}`, borderRadius: "5px", padding: "4px 8px", cursor: "pointer", color: editAccuracy === v ? (v === "success" ? "#22c55e" : v === "partial" ? "#f59e0b" : "#ef4444") : "#4a5568", fontSize: "12px", fontFamily: "'Inter',sans-serif", textTransform: "capitalize" }}>{v}</button>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", gap: "5px" }}>
+                      <button onClick={() => { onUpdateOutcome(entry.id, editOutcome, editAccuracy); setEditingId(null); }} style={{ background: "#6366f120", border: "1px solid #6366f140", borderRadius: "5px", padding: "5px 14px", cursor: "pointer", color: "#6366f1", fontSize: "12px", fontFamily: "'Inter',sans-serif" }}>Save</button>
+                      <button onClick={() => setEditingId(null)} style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "5px 12px", cursor: "pointer", color: "#718096", fontSize: "12px", fontFamily: "'Inter',sans-serif" }}>✕</button>
+                    </div>
+                  </div>
+                ) : entry.outcome ? (
+                  <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                    <div style={{ fontSize: "13px", color: "#4a5568", flex: 1 }}>{entry.outcome}</div>
+                    <button onClick={() => { setEditingId(entry.id); setEditOutcome(entry.outcome); setEditAccuracy(entry.accuracy === true ? "success" : entry.accuracy === "partial" ? "partial" : "failure"); }} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#718096", fontSize: "12px" }}>✏</button>
+                  </div>
+                ) : (
+                  <button onClick={() => { setEditingId(entry.id); setEditOutcome(""); setEditAccuracy("success"); }} style={{ background: "transparent", border: "1px dashed #e2e8f0", borderRadius: "5px", padding: "5px 12px", cursor: "pointer", color: "#718096", fontSize: "12px", fontFamily: "'Inter',sans-serif" }}>+ Record outcome</button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ position: "sticky", top: 0 }}>
+          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "12px 14px" }}>
+            <div style={{ fontSize: "12px", color: "#4a5568", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "10px" }}>FRAMEWORK PERFORMANCE</div>
+            {ALL_FRAMEWORKS.map(fw => {
+              const s = scores[fw.id];
+              if (!s || s.uses === 0) return null;
+              const rate = fwSuccessRate(s);
+              const avgConf = fwAvgConf(s);
+              return (
+                <div key={fw.id} style={{ marginBottom: "8px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
+                    <span style={{ fontSize: "12px", color: "#4a5568" }}>{fw.icon} {fw.label}</span>
+                    <span style={{ fontSize: "11px", fontFamily: "'JetBrains Mono', monospace", color: rate != null ? confColor(rate) : "#718096" }}>
+                      {rate != null ? `${rate}%` : "—"} · {s.uses}✗
+                    </span>
+                  </div>
+                  {rate != null && (
+                    <div style={{ height: "3px", background: "#edf2f7", borderRadius: "2px" }}>
+                      <div style={{ height: "100%", width: `${rate}%`, background: confColor(rate), borderRadius: "2px", transition: "width 0.5s ease" }} />
+                    </div>
+                  )}
+                  {avgConf != null && <div style={{ fontSize: "11px", color: "#a0aec0", marginTop: "1px" }}>Avg conf: {avgConf}%</div>}
+                </div>
+              );
+            })}
+            {Object.keys(scores).length === 0 && <div style={{ fontSize: "12px", color: "#a0aec0" }}>No framework data yet. Complete analyses and record outcomes to build scorecards.</div>}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function ThinkingOS() {
-  const [question, setQuestion] = useState("");
-  const [hasRun, setHasRun] = useState(false);
-  const [selectedFwIds, setSelectedFwIds] = useState([]);
-  const [copied, setCopied] = useState(false);
-  
-  // App Phase States matching your original layout keys
-  const [phaseData, setPhaseData] = useState({
-    research: null,
-    reality: null,
-    crossexam: null,
-    redteam: null,
-    synthesis: null
-  });
+export default function ThinkingOSv2() {
+  const [view, setView]                       = useState("main");
+  const [question, setQuestion]               = useState("");
+  const [manualProblemType, setManualType]    = useState(null);
+  const [activePhase, setActivePhase]         = useState(null);
+  const [completedPhases, setCompletedPhases] = useState({});
+  const [phaseData, setPhaseData]             = useState({});
+  const [activeFrameworkId, setActiveFwId]    = useState(null);
+  const [selectedFwIds, setSelectedFwIds]     = useState([]);
+  const [fwResults, setFwResults]             = useState({});
+  const [fwLoading, setFwLoading]             = useState({});
+  const [isRunning, setIsRunning]             = useState(false);
+  const [hasRun, setHasRun]                   = useState(false);
+  const [contextStakes, setContextStakes]     = useState("");
+  const [contextTimeline, setContextTimeline] = useState("");
+  const [contextSituation, setContextSituation] = useState("");
+  const [contextAlternatives, setContextAlternatives] = useState("");
+  const [journal, setJournal]                 = useState(loadJournal);
+  const [scores, setScores]                   = useState(loadScores);
+  const [showJournalForm, setShowJournalForm] = useState(false);
+  const [journalOutcome, setJournalOutcome]   = useState("");
+  const [pendingEntry, setPendingEntry]       = useState(null);
+  const textRef    = useRef(null);
+  const abortRef   = useRef(false);
+  const sectionRefs = useRef({});  // keyed by phase id
 
-  const [frameworkResults, setFrameworkResults] = useState([]);
-  const [activeFwId, setActiveFwId] = useState(null);
+  useEffect(() => {
+    const s = document.createElement("style");
+    s.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #f0f2f5; }
+      .light-theme { background: #f0f2f5 !important; color: #1a1a2e !important; }
+      .light-theme .card { background: #ffffff !important; border-color: #e2e8f0 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important; }
+      .light-theme .card-title { color: #1a1a2e !important; }
+      .light-theme .card-text { color: #2d3748 !important; }
+      body, .light-theme, .light-theme * { font-size: 16px !important; line-height: 1.7 !important; }
+      .light-theme h1 { font-size: 28px !important; }
+      .light-theme h2 { font-size: 22px !important; }
+      .light-theme h3 { font-size: 18px !important; }
+      .light-theme .small-text { font-size: 14px !important; }
+      @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+      @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+      @keyframes spin { to{transform:rotate(360deg)} }
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: #e2e8f0; }
+      ::-webkit-scrollbar-thumb { background: #a0aec0; border-radius: 4px; }
+      textarea:focus, input:focus { outline: none; }
+      textarea { caret-color: #6366f1; }
+      .fw-pill { transition: all 0.15s ease; cursor: pointer; }
+      .fw-pill:hover { transform: scale(1.02); }
+    `;
+    document.head.appendChild(s);
+    document.body.classList.add('light-theme');
+    return () => {
+      document.head.removeChild(s);
+      document.body.classList.remove('light-theme');
+    };
+  }, []);
 
-  const activeFwResult = frameworkResults.find(f => f.id === activeFwId);
-  const activeFw = frameworkResults.find(f => f.id === activeFwId);
+  const reset = useCallback(() => {
+    abortRef.current = true;  // signal any running pipeline to stop
+    setActivePhase(null); setCompletedPhases({}); setPhaseData({});
+    setActiveFwId(null); setSelectedFwIds([]); setFwResults({}); setFwLoading({});
+    setIsRunning(false); setHasRun(false); setManualType(null);
+    setShowJournalForm(false); setPendingEntry(null); setJournalOutcome("");
+    // NOTE: intentionally do NOT clear question/context fields so the user
+    // can edit and re-run without retyping.
+  }, []);
 
-  const handleCopyMarkdown = () => {
-    const md = exportMarkdown(question, phaseData, frameworkResults, selectedFwIds);
-    navigator.clipboard.writeText(md);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const abort = useCallback(() => {
+    abortRef.current = true;
+    setIsRunning(false);
+    setActivePhase(null);
+  }, []);
 
-  // Mock Trigger to populate data structures safely
-  const runAnalysis = () => {
-    if (!question.trim()) return;
+  const runAnalysis = useCallback(async () => {
+    if (!question.trim() || isRunning) return;
+    abortRef.current = false;
+    // reset clears analysis state but preserves input fields
+    setActivePhase(null); setCompletedPhases({}); setPhaseData({});
+    setActiveFwId(null); setSelectedFwIds([]); setFwResults({}); setFwLoading({});
+    setShowJournalForm(false); setPendingEntry(null); setJournalOutcome("");
+    setManualType(prev => prev); // keep manual type selection
+    setIsRunning(true);
     setHasRun(true);
-    
-    // Simulating phase content injection using exact structure your components expect
-    setPhaseData({
-      research: { output: "Initial factual collection and base data analysis compiled successfully." },
-      reality: { output: "Ground truths calibrated. Checked core assertions against verifiable limits." },
-      crossexam: { output: "Friction analysis complete. Identified points of structural vulnerability." },
-      redteam: { output: "Adversarial simulation complete. Mapped worst-case degradation bounds." },
-      synthesis: {
-        recommendation: "PROCEED WITH OUT-OF-BAND DEPLOYMENT",
-        confidence: 85,
-        risk_level: "MEDIUM",
-        why: ["Bypasses cyclic dependencies completely.", "Minimizes latency overhead on operational loops."],
-        top_risks: ["Requires independent power hardware gating."],
-        next_actions: ["Isolate telemetry hooks.", "Run integration sanity sweeps."],
-        confidence_reasoning: "Mitigation matrices account for 92% of historical failure markers."
+    const q = [
+      question.trim(),
+      contextStakes    ? `Stakes/Risk: ${contextStakes.trim()}`           : "",
+      contextTimeline  ? `Timeline: ${contextTimeline.trim()}`            : "",
+      contextSituation ? `My situation: ${contextSituation.trim()}`       : "",
+      contextAlternatives ? `Alternatives: ${contextAlternatives.trim()}` : "",
+    ].filter(Boolean).join("\n");
+    const col = {};
+
+    setActivePhase("research");
+    let researchData;
+    try {
+      const raw = await callClaude(
+        RESEARCH_SYSTEM,
+        `Question / Problem: "${q}"\n\nSearch for relevant evidence now.`,
+        1400,
+        ENABLE_WEB_SEARCH
+      );
+      if (abortRef.current) return;
+      researchData = safeJSON(raw, {
+        facts: [], sources: [], assumptions: [], unknowns: [],
+        research_confidence: 30, research_summary: "Research incomplete."
+      });
+    } catch (e) {
+      if (abortRef.current) return;
+      researchData = { facts: [], sources: [], assumptions: [], unknowns: [], research_confidence: 20, research_summary: `Research error: ${e.message}` };
+    }
+    col.research = researchData;
+    setPhaseData(p => ({ ...p, research: researchData }));
+    setCompletedPhases(c => ({ ...c, research: true }));
+
+    await sleep(300);
+    if (abortRef.current) return;
+
+    setActivePhase("reality");
+    let realityData;
+    try {
+      const raw = await callClaude(
+        REALITY_SYSTEM,
+        `Question: "${q}"\n\nResearch data:\n${JSON.stringify(researchData)}\n\nExtract reality now.`
+      );
+      if (abortRef.current) return;
+      realityData = safeJSON(raw, {
+        facts: researchData.facts, assumptions: researchData.assumptions,
+        unknowns: researchData.unknowns, problem_type: "strategy",
+        recommended_frameworks: ["first_principles","taleb","bayes","inversion","kahneman"],
+        extraction_confidence: 40
+      });
+    } catch (e) {
+      if (abortRef.current) return;
+      realityData = { facts: [], assumptions: [], unknowns: [], problem_type: "strategy", recommended_frameworks: ["first_principles","taleb","bayes","inversion","kahneman"], extraction_confidence: 35 };
+    }
+    if (manualProblemType) realityData.problem_type = manualProblemType;
+    if (!realityData.recommended_frameworks?.length) {
+      realityData.recommended_frameworks = ALL_FRAMEWORKS.filter(f => f.relevantFor.includes(realityData.problem_type)).slice(0, 5).map(f => f.id);
+    }
+    col.reality = realityData;
+    setPhaseData(p => ({ ...p, reality: realityData }));
+    setCompletedPhases(c => ({ ...c, reality: true }));
+
+    const fws = ALL_FRAMEWORKS.filter(f => realityData.recommended_frameworks.includes(f.id));
+    setSelectedFwIds(fws.map(f => f.id));
+    if (fws.length > 0) setActiveFwId(fws[0].id);
+
+    setActivePhase("analysis");
+    const loadInit = {};
+    fws.forEach(f => { loadInit[f.id] = true; });
+    setFwLoading(loadInit);
+
+    // ── PARALLEL FRAMEWORK EXECUTION ─────────────────────────────────────────
+    // All frameworks fire simultaneously; UI updates as each one lands.
+    const fwRes = {};
+    const fwPrompt = (fw) => callClaude(
+      fw.prompt,
+      `Problem: "${q}"\n\nVERIFIED FACTS (from research — treat as factual):\n${JSON.stringify(researchData.facts)}\n\nSources: ${JSON.stringify(researchData.sources)}\n\nASSUMPTIONS (not verified — label clearly):\n${JSON.stringify(realityData.assumptions)}\n\nUNKNOWNS (missing info — lower confidence accordingly):\n${JSON.stringify(realityData.unknowns)}\n\nApply your framework now.`
+    );
+    await Promise.all(fws.map(async (fw) => {
+      try {
+        const raw = await fwPrompt(fw);
+        if (abortRef.current) return;
+        fwRes[fw.id] = safeJSON(raw, { key_claim: raw.slice(0, 200), confidence: 40, evidence: [], counterarguments: [], unknowns: [], recommendation: "" });
+      } catch (e) {
+        fwRes[fw.id] = { key_claim: `Error: ${e.message}`, confidence: 0, evidence: [], counterarguments: [], unknowns: [], recommendation: "" };
       }
+      if (!abortRef.current) {
+        setFwResults(prev => ({ ...prev, [fw.id]: fwRes[fw.id] }));
+        setFwLoading(prev => ({ ...prev, [fw.id]: false }));
+      }
+    }));
+    // ─────────────────────────────────────────────────────────────────────────
+
+    if (abortRef.current) return;
+    col.frameworks = fwRes;
+    setCompletedPhases(c => ({ ...c, analysis: true }));
+
+    const avgFwConf = Object.values(fwRes).reduce((sum, r) => sum + (r?.confidence || 0), 0) / (Object.keys(fwRes).length || 1);
+    const updatedScores = recordFrameworkUse(scores, fws.map(f => f.id), avgFwConf);
+    setScores(updatedScores);
+    saveScores(updatedScores);
+
+    await sleep(300);
+    if (abortRef.current) return;
+
+    setActivePhase("crossexam");
+    let crossData;
+    try {
+      const summary = fws.map(fw => {
+        const r = fwRes[fw.id];
+        return `${fw.label}: claim="${r?.key_claim || ""}" conf=${r?.confidence || 0} rec="${r?.recommendation || ""}"`;
+      }).join("\n");
+      const raw = await callClaude(CROSS_EXAM_SYSTEM, `Problem: "${q}"\n\nFramework results:\n${summary}\n\nRun cross-examination now.`);
+      if (abortRef.current) return;
+      crossData = safeJSON(raw, { attacks: [], upgraded_claims: [], downgraded_claims: [], consensus: [], major_disagreements: [], agreement_score: 50, conflict_score: 50, hidden_insight: "" });
+    } catch (e) {
+      if (abortRef.current) return;
+      crossData = { attacks: [], upgraded_claims: [], downgraded_claims: [], consensus: [], major_disagreements: [], agreement_score: 50, conflict_score: 50, hidden_insight: "" };
+    }
+    col.crossexam = crossData;
+    setPhaseData(p => ({ ...p, crossexam: crossData }));
+    setCompletedPhases(c => ({ ...c, crossexam: true }));
+
+    await sleep(300);
+    if (abortRef.current) return;
+
+    setActivePhase("redteam");
+    let redData;
+    try {
+      const topRec = crossData?.consensus?.[0]?.recommendation || Object.values(fwRes)[0]?.recommendation || "proceed with the plan";
+      const raw = await callClaude(RED_TEAM_SYSTEM, `Problem: "${q}"\nTop Recommendation: "${topRec}"\n\nRed team this now.`);
+      if (abortRef.current) return;
+      redData = safeJSON(raw, { failure_modes: [], early_warning_signals: [], risk_severity: [], mitigation_plan: [], kill_shot: "Unknown", survivability: "Conditional", survivability_condition: "" });
+    } catch (e) {
+      if (abortRef.current) return;
+      redData = { failure_modes: [], early_warning_signals: [], risk_severity: [], mitigation_plan: [], kill_shot: "", survivability: "Conditional", survivability_condition: "" };
+    }
+    col.redteam = redData;
+    setPhaseData(p => ({ ...p, redteam: redData }));
+    setCompletedPhases(c => ({ ...c, redteam: true }));
+
+    await sleep(300);
+    if (abortRef.current) return;
+
+    setActivePhase("synthesis");
+    let synthData;
+    try {
+      const payload = { question: q, research: col.research, reality: col.reality, frameworks: Object.entries(fwRes).map(([id, r]) => ({ framework: id, ...r })), crossexam: crossData, redteam: redData };
+      const raw = await callClaude(SYNTHESIS_SYSTEM, `Full analysis:\n${JSON.stringify(payload)}\n\nGenerate final decision output now.`, 1400);
+      if (abortRef.current) return;
+      synthData = safeJSON(raw, { status: "ready", recommendation: "Analysis failed — retry.", confidence: 0, confidence_reasoning: [], risk_level: "High", why: [], top_risks: [], what_would_change_positive: [], what_would_change_negative: [], next_actions: [], missing_information: [], recommended_research: [], investigation_needed: true });
+    } catch (e) {
+      if (abortRef.current) return;
+      synthData = { status: "ready", recommendation: "Synthesis error.", confidence: 0, confidence_reasoning: [], risk_level: "High", why: [], top_risks: [], what_would_change_positive: [], what_would_change_negative: [], next_actions: [], missing_information: [], recommended_research: [], investigation_needed: true };
+    }
+    col.synthesis = synthData;
+    setPhaseData(p => ({ ...p, synthesis: synthData }));
+    setCompletedPhases(c => ({ ...c, synthesis: true }));
+
+    setPendingEntry({
+      id: Date.now(),
+      date: new Date().toISOString(),
+      question: q,
+      prediction: synthData?.recommendation || "",
+      confidence: synthData?.confidence || 0,
+      risk_level: synthData?.risk_level || "Unknown",
+      problem_type: realityData.problem_type,
+      reasoning: synthData?.why?.join("; ") || "",
+      framework_ids: fws.map(f => f.id),
+      outcome: null,
+      accuracy: null,
     });
 
-    setFrameworkResults([
-      { id: "evidence_core", name: "Empirical Vector Base", key_claim: "System baseline verification parameters match expected thresholds.", evidence: ["Telemetry Log Alpha verified", "Interrupt timings constant"], counterarguments: ["Latency burst anomaly at 300% load"], unknowns: ["Long-term cold state drift values"], accent: "#2b6cb0" }
-    ]);
-    setActiveFwId("evidence_core");
-  };
+    setActivePhase("synthesis");
+    setIsRunning(false);
+  }, [question, isRunning, manualProblemType, scores, reset, contextStakes, contextTimeline, contextSituation, contextAlternatives]);
+
+  const saveToJournal = useCallback(() => {
+    if (!pendingEntry) return;
+    const entry = { ...pendingEntry, outcome: journalOutcome };
+    const updated = [entry, ...journal].slice(0, 50);
+    setJournal(updated);
+    saveJournal(updated);
+    setShowJournalForm(false);
+    setJournalOutcome("");
+  }, [pendingEntry, journalOutcome, journal]);
+
+  const updateOutcome = useCallback((id, outcome, accuracyStr) => {
+    const accuracy = accuracyStr === "success" ? true : accuracyStr === "partial" ? "partial" : false;
+    const updated = journal.map(e => e.id === id ? { ...e, outcome, accuracy } : e);
+    setJournal(updated);
+    saveJournal(updated);
+    const entry = journal.find(e => e.id === id);
+    if (entry?.framework_ids) {
+      const updatedScores = recordFrameworkOutcome(scores, entry.framework_ids, accuracy === true);
+      setScores(updatedScores);
+      saveScores(updatedScores);
+    }
+  }, [journal, scores]);
+
+  const research  = phaseData.research;
+  const reality   = phaseData.reality;
+  const crossexam = phaseData.crossexam;
+  const redteam   = phaseData.redteam;
+  const synthesis = phaseData.synthesis;
+
+  const activeFw        = ALL_FRAMEWORKS.find(f => f.id === activeFrameworkId);
+  const activeFwResult  = fwResults[activeFrameworkId];
+  const activeFwLoading = fwLoading[activeFrameworkId];
+  const consensusItems  = crossexam?.consensus || [];
+  const maxSupport      = Math.max(...consensusItems.map(c => c.support_count), 1);
+  const insufficientInfo = synthesis?.status === "insufficient_information" || synthesis?.investigation_needed;
+
+  if (view === "journal") {
+    return <JournalView journal={journal} scores={scores} onBack={() => setView("main")} onUpdateOutcome={updateOutcome} />;
+  }
 
   return (
-    <div style={{ maxWidth: "1100px", margin: "40px auto", padding: "0 20px", fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-      
-      {/* Upper Action Panel */}
-      <div style={{ display: "flex", justifyContent: "between", alignItems: "center", marginBottom: "24px", borderBottom: "1px solid #e2e8f0", paddingBottom: "16px" }}>
+    <div style={{ minHeight: "100vh", background: "#f0f2f5", color: "#1a1a2e", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ borderBottom: "1px solid #e2e8f0", padding: "10px 18px", display: "flex", alignItems: "center", gap: "12px", background: "#ffffff", flexShrink: 0 }}>
+        <div style={{ width: "32px", height: "32px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", flexShrink: 0 }}>🧩</div>
         <div>
-          <h1 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "#1a202c" }}>Thinking OS</h1>
-          <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#718096" }}>Decision Analysis Workspace</p>
+          <div style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a2e", letterSpacing: "-0.02em" }}>Thinking OS <span style={{ color: "#6366f1", fontSize: "12px", fontFamily: "'JetBrains Mono', monospace" }}>v2</span></div>
+          <div style={{ fontSize: "11px", color: "#718096", letterSpacing: "0.06em" }}>DECISION INTELLIGENCE · EVIDENCE-FIRST</div>
         </div>
-        {phaseData.synthesis && (
-          <button 
-            onClick={handleCopyMarkdown}
-            style={{ padding: "8px 14px", background: copied ? "#2f855a" : "#1a202c", color: "#fff", border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: "600", cursor: "pointer", transition: "background 0.2s" }}
-          >
-            {copied ? "✓ COPIED MARKDOWN" : "EXPORT ANALYSIS (.MD)"}
-          </button>
-        )}
-      </div>
 
-      {/* Main Form Box */}
-      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "20px", marginBottom: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-        <div style={{ marginBottom: "16px" }}>
-          <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "#4a5568", marginBottom: "6px" }}>ENTER INQUIRY OR ARCHITECTURAL QUESTION</label>
-          <input 
-            type="text" 
-            value={question} 
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="What complex architectural challenge are we debugging today?" 
-            style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e0", borderRadius: "6px", fontSize: "14px", boxSizing: "border-box" }}
-          />
-        </div>
-        <button 
-          onClick={runAnalysis}
-          style={{ padding: "10px 20px", background: "#3182ce", color: "#fff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}
-        >
-          Initialize Reasoning Systems
-        </button>
-      </div>
-
-      {/* Workspace Display grids */}
-      {hasRun && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "20px" }}>
-          
-          {/* Active Framework Panel output */}
-          {activeFwResult && (
-            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-              <div style={{ borderBottom: "1px solid #edf2f7", paddingBottom: "12px", marginBottom: "16px" }}>
-                <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em" }}>ACTIVE ALIGNMENT FRAMEWORK</div>
-                <h3 style={{ margin: "4px 0 0 0", color: "#2d3748", fontSize: "16px" }}>{activeFwResult.name}</h3>
-              </div>
-              
-              {activeFwResult.key_claim && (
-                <div style={{ background: "#f7fafc", padding: "12px", borderRadius: "6px", marginBottom: "16px", borderLeft: `4px solid ${activeFw.accent || '#3182ce'}` }}>
-                  <div style={{ fontSize: "15px", color: "#1a1a2e", lineHeight: "1.6", fontWeight: "500" }}>{activeFwResult.key_claim}</div>
+        {hasRun && (
+          <div style={{ display: "flex", alignItems: "center", gap: "3px", marginLeft: "14px" }}>
+            {PHASES.map((ph, i) => (
+              <div key={ph.id} style={{ display: "flex", alignItems: "center", gap: "3px" }}>
+                <div style={{
+                  fontSize: "12px", padding: "2px 10px", borderRadius: "4px", fontWeight: "600", whiteSpace: "nowrap",
+                  background: completedPhases[ph.id] ? `${ph.color}18` : activePhase === ph.id ? `${ph.color}12` : "#f7fafc",
+                  border: `1px solid ${completedPhases[ph.id] ? ph.color : activePhase === ph.id ? ph.color + "80" : "#e2e8f0"}`,
+                  color: completedPhases[ph.id] ? ph.color : activePhase === ph.id ? ph.color : "#718096",
+                  display: "flex", alignItems: "center", gap: "4px"
+                }}>
+                  {completedPhases[ph.id] ? "✓" : activePhase === ph.id ? <Spinner color={ph.color} /> : ph.icon}
+                  <span style={{ display: "inline" }}>{ph.label}</span>
                 </div>
-              )}
+                {i < PHASES.length - 1 && <div style={{ width: "6px", height: "1px", background: "#e2e8f0" }} />}
+              </div>
+            ))}
+          </div>
+        )}
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                <FrameworkList title="EVIDENCE" items={activeFwResult.evidence} color="#2b6cb0" />
-                <FrameworkList title="COUNTERARGUMENTS" items={activeFwResult.counterarguments} color="#c53030" />
-                <FrameworkList title="UNKNOWNS" items={activeFwResult.unknowns} color="#c05621" />
-                {activeFwResult.recommendation && (
-                  <div style={{ gridColumn: "1 / -1", marginTop: "10px" }}>
-                    <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>RECOMMENDATION</div>
-                    <div style={{ fontSize: "14px", color: activeFw.accent, lineHeight: "1.6", fontWeight: "500" }}>{activeFwResult.recommendation}</div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: "6px", alignItems: "center" }}>
+          {isRunning && (
+            <button onClick={abort} style={{ fontSize: "12px", background: "#ef444412", border: "1px solid #ef444435", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#ef4444", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>⏹ Cancel</button>
+          )}
+          {hasRun && !isRunning && synthesis && (
+            <button onClick={() => exportMarkdown(question, phaseData, fwResults, selectedFwIds)} style={{ fontSize: "12px", background: "#6366f112", border: "1px solid #6366f130", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#6366f1", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>↓ Export MD</button>
+          )}
+          {hasRun && pendingEntry && !showJournalForm && (
+            <button onClick={() => setShowJournalForm(true)} style={{ fontSize: "12px", background: "#f1c40f12", border: "1px solid #f1c40f30", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#b7791f", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>+ Journal</button>
+          )}
+          <button onClick={() => setView("journal")} style={{ fontSize: "12px", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#4a5568", fontFamily: "'Inter',sans-serif" }}>📓 {journal.length}</button>
+          {hasRun && <button onClick={reset} style={{ fontSize: "12px", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#718096", fontFamily: "'Inter',sans-serif" }}>↺ Reset</button>}
+        </div>
+      </div>
+
+      {!hasRun && (
+        <div style={{ padding: "30px 20px 0", flexShrink: 0 }}>
+          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "18px 20px" }}>
+            <div style={{ fontSize: "13px", color: "#4a5568", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "10px" }}>QUESTION OR DECISION</div>
+            <textarea
+              ref={textRef}
+              value={question}
+              onChange={e => setQuestion(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) runAnalysis(); }}
+              placeholder="Describe the problem, decision, or question you need to think through…"
+              rows={3}
+              style={{ width: "100%", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "10px 14px", color: "#1a1a2e", fontSize: "16px", fontFamily: "'Inter', sans-serif", resize: "none", lineHeight: "1.65" }}
+            />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: "8px" }}>
+              <input
+                value={contextStakes}
+                onChange={e => setContextStakes(e.target.value)}
+                placeholder="Stakes / what's at risk (e.g. $50k, 2 years, my career)"
+                style={{ background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "7px 12px", color: "#1a1a2e", fontSize: "13px", fontFamily: "'Inter', sans-serif" }}
+              />
+              <input
+                value={contextTimeline}
+                onChange={e => setContextTimeline(e.target.value)}
+                placeholder="Timeline / urgency (e.g. decide in 2 weeks)"
+                style={{ background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "7px 12px", color: "#1a1a2e", fontSize: "13px", fontFamily: "'Inter', sans-serif" }}
+              />
+              <input
+                value={contextSituation}
+                onChange={e => setContextSituation(e.target.value)}
+                placeholder="Your current situation (e.g. 2 yrs exp, $30k savings, 1 customer)"
+                style={{ background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "7px 12px", color: "#1a1a2e", fontSize: "13px", fontFamily: "'Inter', sans-serif" }}
+              />
+              <input
+                value={contextAlternatives}
+                onChange={e => setContextAlternatives(e.target.value)}
+                placeholder="Alternatives you're considering (optional)"
+                style={{ background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "7px 12px", color: "#1a1a2e", fontSize: "13px", fontFamily: "'Inter', sans-serif" }}
+              />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "12px", flexWrap: "wrap", gap: "8px" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
+                <span style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>TYPE (optional)</span>
+                {PROBLEM_TYPES.map(pt => (
+                  <button key={pt.id} onClick={() => setManualType(manualProblemType === pt.id ? null : pt.id)} style={{
+                    padding: "3px 10px", borderRadius: "4px",
+                    border: `1px solid ${manualProblemType === pt.id ? "#6366f1" : "#e2e8f0"}`,
+                    background: manualProblemType === pt.id ? "#6366f118" : "transparent",
+                    color: manualProblemType === pt.id ? "#6366f1" : "#4a5568",
+                    fontSize: "12px", fontFamily: "'Inter',sans-serif", cursor: "pointer"
+                  }}>{pt.icon} {pt.label}</button>
+                ))}
+              </div>
+              <button onClick={runAnalysis} disabled={!question.trim()} style={{
+                background: question.trim() ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "#edf2f7",
+                border: "none", borderRadius: "8px", padding: "10px 24px",
+                color: question.trim() ? "#fff" : "#a0aec0", fontSize: "14px", fontWeight: "600",
+                cursor: question.trim() ? "pointer" : "not-allowed", fontFamily: "'Inter',sans-serif", whiteSpace: "nowrap"
+              }}>Analyze →</button>
+            </div>
+            <div style={{ fontSize: "12px", color: "#a0aec0", marginTop: "8px" }}>⌘+Enter to run · Web search: {ENABLE_WEB_SEARCH ? "✅ ON" : "❌ OFF"} · Auto-selects frameworks</div>
+          </div>
+
+          <div style={{ padding: "40px 0", textAlign: "center" }}>
+            <div style={{ fontSize: "36px", marginBottom: "12px" }}>🧩</div>
+            <div style={{ color: "#718096", fontSize: "15px", maxWidth: "480px", margin: "0 auto", lineHeight: "1.8" }}>
+              Research → Reality Extraction → Framework Analysis → Cross-Examination → Red Team → Decision Synthesis
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", justifyContent: "center", marginTop: "16px", maxWidth: "520px", margin: "16px auto 0" }}>
+              {ALL_FRAMEWORKS.map(f => (
+                <div key={f.id} style={{ padding: "4px 12px", background: `${f.color}10`, border: `1px solid ${f.color}22`, borderRadius: "20px", fontSize: "12px", color: f.color }}>
+                  {f.icon} {f.label}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {hasRun && (
+        <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
+          <div style={{ width: "220px", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", flexShrink: 0, overflow: "hidden", background: "#ffffff" }}>
+            <div style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0", fontSize: "12px", color: "#718096", lineHeight: "1.5", fontStyle: "italic" }}>
+              "{question.slice(0, 70)}{question.length > 70 ? "…" : ""}"
+            </div>
+            <div style={{ padding: "6px 8px", borderBottom: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "2px" }}>
+              {PHASES.filter(ph => ph.id !== "analysis").map(ph => (
+                <button key={ph.id} onClick={() => {
+                  const el = sectionRefs.current[ph.id];
+                  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                }} style={{
+                  background: "#f7fafc",
+                  border: `1px solid ${completedPhases[ph.id] ? ph.color + "55" : "#e2e8f0"}`,
+                  borderRadius: "6px", padding: "6px 10px", cursor: "pointer", textAlign: "left",
+                  display: "flex", alignItems: "center", gap: "8px", transition: "all 0.15s ease"
+                }}>
+                  <span style={{ fontSize: "14px" }}>
+                    {completedPhases[ph.id] ? "✓" : activePhase === ph.id ? <Spinner color={ph.color} /> : ph.icon}
+                  </span>
+                  <span style={{ fontSize: "12px", fontWeight: "600", color: completedPhases[ph.id] ? ph.color : "#4a5568" }}>{ph.label}</span>
+                </button>
+              ))}
+            </div>
+            <div style={{ padding: "6px 10px 3px", fontSize: "11px", color: "#a0aec0", letterSpacing: "0.08em", fontWeight: "600" }}>FRAMEWORKS</div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "0 8px 8px", display: "flex", flexDirection: "column", gap: "2px" }}>
+              {selectedFwIds.map(fid => {
+                const fw = ALL_FRAMEWORKS.find(f => f.id === fid);
+                if (!fw) return null;
+                const res = fwResults[fid];
+                const loading = fwLoading[fid];
+                const isActive = activeFrameworkId === fid;
+                return (
+                  <button key={fid} onClick={() => setActiveFwId(fid)} style={{
+                    background: isActive ? `${fw.color}18` : "#f7fafc",
+                    border: `1px solid ${isActive ? fw.color : "#e2e8f0"}`,
+                    borderRadius: "6px", padding: "6px 10px", cursor: "pointer", textAlign: "left",
+                    display: "flex", alignItems: "center", gap: "8px", transition: "all 0.15s ease"
+                  }}>
+                    <span style={{ fontSize: "16px", flexShrink: 0 }}>{fw.icon}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "12px", fontWeight: "600", color: isActive ? fw.accent : "#4a5568", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{fw.label}</div>
+                      {res && <div style={{ fontSize: "11px", color: confColor(res.confidence), marginTop: "1px" }}>{res.confidence}%</div>}
+                    </div>
+                    {loading && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: fw.accent, animation: "pulse 1s infinite", flexShrink: 0 }} />}
+                    {res && !loading && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", flexShrink: 0 }} />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", minWidth: 0, background: "#f0f2f5" }}>
+            {showJournalForm && (
+              <div style={{ background: "#fefcbf", border: "1px solid #f6e05e", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.3s ease" }}>
+                <div style={{ fontSize: "14px", fontWeight: "700", color: "#744210", marginBottom: "6px" }}>📓 Save to Decision Journal</div>
+                <input value={journalOutcome} onChange={e => setJournalOutcome(e.target.value)} placeholder="What outcome are you expecting / betting on?" style={{ width: "100%", background: "#fffff0", border: "1px solid #ecc94b", borderRadius: "6px", padding: "6px 12px", color: "#1a1a2e", fontSize: "14px", fontFamily: "'Inter',sans-serif" }} />
+                <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
+                  <button onClick={saveToJournal} style={{ background: "#f6e05e", border: "1px solid #ecc94b", borderRadius: "6px", padding: "5px 14px", cursor: "pointer", color: "#744210", fontSize: "12px", fontWeight: "600", fontFamily: "'Inter',sans-serif" }}>Save Entry</button>
+                  <button onClick={() => setShowJournalForm(false)} style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "5px 12px", cursor: "pointer", color: "#718096", fontSize: "12px", fontFamily: "'Inter',sans-serif" }}>Cancel</button>
+                </div>
+              </div>
+            )}
+
+            {synthesis && (
+              <div ref={el => sectionRefs.current.synthesis = el} style={{ background: insufficientInfo ? "#fff5f5" : "#fffff0", border: `1px solid ${insufficientInfo ? "#feb2b2" : "#f6e05e"}`, borderRadius: "12px", padding: "18px 22px", marginBottom: "18px", animation: "fadeUp 0.4s ease" }}>
+                {insufficientInfo ? (
+                  <>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+                      <div style={{ fontSize: "13px", color: "#c53030", fontWeight: "700", letterSpacing: "0.08em" }}>⛔ INSUFFICIENT INFORMATION — DO NOT DECIDE YET</div>
+                      <ConfidenceBadge value={synthesis.confidence} />
+                    </div>
+                    <div style={{ fontSize: "15px", color: "#4a5568", marginBottom: "12px" }}>{synthesis.recommendation}</div>
+                    {synthesis.missing_information?.length > 0 && (
+                      <div style={{ marginBottom: "8px" }}>
+                        <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "5px" }}>MISSING INFORMATION</div>
+                        {synthesis.missing_information.map((m, i) => <div key={i} style={{ fontSize: "14px", color: "#c53030", marginBottom: "3px" }}>· {m}</div>)}
+                      </div>
+                    )}
+                    {synthesis.recommended_research?.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "5px" }}>RECOMMENDED RESEARCH</div>
+                        {synthesis.recommended_research.map((r, i) => <div key={i} style={{ fontSize: "14px", color: "#2b6cb0", marginBottom: "3px" }}>→ {r}</div>)}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "12px" }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>FINAL DECISION</div>
+                        <div style={{ fontSize: "20px", fontWeight: "700", color: "#1a1a2e", lineHeight: "1.4" }}>{synthesis.recommendation}</div>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "5px", flexShrink: 0 }}>
+                        <ConfidenceBadge value={synthesis.confidence} />
+                        <span style={{
+                          fontSize: "12px", fontWeight: "700", padding: "2px 10px", borderRadius: "4px",
+                          background: synthesis.risk_level === "High" ? "#ef444415" : synthesis.risk_level === "Medium" ? "#f59e0b15" : "#22c55e15",
+                          color: synthesis.risk_level === "High" ? "#ef4444" : synthesis.risk_level === "Medium" ? "#f59e0b" : "#22c55e",
+                          border: `1px solid ${synthesis.risk_level === "High" ? "#ef444430" : synthesis.risk_level === "Medium" ? "#f59e0b30" : "#22c55e30"}` 
+                        }}>{synthesis.risk_level} RISK</span>
+                      </div>
+                    </div>
+
+                    {synthesis.confidence_reasoning?.length > 0 && (
+                      <div style={{ background: "#f7fafc", borderRadius: "6px", padding: "8px 12px", marginBottom: "12px" }}>
+                        <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>CONFIDENCE REASONING</div>
+                        {synthesis.confidence_reasoning.map((r, i) => <div key={i} style={{ fontSize: "13px", color: "#4a5568", marginBottom: "2px" }}>· {r}</div>)}
+                      </div>
+                    )}
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
+                      <MiniSection title="WHY" items={synthesis.why} color="#2b6cb0" />
+                      <MiniSection title="TOP RISKS" items={synthesis.top_risks} color="#c53030" />
+                      <MiniSection title="WHAT WOULD CHANGE THIS (+)" items={synthesis.what_would_change_positive} color="#276749" />
+                      <MiniSection title="WHAT WOULD CHANGE THIS (−)" items={synthesis.what_would_change_negative} color="#c05621" />
+                    </div>
+
+                    {synthesis.next_actions?.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "6px" }}>NEXT ACTIONS</div>
+                        {synthesis.next_actions.slice(0, 5).map((a, i) => (
+                          <div key={i} style={{ display: "flex", gap: "10px", marginBottom: "4px" }}>
+                            <span style={{ fontSize: "12px", fontFamily: "'JetBrains Mono', monospace", color: "#6366f1", fontWeight: "700", flexShrink: 0, marginTop: "2px" }}>{String(i + 1).padStart(2, "0")}</span>
+                            <span style={{ fontSize: "14px", color: "#4a5568", lineHeight: "1.6" }}>{a}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {crossexam && (
+              <div ref={el => sectionRefs.current.crossexam = el} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.35s ease" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>CONSENSUS ENGINE</div>
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <span style={{ fontSize: "13px", color: "#22c55e", fontWeight: "600" }}>Agreement {crossexam.agreement_score}%</span>
+                    <span style={{ fontSize: "13px", color: "#ef4444", fontWeight: "600" }}>Conflict {crossexam.conflict_score}%</span>
+                  </div>
+                </div>
+
+                {consensusItems.map((c, i) => (
+                  <div key={i} style={{ marginBottom: "8px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
+                      <span style={{ fontSize: "14px", color: "#1a1a2e" }}>{c.recommendation}</span>
+                      <span style={{ fontSize: "12px", fontFamily: "'JetBrains Mono', monospace", color: "#718096" }}>{c.support_count}/{selectedFwIds.length}</span>
+                    </div>
+                    <div style={{ height: "5px", background: "#edf2f7", borderRadius: "3px" }}>
+                      <div style={{ height: "100%", width: `${(c.support_count / maxSupport) * 100}%`, background: i === 0 ? "#6366f1" : "#a0aec0", borderRadius: "3px", transition: "width 0.6s ease" }} />
+                    </div>
+                  </div>
+                ))}
+
+                {crossexam.major_disagreements?.length > 0 && (
+                  <div style={{ marginTop: "10px", borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
+                    <div style={{ fontSize: "12px", color: "#ec4899", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "8px" }}>⚡ MAJOR DISAGREEMENTS — Often the most valuable insight</div>
+                    {crossexam.major_disagreements.map((d, i) => (
+                      <div key={i} style={{ marginBottom: "8px", padding: "8px 12px", background: "#fdf2f8", border: "1px solid #fbb6ce", borderRadius: "6px" }}>
+                        <div style={{ fontSize: "12px", color: "#d53f8c", fontWeight: "600", marginBottom: "3px" }}>{d.framework_a} vs {d.framework_b}</div>
+                        <div style={{ fontSize: "14px", color: "#4a5568", marginBottom: "3px" }}>{d.disagreement}</div>
+                        {d.why_this_matters && <div style={{ fontSize: "13px", color: "#718096" }}>Why it matters: {d.why_this_matters}</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {crossexam.hidden_insight && (
+                  <div style={{ marginTop: "10px", padding: "8px 12px", background: "#fefcbf", border: "1px solid #f6e05e", borderRadius: "6px", fontSize: "14px", color: "#744210" }}>
+                    💡 {crossexam.hidden_insight}
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Skeletons Fallback state handling */}
-          {hasRun && !phaseData.research && (
-            <LoadingSkeleton color="#22c55e" label="Searching datasets and processing logical blocks..." />
-          )}
+            {redteam && (
+              <div ref={el => sectionRefs.current.redteam = el} style={{ background: "#ffffff", border: "1px solid #feb2b2", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.35s ease" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>RED TEAM REVIEW</div>
+                  <span style={{
+                    fontSize: "12px", fontWeight: "700", padding: "2px 10px", borderRadius: "4px",
+                    background: redteam.survivability === "Yes" ? "#22c55e15" : redteam.survivability === "No" ? "#ef444415" : "#f59e0b15",
+                    color: redteam.survivability === "Yes" ? "#22c55e" : redteam.survivability === "No" ? "#ef4444" : "#f59e0b",
+                    border: `1px solid ${redteam.survivability === "Yes" ? "#22c55e30" : redteam.survivability === "No" ? "#ef444430" : "#f59e0b30"}`
+                  }}>Survives: {redteam.survivability}</span>
+                </div>
+
+                {redteam.kill_shot && <div style={{ fontSize: "14px", color: "#c53030", fontWeight: "600", marginBottom: "10px" }}>☠ Kill shot: {redteam.kill_shot}</div>}
+
+                {(redteam.failure_modes || []).slice(0, 5).map((fm, i) => (
+                  <div key={i} style={{ display: "flex", gap: "10px", marginBottom: "7px", padding: "8px 12px", background: "#f7fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                    <SeverityBadge severity={fm.severity} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "14px", color: "#1a1a2e", fontWeight: "500" }}>{fm.mode}</div>
+                      {fm.warning_signal && <div style={{ fontSize: "13px", color: "#718096", marginTop: "2px" }}>⚡ {fm.warning_signal}</div>}
+                      {fm.mitigation && <div style={{ fontSize: "13px", color: "#2b6cb0", marginTop: "2px" }}>🛡 {fm.mitigation}</div>}
+                    </div>
+                  </div>
+                ))}
+
+                {redteam.mitigation_plan?.length > 0 && (
+                  <div style={{ marginTop: "10px", borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
+                    <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "6px" }}>MITIGATION PLAN</div>
+                    {redteam.mitigation_plan.slice(0, 4).map((m, i) => (
+                      <div key={i} style={{ marginBottom: "5px", display: "flex", gap: "10px" }}>
+                        <span style={{ fontSize: "12px", fontFamily: "'JetBrains Mono', monospace", color: "#c53030", flexShrink: 0, marginTop: "2px" }}>{String(i + 1).padStart(2, "0")}</span>
+                        <div>
+                          <div style={{ fontSize: "14px", color: "#4a5568" }}>{m.risk}</div>
+                          <div style={{ fontSize: "13px", color: "#2b6cb0" }}>→ {m.action}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {research && (
+              <div ref={el => sectionRefs.current.research = el} style={{ background: "#ffffff", border: "1px solid #68d391", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.3s ease" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>🔎 RESEARCH LAYER</div>
+                  <ConfidenceBadge value={research.research_confidence} small />
+                </div>
+                {research.research_summary && <div style={{ fontSize: "14px", color: "#4a5568", marginBottom: "10px", fontStyle: "italic" }}>{research.research_summary}</div>}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+                  <div>
+                    <div style={{ fontSize: "11px", color: "#22c55e", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>FACTS ✓</div>
+                    {(!research.facts?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None found</div>
+                      : research.facts.slice(0, 5).map((f, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {f}</div>)}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "11px", color: "#f59e0b", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>SOURCES</div>
+                    {(!research.sources?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None</div>
+                      : research.sources.slice(0, 5).map((s, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {s}</div>)}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "11px", color: "#ef4444", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>UNKNOWNS ?</div>
+                    {(!research.unknowns?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None</div>
+                      : research.unknowns.slice(0, 5).map((u, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {u}</div>)}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {reality && (
+              <div ref={el => sectionRefs.current.reality = el} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.3s ease" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>REALITY EXTRACTION</div>
+                  <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                    {reality.problem_type && (
+                      <span style={{ fontSize: "12px", background: "#6366f112", border: "1px solid #6366f128", borderRadius: "4px", padding: "2px 8px", color: "#6366f1" }}>
+                        {PROBLEM_TYPES.find(p => p.id === reality.problem_type)?.icon} {reality.problem_type}
+                      </span>
+                    )}
+                    <ConfidenceBadge value={reality.extraction_confidence} small />
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+                  {[
+                    { title: "FACTS ✓", items: reality.facts, color: "#22c55e" },
+                    { title: "ASSUMPTIONS ~", items: reality.assumptions, color: "#f59e0b" },
+                    { title: "UNKNOWNS ?", items: reality.unknowns, color: "#ef4444" },
+                  ].map(({ title, items, color }) => (
+                    <div key={title}>
+                      <div style={{ fontSize: "11px", color, fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>{title}</div>
+                      {(!items?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None</div>
+                        : items.slice(0, 4).map((item, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {item}</div>)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeFrameworkId && !activeFrameworkId.startsWith("__") && activeFw && (
+              <div style={{ background: "#ffffff", border: `1px solid ${activeFw.color}40`, borderRadius: "10px", padding: "16px 20px", animation: "fadeUp 0.3s ease" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                  <div style={{ width: "36px", height: "36px", background: `${activeFw.color}18`, border: `1px solid ${activeFw.color}35`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>{activeFw.icon}</div>
+                  <div>
+                    <div style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a2e" }}>{activeFw.label}</div>
+                    <div style={{ fontSize: "12px", color: "#718096" }}>{activeFw.thinker}</div>
+                  </div>
+                  {activeFwResult && <ConfidenceBadge value={activeFwResult.confidence} />}
+                </div>
+
+                {activeFwLoading ? (
+                  <LoadingSkeleton color={activeFw.accent} label={`Applying ${activeFw.label} lens…`} />
+                ) : activeFwResult ? (
+                  <div style={{ animation: "fadeUp 0.3s ease" }}>
+                    {activeFwResult.key_claim && (
+                      <div style={{ marginBottom: "12px" }}>
+                        <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>KEY CLAIM</div>
+                        <div style={{ fontSize: "15px", color: "#1a1a2e", lineHeight: "1.6", fontWeight: "500" }}>{activeFwResult.key_claim}</div>
+                      </div>
+                    )}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                      <FrameworkList title="EVIDENCE" items={activeFwResult.evidence} color="#2b6cb0" />
+                      <FrameworkList title="COUNTERARGUMENTS" items={activeFwResult.counterarguments} color="#c53030" />
+                      <FrameworkList title="UNKNOWNS" items={activeFwResult.unknowns} color="#c05621" />
+                      {activeFwResult.recommendation && (
+                        <div>
+                          <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>RECOMMENDATION</div>
+                          <div style={{ fontSize: "14px", color: activeFw.accent, lineHeight: "1.6" }}>{activeFwResult.recommendation}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ color: "#a0aec0", fontSize: "14px" }}>Waiting to load…</div>
+                )}
+              </div>
+            )}
+
+            {hasRun && !research && (
+              <LoadingSkeleton color="#22c55e" label="Searching for evidence…" />
+            )}
+          </div>
         </div>
       )}
     </div>
