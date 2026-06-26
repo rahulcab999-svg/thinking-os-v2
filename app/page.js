@@ -42,8 +42,7 @@ function exportMarkdown(question, phaseData, fwResults, selectedFwIds) {
   }
   if (selectedFwIds?.length) {
     lines.push(`## Framework Analysis`);
-    // We need ALL_FRAMEWORKS here – it's defined outside this function
-    const ALL_FRAMEWORKS = [
+    const FW_LIST = [
       {id:"first_principles",label:"First Principles",icon:"⚗️"},
       {id:"thiel",label:"Thiel Contrarian",icon:"♟️"},
       {id:"inversion",label:"Inversion",icon:"🔄"},
@@ -59,10 +58,10 @@ function exportMarkdown(question, phaseData, fwResults, selectedFwIds) {
       {id:"bias_checker",label:"Bias Audit",icon:"🪲"},
     ];
     selectedFwIds.forEach(fid => {
-      const fw = ALL_FRAMEWORKS.find(f => f.id === fid);
+      const fw = FW_LIST.find(f => f.id === fid);
       const res = fwResults[fid];
       if (!fw || !res) return;
-      lines.push(``); lines.push(`### ${fw.icon} ${fw.label} (${fw.thinker || ''})`);
+      lines.push(``); lines.push(`### ${fw.icon} ${fw.label}`);
       if (res.key_claim) lines.push(`**Key Claim:** ${res.key_claim}`);
       lines.push(`Confidence: ${res.confidence}%`);
       if (res.evidence?.length) { lines.push(`**Evidence:**`); res.evidence.forEach(e => lines.push(`- ${e}`)); }
@@ -403,41 +402,21 @@ function loadScores() {
 function saveScores(s) {
   try { localStorage.setItem("tos_v2_scores", JSON.stringify(s)); } catch {}
 }
-function loadUserAnswers() {
+
+// ─── DECISION CONTEXT ENGINE ──────────────────────────────────────────────────
+function loadContexts() {
   if (typeof window === "undefined") return {};
-  try { return JSON.parse(localStorage.getItem("tos_v2_answers") || "{}"); } catch { return {}; }
+  try { return JSON.parse(localStorage.getItem("tos_v2_contexts") || "{}"); } catch { return {}; }
 }
-function saveUserAnswers(a) {
-  try { localStorage.setItem("tos_v2_answers", JSON.stringify(a)); } catch {}
-}
-
-function recordFrameworkUse(scores, fwIds, confidence) {
-  const updated = { ...scores };
-  fwIds.forEach(id => {
-    if (!updated[id]) updated[id] = { uses: 0, successes: 0, totalConfidence: 0 };
-    updated[id].uses += 1;
-    updated[id].totalConfidence += (confidence || 0);
-  });
-  return updated;
-}
-function recordFrameworkOutcome(scores, fwIds, success) {
-  const updated = { ...scores };
-  fwIds.forEach(id => {
-    if (!updated[id]) updated[id] = { uses: 0, successes: 0, totalConfidence: 0 };
-    if (success) updated[id].successes += 1;
-  });
-  return updated;
-}
-function fwSuccessRate(s) {
-  if (!s || s.uses === 0) return null;
-  return Math.round((s.successes / s.uses) * 100);
-}
-function fwAvgConf(s) {
-  if (!s || s.uses === 0) return null;
-  return Math.round(s.totalConfidence / s.uses);
+function saveContexts(c) {
+  try { localStorage.setItem("tos_v2_contexts", JSON.stringify(c)); } catch {}
 }
 
-// ─── ADAPTIVE QUESTIONING ENGINE ──────────────────────────────────────────────
+function generateContextId(question, type) {
+  const base = question.slice(0, 30).replace(/\s+/g, '_');
+  return `${type}_${base}_${Date.now()}`;
+}
+
 function classifyProblemType(question) {
   const keywords = {
     startup: ["startup", "business", "company", "entrepreneur", "venture", "founder", "launch"],
@@ -463,11 +442,12 @@ function classifyProblemType(question) {
   return sorted[0][1] > 0 ? sorted[0][0] : "strategy";
 }
 
-function detectMissingInfo(category, userAnswers) {
+function detectMissingInfo(category, answers) {
   const required = REQUIRED_FIELDS[category] || [];
   const missing = [];
   required.forEach(field => {
-    if (!userAnswers[field.id]) {
+    const value = answers[field.id];
+    if (!value || value.trim() === "") {
       missing.push(field);
     }
   });
@@ -476,6 +456,18 @@ function detectMissingInfo(category, userAnswers) {
 
 function generateQuestions(missing) {
   return missing.slice(0, 5).map(field => field.label);
+}
+
+function createContext(question, type, answers = {}) {
+  return {
+    id: generateContextId(question, type),
+    question: question,
+    type: type,
+    answers: answers,
+    created: Date.now(),
+    updated: Date.now(),
+    status: "incomplete", // incomplete | complete | analyzing | done
+  };
 }
 
 // ─── API CALL ──────────────────────────────────────────────────────────────────
@@ -824,6 +816,32 @@ function JournalView({ journal, scores, onBack, onUpdateOutcome }) {
   );
 }
 
+function recordFrameworkUse(scores, fwIds, confidence) {
+  const updated = { ...scores };
+  fwIds.forEach(id => {
+    if (!updated[id]) updated[id] = { uses: 0, successes: 0, totalConfidence: 0 };
+    updated[id].uses += 1;
+    updated[id].totalConfidence += (confidence || 0);
+  });
+  return updated;
+}
+function recordFrameworkOutcome(scores, fwIds, success) {
+  const updated = { ...scores };
+  fwIds.forEach(id => {
+    if (!updated[id]) updated[id] = { uses: 0, successes: 0, totalConfidence: 0 };
+    if (success) updated[id].successes += 1;
+  });
+  return updated;
+}
+function fwSuccessRate(s) {
+  if (!s || s.uses === 0) return null;
+  return Math.round((s.successes / s.uses) * 100);
+}
+function fwAvgConf(s) {
+  if (!s || s.uses === 0) return null;
+  return Math.round(s.totalConfidence / s.uses);
+}
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function ThinkingOSv2() {
   const [view, setView]                       = useState("main");
@@ -840,7 +858,8 @@ export default function ThinkingOSv2() {
   const [hasRun, setHasRun]                   = useState(false);
   const [journal, setJournal]                 = useState(loadJournal);
   const [scores, setScores]                   = useState(loadScores);
-  const [userAnswers, setUserAnswers]         = useState(loadUserAnswers);
+  const [contexts, setContexts]               = useState(loadContexts);
+  const [currentContextId, setCurrentContextId] = useState(null);
   const [showJournalForm, setShowJournalForm] = useState(false);
   const [journalOutcome, setJournalOutcome]   = useState("");
   const [pendingEntry, setPendingEntry]       = useState(null);
@@ -876,6 +895,7 @@ export default function ThinkingOSv2() {
       .fw-pill:hover { transform: scale(1.02); }
       .answer-input { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; color: #1a1a2e; font-size: 14px; font-family: 'Inter', sans-serif; width: 100%; }
       .answer-input:focus { border-color: #6366f1; outline: none; }
+      .context-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-right: 4px; }
     `;
     document.head.appendChild(s);
     document.body.classList.add('light-theme');
@@ -884,6 +904,52 @@ export default function ThinkingOSv2() {
       document.body.classList.remove('light-theme');
     };
   }, []);
+
+  // ─── CONTEXT MANAGEMENT ──────────────────────────────────────────────────────
+  const getCurrentContext = useCallback(() => {
+    if (currentContextId && contexts[currentContextId]) {
+      return contexts[currentContextId];
+    }
+    return null;
+  }, [currentContextId, contexts]);
+
+  const createNewContext = useCallback((q, type) => {
+    const newContext = createContext(q, type);
+    const updated = { ...contexts, [newContext.id]: newContext };
+    setContexts(updated);
+    saveContexts(updated);
+    setCurrentContextId(newContext.id);
+    return newContext;
+  }, [contexts]);
+
+  const updateContextAnswers = useCallback((id, newAnswers) => {
+    if (!contexts[id]) return;
+    const updated = {
+      ...contexts,
+      [id]: {
+        ...contexts[id],
+        answers: { ...contexts[id].answers, ...newAnswers },
+        updated: Date.now(),
+      }
+    };
+    setContexts(updated);
+    saveContexts(updated);
+  }, [contexts]);
+
+  const deleteContext = useCallback((id) => {
+    const updated = { ...contexts };
+    delete updated[id];
+    setContexts(updated);
+    saveContexts(updated);
+    if (currentContextId === id) {
+      const keys = Object.keys(updated);
+      setCurrentContextId(keys.length > 0 ? keys[0] : null);
+    }
+  }, [contexts, currentContextId]);
+
+  const getContextList = useCallback(() => {
+    return Object.values(contexts).sort((a, b) => b.updated - a.updated);
+  }, [contexts]);
 
   const reset = useCallback(() => {
     setActivePhase(null); setCompletedPhases({}); setPhaseData({});
@@ -901,26 +967,32 @@ export default function ThinkingOSv2() {
         currentAnswers[field.id] = input.value;
       }
     });
-    const updatedAnswers = { ...userAnswers, ...currentAnswers };
-    setUserAnswers(updatedAnswers);
-    saveUserAnswers(updatedAnswers);
 
-    const category = classifyProblemType(question);
-    const missing = detectMissingInfo(category, updatedAnswers);
+    // Update the current context
+    if (currentContextId) {
+      updateContextAnswers(currentContextId, currentAnswers);
+    }
+
+    const context = getCurrentContext();
+    const category = context ? context.type : classifyProblemType(question);
+    const allAnswers = context ? context.answers : currentAnswers;
+    const missing = detectMissingInfo(category, allAnswers);
 
     if (missing.length === 0) {
       setMissingInfo(null);
       setIsAsking(false);
       setInfoStatus("✅ All information collected! Running analysis...");
-      runFullAnalysis(question, category, updatedAnswers);
+      const fullQuestion = context ? context.question : question;
+      runFullAnalysis(fullQuestion, category, allAnswers);
     } else {
       setMissingInfo(missing);
       setInfoStatus(`📋 ${missing.length} more questions needed:`);
     }
-  }, [missingInfo, userAnswers, question]);
+  }, [missingInfo, currentContextId, updateContextAnswers, getCurrentContext, question]);
 
   const runFullAnalysis = useCallback(async (q, category, answers) => {
     const answerContext = Object.entries(answers)
+      .filter(([_, value]) => value && value.trim() !== "")
       .map(([key, value]) => `${key}: ${value}`)
       .join("\n");
     const fullQuestion = `${q}\n\nUser context:\n${answerContext}`;
@@ -1078,10 +1150,24 @@ export default function ThinkingOSv2() {
     reset();
 
     const q = question.trim();
-    const category = classifyProblemType(q);
-    const currentAnswers = loadUserAnswers();
+    const type = classifyProblemType(q);
 
-    const missing = detectMissingInfo(category, currentAnswers);
+    // Check if we have an existing context for this question type
+    let context = getCurrentContext();
+    if (!context || context.type !== type) {
+      // Create a new context
+      context = createNewContext(q, type);
+    } else {
+      // Update the question if it changed
+      if (context.question !== q) {
+        const updated = { ...contexts, [context.id]: { ...context, question: q, updated: Date.now() } };
+        setContexts(updated);
+        saveContexts(updated);
+      }
+    }
+
+    const allAnswers = context ? context.answers : {};
+    const missing = detectMissingInfo(type, allAnswers);
 
     if (missing.length > 0) {
       setMissingInfo(missing);
@@ -1089,9 +1175,9 @@ export default function ThinkingOSv2() {
       setInfoStatus(`📋 To give you a reliable recommendation, I need some information:`);
     } else {
       setInfoStatus("✅ All information collected! Running analysis...");
-      await runFullAnalysis(q, category, currentAnswers);
+      await runFullAnalysis(q, type, allAnswers);
     }
-  }, [question, isRunning, reset, runFullAnalysis]);
+  }, [question, isRunning, reset, runFullAnalysis, getCurrentContext, createNewContext, contexts]);
 
   const saveToJournal = useCallback(() => {
     if (!pendingEntry) return;
@@ -1128,6 +1214,8 @@ export default function ThinkingOSv2() {
   const consensusItems  = crossexam?.consensus || [];
   const maxSupport      = Math.max(...consensusItems.map(c => c.support_count), 1);
   const insufficientInfo = synthesis?.status === "insufficient_information" || synthesis?.investigation_needed;
+  const contextList = getContextList();
+  const currentContext = getCurrentContext();
 
   if (view === "journal") {
     return <JournalView journal={journal} scores={scores} onBack={() => setView("main")} onUpdateOutcome={updateOutcome} />;
@@ -1142,23 +1230,52 @@ export default function ThinkingOSv2() {
           <div style={{ fontSize: "11px", color: "#718096", letterSpacing: "0.06em" }}>DECISION INTELLIGENCE · EVIDENCE-FIRST</div>
         </div>
 
-        {hasRun && (
-          <div style={{ display: "flex", alignItems: "center", gap: "3px", marginLeft: "14px" }}>
-            {PHASES.map((ph, i) => (
-              <div key={ph.id} style={{ display: "flex", alignItems: "center", gap: "3px" }}>
-                <div style={{
-                  fontSize: "12px", padding: "2px 10px", borderRadius: "4px", fontWeight: "600", whiteSpace: "nowrap",
-                  background: completedPhases[ph.id] ? `${ph.color}18` : activePhase === ph.id ? `${ph.color}12` : "#f7fafc",
-                  border: `1px solid ${completedPhases[ph.id] ? ph.color : activePhase === ph.id ? ph.color + "80" : "#e2e8f0"}`,
-                  color: completedPhases[ph.id] ? ph.color : activePhase === ph.id ? ph.color : "#718096",
-                  display: "flex", alignItems: "center", gap: "4px"
-                }}>
-                  {completedPhases[ph.id] ? "✓" : activePhase === ph.id ? <Spinner color={ph.color} /> : ph.icon}
-                  <span style={{ display: "inline" }}>{ph.label}</span>
-                </div>
-                {i < PHASES.length - 1 && <div style={{ width: "6px", height: "1px", background: "#e2e8f0" }} />}
-              </div>
+        {/* ─── CONTEXT SWITCHER ──────────────────────────────────────────────── */}
+        {contextList.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px", flexShrink: 0, overflowX: "auto" }}>
+            <span style={{ fontSize: "10px", color: "#718096", fontWeight: "600" }}>Context:</span>
+            {contextList.map(c => (
+              <button
+                key={c.id}
+                onClick={() => setCurrentContextId(c.id)}
+                style={{
+                  padding: "2px 10px",
+                  borderRadius: "12px",
+                  fontSize: "11px",
+                  fontWeight: "600",
+                  border: `1px solid ${currentContextId === c.id ? "#6366f1" : "#e2e8f0"}`,
+                  background: currentContextId === c.id ? "#6366f118" : "transparent",
+                  color: currentContextId === c.id ? "#6366f1" : "#4a5568",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  fontFamily: "'Inter', sans-serif"
+                }}
+              >
+                {c.type === "investment" ? "📈" : c.type === "career" ? "🧭" : c.type === "startup" ? "🚀" : "📋"} {c.question.slice(0, 20)}{c.question.length > 20 ? "…" : ""}
+                {c.answers && Object.keys(c.answers).length > 0 && ` ✓`}
+              </button>
             ))}
+            {contextList.length > 1 && (
+              <button
+                onClick={() => {
+                  if (currentContextId && window.confirm("Delete this context?")) {
+                    deleteContext(currentContextId);
+                  }
+                }}
+                style={{
+                  padding: "2px 8px",
+                  borderRadius: "12px",
+                  fontSize: "11px",
+                  border: "1px solid #ef444430",
+                  background: "transparent",
+                  color: "#ef4444",
+                  cursor: "pointer",
+                  fontFamily: "'Inter', sans-serif"
+                }}
+              >
+                ✕
+              </button>
+            )}
           </div>
         )}
 
@@ -1177,10 +1294,62 @@ export default function ThinkingOSv2() {
         </div>
       </div>
 
+      {/* ─── CONTEXT SUMMARY ────────────────────────────────────────────────── */}
+      {currentContext && (
+        <div style={{ padding: "6px 18px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", fontSize: "12px", color: "#475569", display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
+          <span style={{ fontWeight: "600" }}>📋 Context:</span>
+          <span style={{ fontWeight: "500" }}>“{currentContext.question.slice(0, 60)}{currentContext.question.length > 60 ? "…" : ""}”</span>
+          <span style={{ background: "#e2e8f0", padding: "1px 8px", borderRadius: "12px", fontSize: "10px" }}>
+            {currentContext.type}
+          </span>
+          <span style={{ fontSize: "10px", color: "#94a3b8" }}>
+            {Object.keys(currentContext.answers).filter(k => currentContext.answers[k] && currentContext.answers[k].trim() !== "").length} fields filled
+          </span>
+          {currentContext.answers && Object.keys(currentContext.answers).length > 0 && (
+            <button
+              onClick={() => {
+                // Show a mini editor for context
+                const fields = Object.keys(currentContext.answers).filter(k => currentContext.answers[k] && currentContext.answers[k].trim() !== "");
+                if (fields.length === 0) return;
+                const fieldList = fields.map(k => `${k}: ${currentContext.answers[k]}`).join("\n");
+                const newVal = prompt("Edit your context information (format: field: value, one per line):", fieldList);
+                if (newVal) {
+                  const updates = {};
+                  newVal.split("\n").forEach(line => {
+                    const parts = line.split(":");
+                    if (parts.length >= 2) {
+                      updates[parts[0].trim()] = parts.slice(1).join(":").trim();
+                    }
+                  });
+                  if (Object.keys(updates).length > 0) {
+                    updateContextAnswers(currentContext.id, updates);
+                  }
+                }
+              }}
+              style={{
+                fontSize: "10px",
+                background: "transparent",
+                border: "1px solid #e2e8f0",
+                borderRadius: "4px",
+                padding: "2px 8px",
+                cursor: "pointer",
+                color: "#6366f1",
+                fontFamily: "'Inter', sans-serif"
+              }}
+            >
+              ✏️ Edit
+            </button>
+          )}
+        </div>
+      )}
+
       {!hasRun && !isAsking && (
         <div style={{ padding: "30px 20px 0", flexShrink: 0 }}>
           <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "18px 20px" }}>
-            <div style={{ fontSize: "13px", color: "#4a5568", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "10px" }}>QUESTION OR DECISION</div>
+            <div style={{ fontSize: "13px", color: "#4a5568", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "10px" }}>
+              QUESTION OR DECISION
+              {currentContext && <span style={{ fontWeight: "400", color: "#94a3b8", fontSize: "11px" }}> — continuing conversation</span>}
+            </div>
             <textarea
               ref={textRef}
               value={question}
@@ -1210,17 +1379,20 @@ export default function ThinkingOSv2() {
                 cursor: question.trim() ? "pointer" : "not-allowed", fontFamily: "'Inter',sans-serif", whiteSpace: "nowrap"
               }}>Analyze →</button>
             </div>
-            <div style={{ fontSize: "12px", color: "#a0aec0", marginTop: "8px" }}>⌘+Enter to run · Web search: {ENABLE_WEB_SEARCH ? "✅ ON" : "❌ OFF"} · Auto-selects frameworks</div>
+            <div style={{ fontSize: "12px", color: "#a0aec0", marginTop: "8px" }}>
+              ⌘+Enter to run · Web search: {ENABLE_WEB_SEARCH ? "✅ ON" : "❌ OFF"} · Auto-selects frameworks
+              {currentContext && ` · 📋 ${Object.keys(currentContext.answers).filter(k => currentContext.answers[k] && currentContext.answers[k].trim() !== "").length} fields saved`}
+            </div>
           </div>
 
-          <div style={{ padding: "40px 0", textAlign: "center" }}>
-            <div style={{ fontSize: "36px", marginBottom: "12px" }}>🧩</div>
-            <div style={{ color: "#718096", fontSize: "15px", maxWidth: "480px", margin: "0 auto", lineHeight: "1.8" }}>
+          <div style={{ padding: "30px 0", textAlign: "center" }}>
+            <div style={{ fontSize: "28px", marginBottom: "8px" }}>🧩</div>
+            <div style={{ color: "#718096", fontSize: "14px", maxWidth: "480px", margin: "0 auto", lineHeight: "1.8" }}>
               Research → Reality Extraction → Framework Analysis → Cross-Examination → Red Team → Decision Synthesis
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", justifyContent: "center", marginTop: "16px", maxWidth: "520px", margin: "16px auto 0" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", justifyContent: "center", marginTop: "12px", maxWidth: "520px", margin: "12px auto 0" }}>
               {ALL_FRAMEWORKS.map(f => (
-                <div key={f.id} style={{ padding: "4px 12px", background: `${f.color}10`, border: `1px solid ${f.color}22`, borderRadius: "20px", fontSize: "12px", color: f.color }}>
+                <div key={f.id} style={{ padding: "3px 10px", background: `${f.color}10`, border: `1px solid ${f.color}22`, borderRadius: "20px", fontSize: "11px", color: f.color }}>
                   {f.icon} {f.label}
                 </div>
               ))}
@@ -1235,6 +1407,11 @@ export default function ThinkingOSv2() {
           <div style={{ background: "#ffffff", border: "1px solid #6366f1", borderRadius: "14px", padding: "24px", maxWidth: "700px", margin: "0 auto" }}>
             <div style={{ fontSize: "14px", color: "#1a1a2e", marginBottom: "16px" }}>
               <span style={{ fontWeight: "700", color: "#6366f1" }}>📋 {infoStatus}</span>
+              {currentContext && (
+                <span style={{ fontSize: "12px", color: "#94a3b8", display: "block", marginTop: "4px" }}>
+                  Context: {currentContext.question.slice(0, 50)}…
+                </span>
+              )}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {missingInfo.map((field, index) => (
@@ -1247,7 +1424,7 @@ export default function ThinkingOSv2() {
                     type={field.type === "number" ? "number" : "text"}
                     placeholder={`Enter your ${field.label.toLowerCase()}`}
                     className="answer-input"
-                    defaultValue={userAnswers[field.id] || ""}
+                    defaultValue={currentContext?.answers?.[field.id] || ""}
                   />
                 </div>
               ))}
@@ -1271,7 +1448,7 @@ export default function ThinkingOSv2() {
               Submit Answers → Continue Analysis
             </button>
             <div style={{ fontSize: "12px", color: "#a0aec0", marginTop: "8px", textAlign: "center" }}>
-              Your answers will be saved. You can run another analysis later without retyping them.
+              Your answers will be saved in the context. You can edit them anytime.
             </div>
           </div>
         </div>
