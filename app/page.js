@@ -243,7 +243,7 @@ CRITICAL RULE: Every point you make must directly reference something specific f
 3. REBUILD: Reason upward from verified fundamentals only.
 4. CLAIM: Clearest rational path forward.
 5. CONFIDENCE: Rate 0-100. Lower if many unknowns remain.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "thiel", label: "Thiel Contrarian", icon: "♟️",
@@ -257,7 +257,7 @@ CRITICAL RULE: Every point must be specific to this exact situation. Do not give
 4. MONOPOLY TEST: Does the obvious solution lead to differentiation or competition?
 5. 10X QUESTION: What would a 10x better solution look like?
 6. CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "inversion", label: "Inversion", icon: "🔄",
@@ -270,7 +270,7 @@ CRITICAL RULE: List failure modes that are specific to this exact situation. Not
 3. OBSTACLES: What, when removed, makes solution obvious?
 4. FORWARD PATH: Failure-free version.
 5. CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "second_order", label: "Second-Order", icon: "🌊",
@@ -284,7 +284,7 @@ CRITICAL RULE: The effects you describe must be specific to this situation. Do n
 4. TIME HORIZONS: Best decision across 1wk / 6mo / 5yr?
 5. RECOMMENDATION: Most rational action given all orders.
 6. CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "taleb", label: "Taleb Antifragility", icon: "💀",
@@ -299,7 +299,7 @@ CRITICAL RULE: Identify black swans and tail risks that are specific to this sit
 5. BARBELL STRATEGY: Extreme safety on one end, small high-upside bets on other.
 6. OPTIONALITY: Which path preserves most future options?
 7. CONFIDENCE: Rate 0-100. Penalize heavily for missing tail-risk data.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "bayes", label: "Bayesian Thinking", icon: "📊",
@@ -314,7 +314,7 @@ CRITICAL RULE: Use actual numbers and base rates from the provided research data
 5. BASE RATE NEGLECT CHECK: Are vivid events overriding priors?
 6. WHAT WOULD MOVE YOU: Evidence that would significantly change posterior?
 7. CONFIDENCE: State explicitly (e.g. "70% confident X is true"). Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "porter", label: "Porter's Five Forces", icon: "🏭",
@@ -330,7 +330,7 @@ CRITICAL RULE: Name actual competitors, actual market dynamics, actual suppliers
 6. GENERIC STRATEGY: Cost Leadership, Differentiation, or Focus?
 7. SUSTAINABLE ADVANTAGE: What makes this defensible over 5-10 years?
 8. CONFIDENCE: Rate 0-100. Lower if market data is missing.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "kahneman", label: "Kahneman: Bias", icon: "⚡",
@@ -345,7 +345,7 @@ CRITICAL RULE: Identify biases that are specifically active in this situation. D
 5. PRE-MORTEM: Imagine 1 year later, this failed. What went wrong?
 6. DEBIASED RECOMMENDATION: Rational action after correcting for biases.
 7. CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "munger", label: "Munger's Lattice", icon: "🧠",
@@ -357,7 +357,7 @@ Pick 4-5 most relevant models: Opportunity Cost, Incentives, Confirmation Bias, 
 For each: Name it, apply it, state what it reveals that naive analysis misses.
 SYNTHESIS: What do models together suggest?
 CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "sun_tzu", label: "Sun Tzu", icon: "⚔️",
@@ -372,7 +372,7 @@ CRITICAL RULE: Be specific about who the actual adversaries or competing forces 
 5. ASYMMETRY: Where can you exploit an asymmetric advantage?
 6. ALREADY-WON BATTLE: Preparation that makes outcome nearly certain before engagement?
 7. CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "feynman", label: "Feynman Technique", icon: "🔬",
@@ -387,7 +387,7 @@ CRITICAL RULE: The plain language test and gap identification must be about THIS
 5. ELEGANT SIMPLICITY: Simplest explanation that accounts for all known facts?
 6. WHAT WOULD BREAK THIS: Single fact that completely invalidates this?
 7. CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "popper", label: "Popper: Falsifiability", icon: "🔭",
@@ -402,7 +402,7 @@ CRITICAL RULE: The hypothesis you test must be the actual core claim or belief e
 5. UNFALSIFIABLE RED FLAGS: Elements that cannot be proven wrong no matter what?
 6. RECOMMENDATION: Most intellectually honest position given what can/cannot be falsified.
 7. CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "bias_checker", label: "Bias Audit", icon: "🪲",
@@ -416,7 +416,7 @@ SOCIAL BIASES: Bandwagon Effect, Authority Bias, Halo Effect, Groupthink
 DECISION BIASES: Sunk Cost Fallacy, Loss Aversion, Status Quo Bias, Hyperbolic Discounting
 OUTPUT: List active biases, rank top 3 by severity, debiasing protocol for each, clean reframe after stripping biases.
 CONFIDENCE: Rate 0-100.
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
 
   // ==== NEW FRAMEWORKS (37+) ====
@@ -446,7 +446,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 CRITICAL RULE: Every point must be specific to this situation. Apply these principles to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "naval_leverage",
@@ -474,7 +474,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these principles to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "christensen_disruption",
@@ -500,7 +500,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these principles to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "buffett_margin_safety",
@@ -528,7 +528,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these principles to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "dawkins_memetic",
@@ -554,7 +554,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these principles to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "harari_narrative",
@@ -580,7 +580,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these principles to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "greene_power",
@@ -608,7 +608,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these principles to the user's specific situation. Be strategic but ethical.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "hoffertrue_believer",
@@ -634,7 +634,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these principles to the user's situation.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "senge_systems",
@@ -662,7 +662,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these principles to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "meadows_leverage",
@@ -694,7 +694,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's situation.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "ackoff_idealized",
@@ -720,7 +720,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these principles to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "drucker_effectiveness",
@@ -748,7 +748,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's specific situation.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "collins_flywheel",
@@ -776,7 +776,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these principles to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "gladwell_tipping",
@@ -802,7 +802,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's specific situation.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "kahneman_noise",
@@ -828,7 +828,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these principles to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "thaler_nudge",
@@ -856,7 +856,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's specific situation.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "taleb_black_swan",
@@ -880,7 +880,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "greene_seduction",
@@ -908,7 +908,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's specific situation.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "machiavelli_prince",
@@ -936,7 +936,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these principles to the user's specific situation, ethically.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "epictetus_stoic",
@@ -964,7 +964,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "marcus_aurelius",
@@ -990,7 +990,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's specific situation.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "seneca_stoic",
@@ -1018,7 +1018,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "nietzsche_willpower",
@@ -1044,7 +1044,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's situation.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "camus_absurdism",
@@ -1068,7 +1068,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "sartre_existentialism",
@@ -1094,7 +1094,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's situation.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "foucault_power",
@@ -1120,7 +1120,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "marx_dialectical",
@@ -1146,7 +1146,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's situation.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "keynes_economics",
@@ -1172,7 +1172,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "friedman_free_market",
@@ -1198,7 +1198,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's situation.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "hayek_spontaneous",
@@ -1224,7 +1224,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "smith_invisible_hand",
@@ -1250,7 +1250,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's situation.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
   {
     id: "darwin_evolution",
@@ -1276,7 +1276,7 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
 
 Apply these to the user's specific decision.
 
-Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""}`
+Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"counterarguments":[],"unknowns":[],"recommendation":""} confidence MUST be a whole number 0-100 (e.g. 60, not 0.6).`
   },
 ];
 
@@ -1409,7 +1409,13 @@ async function callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch)
     })
   });
   const result = await response.json();
-  if (!result.success) throw new Error(result.error || "API call failed");
+  if (!result.success) {
+    const err = new Error(result.error || "API call failed");
+    err.rateLimited = !!result.rateLimited;
+    err.contextTooLong = !!result.contextTooLong;
+    err.retryAfterMs = result.retryAfterMs || null;
+    throw err;
+  }
   return result.data.content?.map(c => c.text || "").join("") || "";
 }
 
@@ -1418,6 +1424,19 @@ async function callModel(systemPrompt, userContent, maxTokens = 1200, useWebSear
   try {
     raw = await callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch);
   } catch (firstErr) {
+    if (firstErr.contextTooLong) {
+      // Retrying identically won't help — the request itself is too large.
+      // Fail fast with a clear message instead of burning time on a doomed retry.
+      throw new Error(`Request too large for the model's context window (${firstErr.message}). This usually means too much prior-stage data was included in the prompt.`);
+    }
+    if (firstErr.rateLimited) {
+      // Groq enforces per-minute token limits. Wait however long it told us
+      // to (or a safe default), then retry once — rather than failing the
+      // whole pipeline on a transient, self-resolving condition.
+      await sleep(firstErr.retryAfterMs || 4000);
+      raw = await callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch);
+      return raw;
+    }
     // Network/API-level failure — plain retry after a short backoff.
     await sleep(800);
     raw = await callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch);
@@ -1492,6 +1511,35 @@ async function mapWithConcurrency(items, limit, worker) {
   return results;
 }
 
+// By the time the pipeline reaches evidence/scenario/assumptions/synthesis,
+// the raw JSON of every prior stage combined can run into thousands of
+// tokens — large enough to trip Groq's per-minute token limits on Deep-mode
+// runs. Later stages need the gist of each prior stage, not every field
+// verbatim, so trim arrays and long strings before re-serializing.
+function compact(obj, maxArrayItems = 3, maxStringLen = 220) {
+  if (obj == null) return obj;
+  if (typeof obj === "string") return obj.length > maxStringLen ? obj.slice(0, maxStringLen) + "…" : obj;
+  if (Array.isArray(obj)) return obj.slice(0, maxArrayItems).map(v => compact(v, maxArrayItems, maxStringLen));
+  if (typeof obj === "object") {
+    const out = {};
+    for (const k of Object.keys(obj)) out[k] = compact(obj[k], maxArrayItems, maxStringLen);
+    return out;
+  }
+  return obj;
+}
+
+// Compact summary of a single framework's result — key fields only, capped.
+function compactFramework(id, r) {
+  return {
+    framework: id,
+    key_claim: (r?.key_claim || "").slice(0, 220),
+    recommendation: (r?.recommendation || "").slice(0, 160),
+    confidence: r?.confidence || 0,
+    evidence: (r?.evidence || []).slice(0, 2),
+    counterarguments: (r?.counterarguments || []).slice(0, 2),
+  };
+}
+
 function parseJSON(raw) {
   const cleaned = (raw || "").replace(/```json|```/g, "").trim();
   try {
@@ -1544,7 +1592,8 @@ Return ONLY a JSON object (no markdown fences):
   "unknowns": [],
   "research_confidence": 0,
   "research_summary": ""
-}`;
+}
+"research_confidence" MUST be a whole number from 0 to 100 (e.g. 60, not 0.6).`;
 
 const REALITY_SYSTEM = `You are a reality extraction engine. You receive raw research data. Your job:
 1. Classify the problem type
@@ -1561,7 +1610,8 @@ Return ONLY a JSON object (no fences):
   "problem_type": "startup|career|investment|product|hiring|strategy|personal|marketing|operations|negotiation",
   "recommended_frameworks": [],
   "extraction_confidence": 0
-}`;
+}
+"extraction_confidence" MUST be a whole number from 0 to 100 (e.g. 60, not 0.6).`;
 
 const CROSS_EXAM_SYSTEM = `You are the cross-examination engine. Frameworks challenge each other. Your job:
 1. ATTACKS: Find contradictions between frameworks. Have Bayes attack overconfident claims. Taleb attacks anything that ignores tail risk. Kahneman flags anything that reeks of bias.
@@ -1714,7 +1764,8 @@ Return ONLY a JSON object (no fences):
   "missing_information": [],
   "recommended_research": [],
   "investigation_needed": false
-}`;
+}
+"confidence" MUST be a whole number from 0 to 100 (e.g. 60, not 0.6).`;
 
 // ─── PHASES ───────────────────────────────────────────────────────────────────
 const PHASES = [
@@ -1732,14 +1783,15 @@ const PHASES = [
 // ─── CONFIDENCE BADGE ─────────────────────────────────────────────────────────
 function ConfidenceBadge({ value, small }) {
   if (value == null) return null;
-  const color = confColor(value);
+  const normalized = (value > 0 && value <= 1) ? Math.round(value * 100) : value;
+  const color = confColor(normalized);
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
       <div style={{ fontSize: small ? "11px" : "13px", fontWeight: "700", color, letterSpacing: "0.06em" }}>
-        {confLabel(value)} {value}%
+        {confLabel(normalized)} {normalized}%
       </div>
       <div style={{ width: small ? "48px" : "60px", height: "3px", background: "#e2e8f0", borderRadius: "2px" }}>
-        <div style={{ height: "100%", width: `${value}%`, background: color, borderRadius: "2px", transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)" }} />
+        <div style={{ height: "100%", width: `${normalized}%`, background: color, borderRadius: "2px", transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)" }} />
       </div>
     </div>
   );
@@ -2230,16 +2282,14 @@ export default function ThinkingOSv2() {
   const [activePhase, setActivePhase]         = useState(null);
   const [completedPhases, setCompletedPhases] = useState({});
   const [phaseData, setPhaseData]             = useState({});
-  const [stageErrors, setStageErrors]         = useState({}); // { stageId: [messages] } — surfaced to the user instead of failing silently
-  const [assumptionOverrides, setAssumptionOverrides] = useState({}); // { index: "Verified" | "Contradicted" } — user's own confirmation, separate from the model's self-graded status
-  const [runMode, setRunMode]                 = useState("deep"); // "deep" (full 9-stage pipeline) or "quick" (3 frameworks, skips cross-exam/red-team/scenario — shape borrowed from Prism-5)
+  const [stageErrors, setStageErrors]         = useState({});
+  const [assumptionOverrides, setAssumptionOverrides] = useState({});
+  const [runMode, setRunMode]                 = useState("deep");
   const runModeRef = useRef("deep");
   useEffect(() => { runModeRef.current = runMode; }, [runMode]);
 
-  // ─── THINKER CHAT (ported concept from Prism-5, safer wording) ───────────
-  // chatOpen: null | "general" | a framework id — which chat panel is showing
   const [chatOpen, setChatOpen]       = useState(null);
-  const [chatMessages, setChatMessages] = useState({}); // { "general" | fw.id: [{role, content}] }
+  const [chatMessages, setChatMessages] = useState({});
   const [chatInput, setChatInput]     = useState("");
   const [chatSending, setChatSending] = useState(false);
   const [activeFrameworkId, setActiveFwId]    = useState(null);
@@ -2266,6 +2316,9 @@ export default function ThinkingOSv2() {
   const [traceView, setTraceView]             = useState(false);
   const [scenarioView, setScenarioView]       = useState(false);
   const textRef = useRef(null);
+
+  // ─── NEW: active tab for results ──────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState("synthesis");
 
   useEffect(() => {
     const s = document.createElement("style");
@@ -2298,6 +2351,8 @@ export default function ThinkingOSv2() {
       .evidence-section { transition: all 0.3s ease; }
       .evidence-section:hover { background: #f8fafc; }
       .evidence-score { font-size: 24px; font-weight: 700; }
+      .tab-button { transition: all 0.2s ease; cursor: pointer; }
+      .tab-button:hover { background: #f1f5f9; }
     `;
     document.head.appendChild(s);
     document.body.classList.add('light-theme');
@@ -2363,12 +2418,9 @@ export default function ThinkingOSv2() {
     setScenarioExpanded(false);
     setAssumptionExpanded(false);
     setChatOpen(null); setChatMessages({}); setChatInput(""); setChatSending(false);
+    setActiveTab("synthesis");
   }, []);
 
-  // Builds a short text summary of the analysis so far, used as context for
-  // Thinker Chat. `scope` is either a framework object (chat scoped to that
-  // one framework's analysis) or null (general chat scoped to the final
-  // recommendation).
   const buildChatContext = useCallback((scope) => {
     if (scope) {
       const r = fwResults[scope.id];
@@ -2445,9 +2497,6 @@ export default function ThinkingOSv2() {
     setAssumptionOverrides({});
     const col = {};
 
-    // A stage can "succeed" (no exception) but still return text the model
-    // didn't format as valid JSON, in which case safeJSON quietly substitutes
-    // a fallback. Flag that here so it's visible instead of silent.
     const flagParseFailure = (stageId, label) => {
       setStageErrors(prev => ({ ...prev, [stageId]: [...(prev[stageId] || []), `${label}: response couldn't be parsed — used fallback data.`] }));
     };
@@ -2502,7 +2551,7 @@ export default function ThinkingOSv2() {
 
     const isQuick = runModeRef.current === "quick";
     let fws = ALL_FRAMEWORKS.filter(f => (realityData.recommended_frameworks || []).includes(f.id));
-    if (isQuick) fws = fws.slice(0, 3); // Quick mode: 3 frameworks, like Prism-5's lean pipeline
+    if (isQuick) fws = fws.slice(0, 3);
     setSelectedFwIds(fws.map(f => f.id));
     if (fws.length > 0) setActiveFwId(fws[0].id);
 
@@ -2513,11 +2562,7 @@ export default function ThinkingOSv2() {
 
     const fwRes = {};
     const fwErrors = [];
-    // Run frameworks concurrently (limit 3 at a time) instead of one-by-one.
-    // This was the single biggest latency cost in the old pipeline — 4-6
-    // frameworks sequentially, each with an extra 1.5s artificial delay,
-    // could add 30-60+ seconds by itself.
-    await mapWithConcurrency(fws, 3, async (fw) => {
+    await mapWithConcurrency(fws, 2, async (fw) => {
       try {
         const raw = await callModel(
           fw.prompt,
@@ -2599,11 +2644,11 @@ export default function ThinkingOSv2() {
     try {
       const payload = {
         question: fullQuestion,
-        research: col.research,
-        reality: col.reality,
-        frameworks: Object.entries(fwRes).map(([id, r]) => ({ framework: id, ...r })),
-        crossexam: crossData,
-        redteam: redData,
+        research: compact(col.research),
+        reality: compact(col.reality),
+        frameworks: Object.entries(fwRes).map(([id, r]) => compactFramework(id, r)),
+        crossexam: compact(crossData),
+        redteam: compact(redData),
       };
       const raw = await callModel(EVIDENCE_CHALLENGE_SYSTEM, `Full analysis data:\n${JSON.stringify(payload)}\n\nChallenge the evidence now.`, 1200);
       if (!parseJSON(raw)) flagParseFailure("evidence", "Evidence challenge");
@@ -2650,12 +2695,12 @@ export default function ThinkingOSv2() {
       try {
         const payload = {
           question: fullQuestion,
-          research: col.research,
-          reality: col.reality,
-          frameworks: Object.entries(fwRes).map(([id, r]) => ({ framework: id, ...r })),
-          crossexam: crossData,
-          redteam: redData,
-          evidence: evidenceData,
+          research: compact(col.research),
+          reality: compact(col.reality),
+          frameworks: Object.entries(fwRes).map(([id, r]) => compactFramework(id, r)),
+          crossexam: compact(crossData),
+          redteam: compact(redData),
+          evidence: compact(evidenceData),
           recommendation: crossData?.consensus?.[0]?.recommendation || Object.values(fwRes)[0]?.recommendation || "No recommendation yet",
         };
         const raw = await callModel(SCENARIO_SYSTEM, `Full analysis data:\n${JSON.stringify(payload)}\n\nSimulate scenarios now.`, 1600);
@@ -2697,14 +2742,13 @@ export default function ThinkingOSv2() {
     try {
       const payload = {
         question: fullQuestion,
-        research: col.research,
-        reality: col.reality,
-        frameworks: Object.entries(fwRes).map(([id, r]) => ({ framework: id, ...r })),
-        crossexam: crossData,
-        redteam: redData,
-        evidence: evidenceData,
-        scenario: scenarioData,
-        synthesis: col.synthesis || {},
+        research: compact(col.research),
+        reality: compact(col.reality),
+        frameworks: Object.entries(fwRes).map(([id, r]) => compactFramework(id, r)),
+        crossexam: compact(crossData),
+        redteam: compact(redData),
+        evidence: compact(evidenceData),
+        scenario: compact(scenarioData),
       };
       const raw = await callModel(ASSUMPTION_SYSTEM, `Full analysis data:\n${JSON.stringify(payload)}\n\nDetect and manage all assumptions now.`, 1600);
       if (!parseJSON(raw)) flagParseFailure("assumptions", "Assumption manager");
@@ -2732,14 +2776,14 @@ export default function ThinkingOSv2() {
     try {
       const payload = {
         question: fullQuestion,
-        research: col.research,
-        reality: col.reality,
-        frameworks: Object.entries(fwRes).map(([id, r]) => ({ framework: id, ...r })),
-        crossexam: crossData,
-        redteam: redData,
-        evidence: evidenceData,
-        scenario: scenarioData,
-        assumptions: assumptionData,
+        research: compact(col.research),
+        reality: compact(col.reality),
+        frameworks: Object.entries(fwRes).map(([id, r]) => compactFramework(id, r)),
+        crossexam: compact(crossData),
+        redteam: compact(redData),
+        evidence: compact(evidenceData),
+        scenario: compact(scenarioData),
+        assumptions: compact(assumptionData),
       };
       const raw = await callModel(SYNTHESIS_SYSTEM, `Full analysis:\n${JSON.stringify(payload)}\n\nGenerate final decision output now.`, 1600);
       if (!parseJSON(raw)) flagParseFailure("synthesis", "Final synthesis — this is the output you're about to read");
@@ -2754,7 +2798,6 @@ export default function ThinkingOSv2() {
 
     const endTime = performance.now();
 
-    // ─── BUILD AND SAVE TRACE ──────────────────────────────────────────────
     const context = getCurrentContext();
     const trace = {
       metadata: {
@@ -2816,6 +2859,7 @@ export default function ThinkingOSv2() {
     setActivePhase("synthesis");
     setIsRunning(false);
     setInfoStatus("");
+    setActiveTab("synthesis");
   }, [scores, manualProblemType, selectedFwIds, traces]);
 
   const startAnalysis = useCallback(async () => {
@@ -2890,7 +2934,17 @@ export default function ThinkingOSv2() {
   const contextList = getContextList();
   const currentContext = getCurrentContext();
 
-  // ─── View handling ────────────────────────────────────────────────────────
+  // ─── GROUP FRAMEWORKS BY CATEGORY ─────────────────────────────────────────
+  const frameworkGroups = {
+    Strategy: ["first_principles", "thiel", "inversion", "second_order", "taleb", "sun_tzu", "machiavelli_prince", "greene_power", "foucault_power", "marx_dialectical"],
+    Economics: ["bayes", "porter", "keynes_economics", "friedman_free_market", "hayek_spontaneous", "smith_invisible_hand", "buffett_margin_safety"],
+    Psychology: ["kahneman", "munger", "bias_checker", "kahneman_noise", "thaler_nudge"],
+    Product: ["feynman", "popper", "bezos_day1", "naval_leverage", "christensen_disruption", "dawkins_memetic", "harari_narrative", "senge_systems", "meadows_leverage", "ackoff_idealized", "collins_flywheel", "gladwell_tipping", "darwin_evolution"],
+    Philosophy: ["epictetus_stoic", "marcus_aurelius", "seneca_stoic", "nietzsche_willpower", "camus_absurdism", "sartre_existentialism"],
+    Other: ["hoffertrue_believer", "greene_seduction"]
+  };
+
+  // ─── VIEW HANDLING ────────────────────────────────────────────────────────
   if (scenarioView) {
     return <ScenarioView scenario={scenario} onBack={() => setScenarioView(false)} />;
   }
@@ -2903,89 +2957,64 @@ export default function ThinkingOSv2() {
     return <JournalView journal={journal} scores={scores} onBack={() => setView("main")} onUpdateOutcome={updateOutcome} />;
   }
 
+  // ─── RENDER ──────────────────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: "100vh", background: "#f0f2f5", color: "#1a1a2e", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ borderBottom: "1px solid #e2e8f0", padding: "10px 18px", display: "flex", alignItems: "center", gap: "12px", background: "#ffffff", flexShrink: 0 }}>
+      {/* HEADER */}
+      <div style={{ borderBottom: "1px solid #e2e8f0", padding: "8px 18px", display: "flex", alignItems: "center", gap: "12px", background: "#ffffff", flexShrink: 0, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
         <div style={{ width: "32px", height: "32px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", flexShrink: 0 }}>🧩</div>
         <div>
           <div style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a2e", letterSpacing: "-0.02em" }}>Thinking OS <span style={{ color: "#6366f1", fontSize: "12px", fontFamily: "'JetBrains Mono', monospace" }}>v2</span></div>
           <div style={{ fontSize: "11px", color: "#718096", letterSpacing: "0.06em" }}>DECISION INTELLIGENCE · EVIDENCE-FIRST</div>
         </div>
 
+        {/* Context dropdown */}
         {contextList.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px", flexShrink: 0, overflowX: "auto" }}>
-            <span style={{ fontSize: "10px", color: "#718096", fontWeight: "600" }}>Context:</span>
-            {contextList.map(c => (
-              <button
-                key={c.id}
-                onClick={() => setCurrentContextId(c.id)}
-                style={{
-                  padding: "2px 10px",
-                  borderRadius: "12px",
-                  fontSize: "11px",
-                  fontWeight: "600",
-                  border: `1px solid ${currentContextId === c.id ? "#6366f1" : "#e2e8f0"}`,
-                  background: currentContextId === c.id ? "#6366f118" : "transparent",
-                  color: currentContextId === c.id ? "#6366f1" : "#4a5568",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  fontFamily: "'Inter', sans-serif"
-                }}
-              >
-                {c.type === "investment" ? "📈" : c.type === "career" ? "🧭" : c.type === "startup" ? "🚀" : "📋"} {c.question.slice(0, 20)}{c.question.length > 20 ? "…" : ""}
-                {c.answers && Object.keys(c.answers).length > 0 && ` ✓`}
-              </button>
-            ))}
-            {contextList.length > 1 && (
-              <button
-                onClick={() => {
-                  if (currentContextId && window.confirm("Delete this context?")) {
-                    deleteContext(currentContextId);
-                  }
-                }}
-                style={{
-                  padding: "2px 8px",
-                  borderRadius: "12px",
-                  fontSize: "11px",
-                  border: "1px solid #ef444430",
-                  background: "transparent",
-                  color: "#ef4444",
-                  cursor: "pointer",
-                  fontFamily: "'Inter', sans-serif"
-                }}
-              >
-                ✕
-              </button>
-            )}
-          </div>
+          <details style={{ position: "relative", marginLeft: "10px" }}>
+            <summary style={{ fontSize: "12px", cursor: "pointer", color: "#6366f1", fontWeight: "600", padding: "4px 10px", background: "#6366f112", borderRadius: "20px", border: "1px solid #6366f130" }}>
+              📚 Contexts ({contextList.length})
+            </summary>
+            <div style={{ position: "absolute", left: 0, top: "calc(100% + 4px)", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "6px", maxHeight: "200px", overflowY: "auto", zIndex: 20, minWidth: "200px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
+              {contextList.map(c => (
+                <div key={c.id} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "4px 8px", borderRadius: "4px", cursor: "pointer", background: currentContextId === c.id ? "#6366f112" : "transparent", fontSize: "12px" }}>
+                  <span onClick={() => setCurrentContextId(c.id)} style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {c.type === "investment" ? "📈" : c.type === "career" ? "🧭" : c.type === "startup" ? "🚀" : "📋"} {c.question.slice(0, 24)}
+                    {c.answers && Object.keys(c.answers).length > 0 && " ✓"}
+                  </span>
+                  {contextList.length > 1 && (
+                    <button onClick={() => { if (window.confirm("Delete this context?")) deleteContext(c.id); }} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "11px" }}>✕</button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </details>
         )}
 
-        <div style={{ marginLeft: "auto", display: "flex", gap: "6px", alignItems: "center" }}>
+        <div style={{ marginLeft: "auto", display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
           {isRunning && (
-            <button onClick={() => setIsRunning(false)} style={{ fontSize: "12px", background: "#ef444412", border: "1px solid #ef444435", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#ef4444", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>⏹ Cancel</button>
+            <button onClick={() => setIsRunning(false)} style={{ fontSize: "12px", background: "#ef444412", border: "1px solid #ef444435", borderRadius: "20px", padding: "4px 12px", cursor: "pointer", color: "#ef4444", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>⏹ Cancel</button>
           )}
           {hasRun && !isRunning && synthesis && (
-            <button onClick={() => exportMarkdown(question, phaseData, fwResults, selectedFwIds)} style={{ fontSize: "12px", background: "#6366f112", border: "1px solid #6366f130", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#6366f1", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>↓ Export MD</button>
+            <button onClick={() => exportMarkdown(question, phaseData, fwResults, selectedFwIds)} style={{ fontSize: "12px", background: "#6366f112", border: "1px solid #6366f130", borderRadius: "20px", padding: "4px 12px", cursor: "pointer", color: "#6366f1", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>↓ Export</button>
           )}
           {hasRun && !isRunning && scenario && (
-            <button onClick={() => setScenarioView(true)} style={{ fontSize: "12px", background: "#06b6d412", border: "1px solid #06b6d430", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#06b6d4", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>🌊 Scenario</button>
+            <button onClick={() => setScenarioView(true)} style={{ fontSize: "12px", background: "#06b6d412", border: "1px solid #06b6d430", borderRadius: "20px", padding: "4px 12px", cursor: "pointer", color: "#06b6d4", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>🌊 Scenario</button>
           )}
           {hasRun && pendingEntry && !showJournalForm && (
-            <button onClick={() => setShowJournalForm(true)} style={{ fontSize: "12px", background: "#f1c40f12", border: "1px solid #f1c40f30", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#b7791f", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>+ Journal</button>
+            <button onClick={() => setShowJournalForm(true)} style={{ fontSize: "12px", background: "#f1c40f12", border: "1px solid #f1c40f30", borderRadius: "20px", padding: "4px 12px", cursor: "pointer", color: "#b7791f", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>+ Journal</button>
           )}
-          <button onClick={() => setTraceView(true)} style={{ fontSize: "12px", background: "#8b5cf612", border: "1px solid #8b5cf630", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#8b5cf6", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>🔍 {traces.length}</button>
-          <button onClick={() => setView("journal")} style={{ fontSize: "12px", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#4a5568", fontFamily: "'Inter',sans-serif" }}>📓 {journal.length}</button>
-          {hasRun && <button onClick={reset} style={{ fontSize: "12px", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "4px 12px", cursor: "pointer", color: "#718096", fontFamily: "'Inter',sans-serif" }}>↺ Reset</button>}
+          <button onClick={() => setTraceView(true)} style={{ fontSize: "12px", background: "#8b5cf612", border: "1px solid #8b5cf630", borderRadius: "20px", padding: "4px 12px", cursor: "pointer", color: "#8b5cf6", fontFamily: "'Inter',sans-serif", fontWeight: "600" }}>🔍 {traces.length}</button>
+          <button onClick={() => setView("journal")} style={{ fontSize: "12px", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "4px 12px", cursor: "pointer", color: "#4a5568", fontFamily: "'Inter',sans-serif" }}>📓 {journal.length}</button>
+          {hasRun && <button onClick={reset} style={{ fontSize: "12px", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "4px 12px", cursor: "pointer", color: "#718096", fontFamily: "'Inter',sans-serif" }}>↺ Reset</button>}
         </div>
       </div>
 
+      {/* Context bar (if context active) */}
       {currentContext && (
         <div style={{ padding: "6px 18px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", fontSize: "12px", color: "#475569", display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
           <span style={{ fontWeight: "600" }}>📋 Context:</span>
           <span style={{ fontWeight: "500" }}>“{currentContext.question.slice(0, 60)}{currentContext.question.length > 60 ? "…" : ""}”</span>
-          <span style={{ background: "#e2e8f0", padding: "1px 8px", borderRadius: "12px", fontSize: "10px" }}>
-            {currentContext.type}
-          </span>
+          <span style={{ background: "#e2e8f0", padding: "1px 8px", borderRadius: "12px", fontSize: "10px" }}>{currentContext.type}</span>
           <span style={{ fontSize: "10px", color: "#94a3b8" }}>
             {Object.keys(currentContext.answers).filter(k => currentContext.answers[k] && currentContext.answers[k].trim() !== "").length} fields filled
           </span>
@@ -3026,10 +3055,11 @@ export default function ThinkingOSv2() {
         </div>
       )}
 
+      {/* MAIN AREA */}
       {!hasRun && !isAsking && (
         <div style={{ padding: "30px 20px 0", flexShrink: 0 }}>
-          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "18px 20px" }}>
-            <div style={{ fontSize: "13px", color: "#4a5568", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "10px" }}>
+          <div style={{ background: "#ffffff", borderRadius: "14px", padding: "24px", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+            <div style={{ fontSize: "13px", color: "#4a5568", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "12px" }}>
               QUESTION OR DECISION
               {currentContext && <span style={{ fontWeight: "400", color: "#94a3b8", fontSize: "11px" }}> — continuing conversation</span>}
             </div>
@@ -3039,41 +3069,36 @@ export default function ThinkingOSv2() {
               onChange={e => setQuestion(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) startAnalysis(); }}
               placeholder="Describe the problem, decision, or question you need to think through…"
-              rows={3}
-              style={{ width: "100%", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "10px 14px", color: "#1a1a2e", fontSize: "16px", fontFamily: "'Inter', sans-serif", resize: "none", lineHeight: "1.65" }}
+              rows={5}
+              style={{ width: "100%", background: "#f7fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "12px 16px", color: "#1a1a2e", fontSize: "16px", fontFamily: "'Inter', sans-serif", resize: "vertical", lineHeight: "1.65", transition: "border-color 0.2s, box-shadow 0.2s" }}
+              onFocus={e => { e.target.style.borderColor = "#6366f1"; e.target.style.boxShadow = "0 0 0 3px #6366f120"; }}
+              onBlur={e => { e.target.style.borderColor = "#e2e8f0"; e.target.style.boxShadow = "none"; }}
             />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "12px", flexWrap: "wrap", gap: "8px" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "16px", alignItems: "center" }}>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
-                <span style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>TYPE (optional)</span>
-                {PROBLEM_TYPES.map(pt => (
-                  <button key={pt.id} onClick={() => setManualType(manualProblemType === pt.id ? null : pt.id)} style={{
-                    padding: "3px 10px", borderRadius: "4px",
-                    border: `1px solid ${manualProblemType === pt.id ? "#6366f1" : "#e2e8f0"}`,
-                    background: manualProblemType === pt.id ? "#6366f118" : "transparent",
-                    color: manualProblemType === pt.id ? "#6366f1" : "#4a5568",
-                    fontSize: "12px", fontFamily: "'Inter',sans-serif", cursor: "pointer"
-                  }}>{pt.icon} {pt.label}</button>
-                ))}
+                <span style={{ fontSize: "11px", color: "#718096", fontWeight: "600", marginRight: "4px" }}>Type:</span>
+                <select
+                  value={manualProblemType || ""}
+                  onChange={e => setManualType(e.target.value || null)}
+                  style={{ padding: "4px 8px", fontSize: "12px", border: "1px solid #e2e8f0", borderRadius: "6px", background: "#f7fafc", fontFamily: "'Inter', sans-serif" }}
+                >
+                  <option value="">Auto-detect</option>
+                  {PROBLEM_TYPES.map(pt => <option key={pt.id} value={pt.id}>{pt.icon} {pt.label}</option>)}
+                </select>
               </div>
-              <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden", flexShrink: 0 }}>
-                <button onClick={() => setRunMode("quick")} title="3 frameworks, skips cross-exam/red-team/scenario — faster, lighter rigor" style={{
-                  padding: "10px 12px", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "600", fontFamily: "'Inter',sans-serif",
-                  background: runMode === "quick" ? "#6366f1" : "#f7fafc", color: runMode === "quick" ? "#fff" : "#718096"
-                }}>⚡ Quick</button>
-                <button onClick={() => setRunMode("deep")} title="Full 9-stage pipeline: cross-exam, red-team, scenario simulation, assumption manager" style={{
-                  padding: "10px 12px", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "600", fontFamily: "'Inter',sans-serif",
-                  background: runMode === "deep" ? "#6366f1" : "#f7fafc", color: runMode === "deep" ? "#fff" : "#718096"
-                }}>🔬 Deep</button>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "12px", color: "#718096" }}>Mode</span>
+                <div style={{ display: "flex", background: "#f1f5f9", borderRadius: "20px", padding: "2px" }}>
+                  <button onClick={() => setRunMode("quick")} style={{ padding: "4px 12px", border: "none", borderRadius: "18px", background: runMode === "quick" ? "#6366f1" : "transparent", color: runMode === "quick" ? "#fff" : "#64748b", fontSize: "11px", fontWeight: "600", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>Quick</button>
+                  <button onClick={() => setRunMode("deep")} style={{ padding: "4px 12px", border: "none", borderRadius: "18px", background: runMode === "deep" ? "#6366f1" : "transparent", color: runMode === "deep" ? "#fff" : "#64748b", fontSize: "11px", fontWeight: "600", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>Deep</button>
+                </div>
               </div>
-              <button onClick={startAnalysis} disabled={!question.trim()} style={{
-                background: question.trim() ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "#edf2f7",
-                border: "none", borderRadius: "8px", padding: "10px 24px",
-                color: question.trim() ? "#fff" : "#a0aec0", fontSize: "14px", fontWeight: "600",
-                cursor: question.trim() ? "pointer" : "not-allowed", fontFamily: "'Inter',sans-serif", whiteSpace: "nowrap"
-              }}>Analyze →</button>
+              <button onClick={startAnalysis} disabled={!question.trim()} style={{ marginLeft: "auto", background: question.trim() ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "#edf2f7", border: "none", borderRadius: "8px", padding: "8px 24px", color: question.trim() ? "#fff" : "#a0aec0", fontSize: "14px", fontWeight: "600", cursor: question.trim() ? "pointer" : "not-allowed", fontFamily: "'Inter', sans-serif", transition: "transform 0.1s" }}>
+                Analyze →
+              </button>
             </div>
-            <div style={{ fontSize: "12px", color: "#a0aec0", marginTop: "8px" }}>
-              ⌘+Enter to run · Web search: {ENABLE_WEB_SEARCH ? "✅ ON" : "❌ OFF"} · Auto-selects frameworks · {runMode === "quick" ? "Quick mode: ~3 frameworks, no cross-exam/red-team/scenario" : "Deep mode: full 9-stage pipeline"}
+            <div style={{ fontSize: "12px", color: "#a0aec0", marginTop: "8px", textAlign: "right" }}>
+              ⌘+Enter · Web search: {ENABLE_WEB_SEARCH ? "✅ ON" : "❌ OFF"} · {runMode === "quick" ? "Quick mode" : "Deep mode"}
               {currentContext && ` · 📋 ${Object.keys(currentContext.answers).filter(k => currentContext.answers[k] && currentContext.answers[k].trim() !== "").length} fields saved`}
             </div>
           </div>
@@ -3083,20 +3108,13 @@ export default function ThinkingOSv2() {
             <div style={{ color: "#718096", fontSize: "14px", maxWidth: "480px", margin: "0 auto", lineHeight: "1.8" }}>
               Research → Reality Extraction → Framework Analysis → Cross-Examination → Red Team → Evidence Challenge → Scenario Simulation → Assumption Manager → Decision Synthesis
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", justifyContent: "center", marginTop: "12px", maxWidth: "520px", margin: "12px auto 0" }}>
-              {ALL_FRAMEWORKS.map(f => (
-                <div key={f.id} style={{ padding: "3px 10px", background: `${f.color}10`, border: `1px solid ${f.color}22`, borderRadius: "20px", fontSize: "11px", color: f.color }}>
-                  {f.icon} {f.label}
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       )}
 
       {isAsking && missingInfo && !hasRun && (
         <div style={{ padding: "20px", flex: 1, overflowY: "auto" }}>
-          <div style={{ background: "#ffffff", border: "1px solid #6366f1", borderRadius: "14px", padding: "24px", maxWidth: "700px", margin: "0 auto" }}>
+          <div style={{ background: "#ffffff", border: "1px solid #6366f1", borderRadius: "14px", padding: "24px", maxWidth: "700px", margin: "0 auto", boxShadow: "0 4px 12px rgba(99,102,241,0.08)" }}>
             <div style={{ fontSize: "14px", color: "#1a1a2e", marginBottom: "16px" }}>
               <span style={{ fontWeight: "700", color: "#6366f1" }}>📋 {infoStatus}</span>
               {currentContext && (
@@ -3148,6 +3166,7 @@ export default function ThinkingOSv2() {
 
       {hasRun && (
         <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
+          {/* SIDEBAR */}
           <div style={{ width: "220px", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", flexShrink: 0, overflow: "hidden", background: "#ffffff" }}>
             <div style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0", fontSize: "12px", color: "#718096", lineHeight: "1.5", fontStyle: "italic" }}>
               "{question.slice(0, 70)}{question.length > 70 ? "…" : ""}"
@@ -3169,32 +3188,44 @@ export default function ThinkingOSv2() {
             </div>
             <div style={{ padding: "6px 10px 3px", fontSize: "11px", color: "#a0aec0", letterSpacing: "0.08em", fontWeight: "600" }}>FRAMEWORKS</div>
             <div style={{ flex: 1, overflowY: "auto", padding: "0 8px 8px", display: "flex", flexDirection: "column", gap: "2px" }}>
-              {selectedFwIds.map(fid => {
-                const fw = ALL_FRAMEWORKS.find(f => f.id === fid);
-                if (!fw) return null;
-                const res = fwResults[fid];
-                const loading = fwLoading[fid];
-                const isActive = activeFrameworkId === fid;
+              {Object.entries(frameworkGroups).map(([category, ids]) => {
+                const relevant = ids.filter(fid => selectedFwIds.includes(fid));
+                if (relevant.length === 0) return null;
                 return (
-                  <button key={fid} onClick={() => setActiveFwId(fid)} style={{
-                    background: isActive ? `${fw.color}18` : "#f7fafc",
-                    border: `1px solid ${isActive ? fw.color : "#e2e8f0"}`,
-                    borderRadius: "6px", padding: "6px 10px", cursor: "pointer", textAlign: "left",
-                    display: "flex", alignItems: "center", gap: "8px", transition: "all 0.15s ease"
-                  }}>
-                    <span style={{ fontSize: "16px", flexShrink: 0 }}>{fw.icon}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: "12px", fontWeight: "600", color: isActive ? fw.accent : "#4a5568", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{fw.label}</div>
-                      {res && <div style={{ fontSize: "11px", color: confColor(res.confidence), marginTop: "1px" }}>{res.confidence}%</div>}
+                  <details key={category} style={{ marginBottom: "4px" }}>
+                    <summary style={{ fontSize: "11px", fontWeight: "600", color: "#4a5568", cursor: "pointer", padding: "4px 0" }}>
+                      {category} ({relevant.length})
+                    </summary>
+                    <div style={{ paddingLeft: "8px" }}>
+                      {relevant.map(fid => {
+                        const fw = ALL_FRAMEWORKS.find(f => f.id === fid);
+                        if (!fw) return null;
+                        const res = fwResults[fid];
+                        const loading = fwLoading[fid];
+                        const isActive = activeFrameworkId === fid;
+                        return (
+                          <button key={fid} onClick={() => setActiveFwId(fid)} style={{
+                            display: "flex", alignItems: "center", gap: "4px",
+                            padding: "3px 6px", fontSize: "11px", width: "100%",
+                            background: isActive ? `${fw.color}18` : "transparent",
+                            border: "none", borderRadius: "4px", cursor: "pointer",
+                            color: isActive ? fw.color : "#4a5568",
+                            textAlign: "left", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
+                          }}>
+                            <span>{fw.icon}</span> {fw.label}
+                            {loading && <span style={{ marginLeft: "auto", width: "6px", height: "6px", borderRadius: "50%", background: fw.accent, animation: "pulse 1s infinite" }} />}
+                            {res && !loading && <span style={{ marginLeft: "auto", fontSize: "10px", color: confColor(res.confidence) }}>{res.confidence}%</span>}
+                          </button>
+                        );
+                      })}
                     </div>
-                    {loading && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: fw.accent, animation: "pulse 1s infinite", flexShrink: 0 }} />}
-                    {res && !loading && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", flexShrink: 0 }} />}
-                  </button>
+                  </details>
                 );
               })}
             </div>
           </div>
 
+          {/* MAIN CONTENT */}
           <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", minWidth: 0, background: "#f0f2f5" }}>
             {Object.keys(stageErrors).length > 0 && (
               <div style={{ background: "#fff5f5", border: "1px solid #fc8181", borderRadius: "10px", padding: "12px 16px", marginBottom: "16px", animation: "fadeUp 0.3s ease" }}>
@@ -3222,303 +3253,352 @@ export default function ThinkingOSv2() {
               </div>
             )}
 
-            {evidence && (
-              <div style={{ background: "#ffffff", border: "1px solid #8b5cf6", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.35s ease" }}>
-                <div onClick={() => setEvidenceExpanded(!evidenceExpanded)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", userSelect: "none" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <span style={{ fontSize: "16px" }}>🔬</span>
-                    <span style={{ fontSize: "13px", fontWeight: "700", color: "#4a5568" }}>Evidence Challenge</span>
-                    {evidence.evidence_strength_score > 0 && (
-                      <span style={{ fontSize: "12px", fontWeight: "700", padding: "2px 10px", borderRadius: "4px", background: confColor(evidence.evidence_strength_score) + "15", color: confColor(evidence.evidence_strength_score), border: `1px solid ${confColor(evidence.evidence_strength_score)}30` }}>
-                        Score: {evidence.evidence_strength_score}%
-                      </span>
-                    )}
-                    <span style={{ fontSize: "12px", color: "#94a3b8" }}>{evidence.supporting_evidence?.length || 0} supporting · {evidence.contradicting_evidence?.length || 0} contradicting</span>
-                  </div>
-                  <span style={{ fontSize: "14px", color: "#94a3b8" }}>{evidenceExpanded ? "▼" : "▶"}</span>
-                </div>
-                {evidenceExpanded && (
-                  <div style={{ marginTop: "14px", borderTop: "1px solid #e2e8f0", paddingTop: "14px" }}>
-                    {evidence.evidence_summary && <div style={{ marginBottom: "12px", padding: "10px 12px", background: "#f7fafc", borderRadius: "6px", fontSize: "13px", color: "#4a5568", fontStyle: "italic" }}>{evidence.evidence_summary}</div>}
-                    {evidence.major_recommendations?.length > 0 && <div style={{ marginBottom: "10px" }}><div style={{ fontSize: "11px", fontWeight: "600", color: "#4a5568", marginBottom: "4px" }}>📋 Major Recommendations</div>{evidence.major_recommendations.map((rec, i) => <div key={i} style={{ fontSize: "13px", color: "#1a1a2e", padding: "3px 0" }}>· {rec}</div>)}</div>}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                      {evidence.supporting_evidence?.length > 0 && <div><div style={{ fontSize: "11px", fontWeight: "600", color: "#22c55e", marginBottom: "6px" }}>✅ Supporting Evidence</div>{evidence.supporting_evidence.slice(0, 5).map((item, i) => <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px", fontSize: "12px", color: "#2d3748" }}><EvidenceBadge classification={item.classification} /><span>{item.evidence}</span></div>)}</div>}
-                      {evidence.contradicting_evidence?.length > 0 && <div><div style={{ fontSize: "11px", fontWeight: "600", color: "#ef4444", marginBottom: "6px" }}>⚠️ Contradicting Evidence</div>{evidence.contradicting_evidence.slice(0, 5).map((item, i) => <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px", fontSize: "12px", color: "#2d3748" }}><EvidenceBadge classification={item.classification} /><span>{item.evidence}</span></div>)}</div>}
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: "10px" }}>
-                      {evidence.missing_evidence?.length > 0 && <div><div style={{ fontSize: "11px", fontWeight: "600", color: "#f59e0b", marginBottom: "4px" }}>📌 Missing Evidence</div>{evidence.missing_evidence.slice(0, 5).map((item, i) => <div key={i} style={{ fontSize: "12px", color: "#2d3748", marginBottom: "2px" }}>· {item}</div>)}</div>}
-                      {evidence.remaining_assumptions?.length > 0 && <div><div style={{ fontSize: "11px", fontWeight: "600", color: "#f97316", marginBottom: "4px" }}>🤔 Remaining Assumptions</div>{evidence.remaining_assumptions.slice(0, 5).map((item, i) => <div key={i} style={{ fontSize: "12px", color: "#2d3748", marginBottom: "2px" }}>· {item}</div>)}</div>}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {scenario && (
-              <div style={{ background: "#ffffff", border: "1px solid #06b6d4", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.35s ease" }}>
-                <div onClick={() => setScenarioExpanded(!scenarioExpanded)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", userSelect: "none" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <span style={{ fontSize: "16px" }}>🌊</span>
-                    <span style={{ fontSize: "13px", fontWeight: "700", color: "#4a5568" }}>Scenario Simulation</span>
-                    {scenario.decision_robustness?.rating && <ScenarioBadge type={scenario.decision_robustness.rating === "High" ? "Best Case" : scenario.decision_robustness.rating === "Medium" ? "Most Likely" : "Worst Case"} />}
-                    <span style={{ fontSize: "12px", color: "#94a3b8" }}>{scenario.best_case ? "✅" : ""} {scenario.most_likely ? "📊" : ""} {scenario.worst_case ? "⚠️" : ""}</span>
-                  </div>
-                  <span style={{ fontSize: "14px", color: "#94a3b8" }}>{scenarioExpanded ? "▼" : "▶"}</span>
-                </div>
-                {scenarioExpanded && (
-                  <div style={{ marginTop: "14px", borderTop: "1px solid #e2e8f0", paddingTop: "14px" }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "12px" }}>
-                      {scenario.best_case && <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: "8px", padding: "10px 12px" }}><ScenarioBadge type="Best Case" /><div style={{ fontSize: "12px", color: "#166534", marginTop: "4px" }}>{scenario.best_case.outcome?.slice(0, 80) || "Optimal outcome"}</div></div>}
-                      {scenario.most_likely && <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: "8px", padding: "10px 12px" }}><ScenarioBadge type="Most Likely" /><div style={{ fontSize: "12px", color: "#92400e", marginTop: "4px" }}>{scenario.most_likely.outcome?.slice(0, 80) || "Expected outcome"}</div></div>}
-                      {scenario.worst_case && <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", padding: "10px 12px" }}><ScenarioBadge type="Worst Case" /><div style={{ fontSize: "12px", color: "#991b1b", marginTop: "4px" }}>{scenario.worst_case.outcome?.slice(0, 80) || "Failure outcome"}</div></div>}
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", fontSize: "12px" }}>
-                      {scenario.risk_analysis?.length > 0 && <div><span style={{ fontWeight: "600", color: "#ef4444" }}>⚠️ Risks: </span><span style={{ color: "#4a5568" }}>{scenario.risk_analysis.length} identified</span></div>}
-                      {scenario.opportunities?.length > 0 && <div><span style={{ fontWeight: "600", color: "#22c55e" }}>🚀 Opportunities: </span><span style={{ color: "#4a5568" }}>{scenario.opportunities.length} identified</span></div>}
-                      {scenario.monitoring_indicators?.length > 0 && <div><span style={{ fontWeight: "600", color: "#06b6d4" }}>📊 Monitoring: </span><span style={{ color: "#4a5568" }}>{scenario.monitoring_indicators.length} metrics</span></div>}
-                    </div>
-                    <div style={{ marginTop: "8px", fontSize: "12px", color: "#94a3b8" }}>Click 🌊 Scenario button above for full details</div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {assumptionsData && (
-              <div style={{ background: "#ffffff", border: "1px solid #f97316", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.35s ease" }}>
-                <div onClick={() => setAssumptionExpanded(!assumptionExpanded)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", userSelect: "none" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <span style={{ fontSize: "16px" }}>🔍</span>
-                    <span style={{ fontSize: "13px", fontWeight: "700", color: "#4a5568" }}>Assumption Manager</span>
-                    {assumptionsData.summary && (
-                      <span style={{ fontSize: "11px", color: "#718096" }}>
-                        {assumptionsData.summary.total || 0} total · {assumptionsData.summary.critical || 0} critical · {assumptionsData.summary.contradictions || 0} conflicts
-                      </span>
-                    )}
-                    {assumptionsData.summary?.critical > 0 && (
-                      <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "4px", background: "#ef444415", color: "#ef4444", border: "1px solid #ef444430" }}>⚠️ {assumptionsData.summary.critical} critical assumptions</span>
-                    )}
-                  </div>
-                  <span style={{ fontSize: "14px", color: "#94a3b8" }}>{assumptionExpanded ? "▼" : "▶"}</span>
-                </div>
-                {assumptionExpanded && (
-                  <div style={{ marginTop: "14px", borderTop: "1px solid #e2e8f0", paddingTop: "14px" }}>
-                    {assumptionsData.summary && (
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px", marginBottom: "12px", padding: "8px 12px", background: "#f7fafc", borderRadius: "6px" }}>
-                        <div><span style={{ fontWeight: "600", fontSize: "12px" }}>Total:</span> <span style={{ fontSize: "13px" }}>{assumptionsData.summary.total || 0}</span></div>
-                        <div><span style={{ fontWeight: "600", fontSize: "12px", color: "#22c55e" }}>Verified:</span> <span style={{ fontSize: "13px" }}>{assumptionsData.summary.verified || 0}</span></div>
-                        <div><span style={{ fontWeight: "600", fontSize: "12px", color: "#ef4444" }}>Unverified:</span> <span style={{ fontSize: "13px" }}>{assumptionsData.summary.unverified || 0}</span></div>
-                        <div><span style={{ fontWeight: "600", fontSize: "12px", color: "#ef4444" }}>Critical:</span> <span style={{ fontSize: "13px" }}>{assumptionsData.summary.critical || 0}</span></div>
-                      </div>
-                    )}
-
-                    {assumptionsData.assumptions?.length > 0 && (
-                      <div style={{ marginBottom: "12px" }}>
-                        <div style={{ fontSize: "11px", fontWeight: "600", color: "#4a5568", marginBottom: "6px" }}>📋 All Assumptions <span style={{ fontWeight: "400", color: "#a0aec0" }}>— you can confirm or reject these yourself</span></div>
-                        {assumptionsData.assumptions.slice(0, 8).map((a, i) => {
-                          const overridden = assumptionOverrides[i];
-                          const displayStatus = overridden || a.verification_status || "Unknown";
-                          return (
-                            <div key={i} style={{ padding: "6px 10px", background: "#f7fafc", borderRadius: "6px", marginBottom: "4px", border: "1px solid #e2e8f0" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                                <span style={{ fontSize: "13px", fontWeight: "500", color: "#1a1a2e" }}>{a.statement}</span>
-                                <AssumptionStatusBadge status={displayStatus} />
-                                {overridden && <span style={{ fontSize: "9px", color: "#6366f1", fontWeight: "700" }}>YOU CONFIRMED</span>}
-                                <AssumptionCriticalityBadge criticality={a.criticality || "Medium"} />
-                                {a.category && <span style={{ fontSize: "10px", color: "#718096", background: "#edf2f7", padding: "1px 6px", borderRadius: "4px" }}>{a.category}</span>}
-                                <div style={{ display: "flex", gap: "4px", marginLeft: "auto" }}>
-                                  <button onClick={() => setAssumptionOverrides(prev => ({ ...prev, [i]: "Verified" }))} title="I checked this myself — it's true" style={{ fontSize: "10px", padding: "2px 7px", borderRadius: "4px", border: "1px solid #22c55e40", background: displayStatus === "Verified" && overridden ? "#22c55e" : "#22c55e10", color: displayStatus === "Verified" && overridden ? "#fff" : "#22c55e", cursor: "pointer", fontWeight: "600" }}>✓ True</button>
-                                  <button onClick={() => setAssumptionOverrides(prev => ({ ...prev, [i]: "Contradicted" }))} title="I checked this myself — it's false" style={{ fontSize: "10px", padding: "2px 7px", borderRadius: "4px", border: "1px solid #ef444440", background: displayStatus === "Contradicted" && overridden ? "#ef4444" : "#ef444410", color: displayStatus === "Contradicted" && overridden ? "#fff" : "#ef4444", cursor: "pointer", fontWeight: "600" }}>✕ False</button>
-                                </div>
-                              </div>
-                              {a.supporting_evidence?.length > 0 && <div style={{ fontSize: "11px", color: "#22c55e", marginTop: "2px" }}>✅ {a.supporting_evidence.slice(0, 2).join(", ")}</div>}
-                              {a.contradicting_evidence?.length > 0 && <div style={{ fontSize: "11px", color: "#ef4444", marginTop: "1px" }}>⚠️ {a.contradicting_evidence.slice(0, 2).join(", ")}</div>}
-                              {a.impact_if_false && <div style={{ fontSize: "11px", color: "#f97316", marginTop: "1px" }}>💥 If false: {a.impact_if_false}</div>}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {assumptionsData.conflicts?.length > 0 && (
-                      <div>
-                        <div style={{ fontSize: "11px", fontWeight: "600", color: "#ec4899", marginBottom: "6px" }}>⚡ Conflicts Detected</div>
-                        {assumptionsData.conflicts.slice(0, 3).map((c, i) => (
-                          <div key={i} style={{ padding: "6px 10px", background: "#fdf2f8", borderRadius: "6px", marginBottom: "4px", border: "1px solid #fbb6ce" }}>
-                            <div style={{ fontSize: "12px", color: "#1a1a2e" }}><span style={{ fontWeight: "600" }}>{c.assumption_a}</span> vs <span style={{ fontWeight: "600" }}>{c.assumption_b}</span></div>
-                            <div style={{ fontSize: "11px", color: "#718096" }}>{c.conflict}</div>
-                            {c.impact && <div style={{ fontSize: "11px", color: "#ef4444" }}>Impact: {c.impact}</div>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {synthesis && (
-              <div style={{ background: insufficientInfo ? "#fff5f5" : "#fffff0", border: `1px solid ${insufficientInfo ? "#feb2b2" : "#f6e05e"}`, borderRadius: "12px", padding: "18px 22px", marginBottom: "18px", animation: "fadeUp 0.4s ease" }}>
-                {insufficientInfo ? (
-                  <>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-                      <div style={{ fontSize: "13px", color: "#c53030", fontWeight: "700", letterSpacing: "0.08em" }}>⛔ INSUFFICIENT INFORMATION — DO NOT DECIDE YET</div>
-                      <ConfidenceBadge value={synthesis.confidence} />
-                    </div>
-                    <div style={{ fontSize: "15px", color: "#4a5568", marginBottom: "12px" }}>{synthesis.recommendation}</div>
-                    {synthesis.missing_information?.length > 0 && (
-                      <div style={{ marginBottom: "8px" }}>
-                        <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "5px" }}>MISSING INFORMATION</div>
-                        {synthesis.missing_information.map((m, i) => <div key={i} style={{ fontSize: "14px", color: "#c53030", marginBottom: "3px" }}>· {m}</div>)}
-                      </div>
-                    )}
-                    {synthesis.recommended_research?.length > 0 && (
-                      <div>
-                        <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "5px" }}>RECOMMENDED RESEARCH</div>
-                        {synthesis.recommended_research.map((r, i) => <div key={i} style={{ fontSize: "14px", color: "#2b6cb0", marginBottom: "3px" }}>→ {r}</div>)}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "12px" }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>FINAL DECISION</div>
-                        <div style={{ fontSize: "20px", fontWeight: "700", color: "#1a1a2e", lineHeight: "1.4" }}>{synthesis.recommendation}</div>
-                        {evidence && evidence.evidence_strength_score > 0 && <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "4px" }}>Evidence Strength: {evidence.evidence_strength_score}% · {evidence.evidence_strength_score >= 70 ? "✅ Well-supported" : evidence.evidence_strength_score >= 50 ? "⚠️ Moderately supported" : "❌ Weakly supported"}</div>}
-                        {scenario && scenario.decision_robustness?.rating && <div style={{ fontSize: "12px", color: "#06b6d4", marginTop: "2px" }}>Scenario Robustness: {scenario.decision_robustness.rating}</div>}
-                        {assumptionsData && assumptionsData.summary?.critical > 0 && <div style={{ fontSize: "12px", color: "#ef4444", marginTop: "2px" }}>⚠️ {assumptionsData.summary.critical} critical assumptions identified</div>}
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "5px", flexShrink: 0 }}>
-                        <ConfidenceBadge value={synthesis.confidence} />
-                        <span style={{ fontSize: "12px", fontWeight: "700", padding: "2px 10px", borderRadius: "4px", background: synthesis.risk_level === "High" ? "#ef444415" : synthesis.risk_level === "Medium" ? "#f59e0b15" : "#22c55e15", color: synthesis.risk_level === "High" ? "#ef4444" : synthesis.risk_level === "Medium" ? "#f59e0b" : "#22c55e", border: `1px solid ${synthesis.risk_level === "High" ? "#ef444430" : synthesis.risk_level === "Medium" ? "#f59e0b30" : "#22c55e30"}` }}>
-                          {synthesis.risk_level} RISK
-                        </span>
-                      </div>
-                    </div>
-
-                    {synthesis.confidence_reasoning?.length > 0 && (
-                      <div style={{ background: "#f7fafc", borderRadius: "6px", padding: "8px 12px", marginBottom: "12px" }}>
-                        <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>CONFIDENCE REASONING</div>
-                        {synthesis.confidence_reasoning.map((r, i) => <div key={i} style={{ fontSize: "13px", color: "#4a5568", marginBottom: "2px" }}>· {r}</div>)}
-                      </div>
-                    )}
-
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
-                      <MiniSection title="WHY" items={synthesis.why} color="#2b6cb0" />
-                      <MiniSection title="TOP RISKS" items={synthesis.top_risks} color="#c53030" />
-                      <MiniSection title="WHAT WOULD CHANGE THIS (+)" items={synthesis.what_would_change_positive} color="#276749" />
-                      <MiniSection title="WHAT WOULD CHANGE THIS (−)" items={synthesis.what_would_change_negative} color="#c05621" />
-                    </div>
-
-                    {synthesis.next_actions?.length > 0 && (
-                      <div>
-                        <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "6px" }}>NEXT ACTIONS</div>
-                        {synthesis.next_actions.slice(0, 5).map((a, i) => (
-                          <div key={i} style={{ display: "flex", gap: "10px", marginBottom: "4px" }}>
-                            <span style={{ fontSize: "12px", fontFamily: "'JetBrains Mono', monospace", color: "#6366f1", fontWeight: "700", flexShrink: 0, marginTop: "2px" }}>{String(i + 1).padStart(2, "0")}</span>
-                            <span style={{ fontSize: "14px", color: "#4a5568", lineHeight: "1.6" }}>{a}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <button onClick={() => setChatOpen(chatOpen === "general" ? null : "general")} style={{ marginTop: "12px", fontSize: "12px", fontWeight: "600", color: "#6366f1", background: "#6366f112", border: "1px solid #6366f130", borderRadius: "6px", padding: "6px 12px", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>
-                      💬 {chatOpen === "general" ? "Close chat" : "Ask a follow-up about this recommendation"}
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-
-            {crossexam && (
-              <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.35s ease" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>CONSENSUS ENGINE</div>
-                  <div style={{ display: "flex", gap: "10px" }}><span style={{ fontSize: "13px", color: "#22c55e", fontWeight: "600" }}>Agreement {crossexam.agreement_score}%</span><span style={{ fontSize: "13px", color: "#ef4444", fontWeight: "600" }}>Conflict {crossexam.conflict_score}%</span></div>
-                </div>
-                {consensusItems.map((c, i) => (
-                  <div key={i} style={{ marginBottom: "8px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}><span style={{ fontSize: "14px", color: "#1a1a2e" }}>{c.recommendation}</span><span style={{ fontSize: "12px", fontFamily: "'JetBrains Mono', monospace", color: "#718096" }}>{c.support_count}/{selectedFwIds.length}</span></div>
-                    <div style={{ height: "5px", background: "#edf2f7", borderRadius: "3px" }}><div style={{ height: "100%", width: `${(c.support_count / maxSupport) * 100}%`, background: i === 0 ? "#6366f1" : "#a0aec0", borderRadius: "3px", transition: "width 0.6s ease" }} /></div>
-                  </div>
-                ))}
-                {crossexam.major_disagreements?.length > 0 && (
-                  <div style={{ marginTop: "10px", borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
-                    <div style={{ fontSize: "12px", color: "#ec4899", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "8px" }}>⚡ MAJOR DISAGREEMENTS — Often the most valuable insight</div>
-                    {crossexam.major_disagreements.map((d, i) => (
-                      <div key={i} style={{ marginBottom: "8px", padding: "8px 12px", background: "#fdf2f8", border: "1px solid #fbb6ce", borderRadius: "6px" }}>
-                        <div style={{ fontSize: "12px", color: "#d53f8c", fontWeight: "600", marginBottom: "3px" }}>{d.framework_a} vs {d.framework_b}</div>
-                        <div style={{ fontSize: "14px", color: "#4a5568", marginBottom: "3px" }}>{d.disagreement}</div>
-                        {d.why_this_matters && <div style={{ fontSize: "13px", color: "#718096" }}>Why it matters: {d.why_this_matters}</div>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {crossexam.hidden_insight && <div style={{ marginTop: "10px", padding: "8px 12px", background: "#fefcbf", border: "1px solid #f6e05e", borderRadius: "6px", fontSize: "14px", color: "#744210" }}>💡 {crossexam.hidden_insight}</div>}
-              </div>
-            )}
-
-            {redteam && (
-              <div style={{ background: "#ffffff", border: "1px solid #feb2b2", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.35s ease" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>RED TEAM REVIEW</div>
-                  <span style={{ fontSize: "12px", fontWeight: "700", padding: "2px 10px", borderRadius: "4px", background: redteam.survivability === "Yes" ? "#22c55e15" : redteam.survivability === "No" ? "#ef444415" : "#f59e0b15", color: redteam.survivability === "Yes" ? "#22c55e" : redteam.survivability === "No" ? "#ef4444" : "#f59e0b", border: `1px solid ${redteam.survivability === "Yes" ? "#22c55e30" : redteam.survivability === "No" ? "#ef444430" : "#f59e0b30"}` }}>Survives: {redteam.survivability}</span>
-                </div>
-                {redteam.kill_shot && <div style={{ fontSize: "14px", color: "#c53030", fontWeight: "600", marginBottom: "10px" }}>☠ Kill shot: {redteam.kill_shot}</div>}
-                {(redteam.failure_modes || []).slice(0, 5).map((fm, i) => (
-                  <div key={i} style={{ display: "flex", gap: "10px", marginBottom: "7px", padding: "8px 12px", background: "#f7fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
-                    <SeverityBadge severity={fm.severity} />
-                    <div style={{ flex: 1 }}><div style={{ fontSize: "14px", color: "#1a1a2e", fontWeight: "500" }}>{fm.mode}</div>{fm.warning_signal && <div style={{ fontSize: "13px", color: "#718096", marginTop: "2px" }}>⚡ {fm.warning_signal}</div>}{fm.mitigation && <div style={{ fontSize: "13px", color: "#2b6cb0", marginTop: "2px" }}>🛡 {fm.mitigation}</div>}</div>
-                  </div>
-                ))}
-                {redteam.mitigation_plan?.length > 0 && (
-                  <div style={{ marginTop: "10px", borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
-                    <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "6px" }}>MITIGATION PLAN</div>
-                    {redteam.mitigation_plan.slice(0, 4).map((m, i) => (
-                      <div key={i} style={{ marginBottom: "5px", display: "flex", gap: "10px" }}>
-                        <span style={{ fontSize: "12px", fontFamily: "'JetBrains Mono', monospace", color: "#c53030", flexShrink: 0, marginTop: "2px" }}>{String(i + 1).padStart(2, "0")}</span>
-                        <div><div style={{ fontSize: "14px", color: "#4a5568" }}>{m.risk}</div><div style={{ fontSize: "13px", color: "#2b6cb0" }}>→ {m.action}</div></div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
+            {/* TABS */}
             {research && (
-              <div style={{ background: "#ffffff", border: "1px solid #68d391", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.3s ease" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>🔎 RESEARCH LAYER</div>
-                  <ConfidenceBadge value={research.research_confidence} small />
-                </div>
-                {research.research_summary && <div style={{ fontSize: "14px", color: "#4a5568", marginBottom: "10px", fontStyle: "italic" }}>{research.research_summary}</div>}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
-                  <div><div style={{ fontSize: "11px", color: "#22c55e", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>FACTS ✓</div>{(!research.facts?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None found</div> : research.facts.slice(0, 5).map((f, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {f}</div>)}</div>
-                  <div><div style={{ fontSize: "11px", color: "#f59e0b", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>SOURCES</div>{(!research.sources?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None</div> : research.sources.slice(0, 5).map((s, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {s}</div>)}</div>
-                  <div><div style={{ fontSize: "11px", color: "#ef4444", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>UNKNOWNS ?</div>{(!research.unknowns?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None</div> : research.unknowns.slice(0, 5).map((u, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {u}</div>)}</div>
-                </div>
+              <div style={{ display: "flex", gap: "4px", marginBottom: "20px", flexWrap: "wrap", borderBottom: "1px solid #e2e8f0", paddingBottom: "8px" }}>
+                {["synthesis", "research", "reality", "crossexam", "redteam", "evidence", "scenario", "assumptions"].map(tab => {
+                  const label = tab === "synthesis" ? "✦ Decision" : PHASES.find(p => p.id === tab)?.label || tab;
+                  const icon = tab === "synthesis" ? "✦" : PHASES.find(p => p.id === tab)?.icon || "📄";
+                  const isActive = activeTab === tab;
+                  return (
+                    <button key={tab} onClick={() => setActiveTab(tab)} className="tab-button" style={{
+                      padding: "6px 14px",
+                      borderRadius: "20px",
+                      border: "none",
+                      background: isActive ? "#6366f1" : "transparent",
+                      color: isActive ? "#fff" : "#4a5568",
+                      fontSize: "12px",
+                      fontWeight: isActive ? "600" : "500",
+                      cursor: "pointer",
+                      fontFamily: "'Inter', sans-serif",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      transition: "all 0.15s"
+                    }}>
+                      {icon} {label}
+                    </button>
+                  );
+                })}
               </div>
             )}
 
-            {reality && (
-              <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.3s ease" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em" }}>REALITY EXTRACTION</div>
-                  <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>{reality.problem_type && <span style={{ fontSize: "12px", background: "#6366f112", border: "1px solid #6366f128", borderRadius: "4px", padding: "2px 8px", color: "#6366f1" }}>{PROBLEM_TYPES.find(p => p.id === reality.problem_type)?.icon} {reality.problem_type}</span>}<ConfidenceBadge value={reality.extraction_confidence} small /></div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
-                  {[
-                    { title: "FACTS ✓", items: reality.facts, color: "#22c55e" },
-                    { title: "ASSUMPTIONS ~", items: reality.assumptions, color: "#f59e0b" },
-                    { title: "UNKNOWNS ?", items: reality.unknowns, color: "#ef4444" },
-                  ].map(({ title, items, color }) => (
-                    <div key={title}><div style={{ fontSize: "11px", color, fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>{title}</div>{(!items?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None</div> : items.slice(0, 4).map((item, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {item}</div>)}</div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* TAB CONTENT */}
+            {(() => {
+              if (!research) return <LoadingSkeleton color="#22c55e" label="Searching for evidence…" />;
 
+              switch (activeTab) {
+                case "synthesis":
+                  return synthesis ? (
+                    <div style={{ background: insufficientInfo ? "#fff5f5" : "#fffff0", border: `1px solid ${insufficientInfo ? "#feb2b2" : "#f6e05e"}`, borderRadius: "12px", padding: "18px 22px", marginBottom: "18px", animation: "fadeUp 0.4s ease" }}>
+                      {insufficientInfo ? (
+                        <>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+                            <div style={{ fontSize: "13px", color: "#c53030", fontWeight: "700", letterSpacing: "0.08em" }}>⛔ INSUFFICIENT INFORMATION — DO NOT DECIDE YET</div>
+                            <ConfidenceBadge value={synthesis.confidence} />
+                          </div>
+                          <div style={{ fontSize: "15px", color: "#4a5568", marginBottom: "12px" }}>{synthesis.recommendation}</div>
+                          {synthesis.missing_information?.length > 0 && (
+                            <div style={{ marginBottom: "8px" }}>
+                              <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "5px" }}>MISSING INFORMATION</div>
+                              {synthesis.missing_information.map((m, i) => <div key={i} style={{ fontSize: "14px", color: "#c53030", marginBottom: "3px" }}>· {m}</div>)}
+                            </div>
+                          )}
+                          {synthesis.recommended_research?.length > 0 && (
+                            <div>
+                              <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "5px" }}>RECOMMENDED RESEARCH</div>
+                              {synthesis.recommended_research.map((r, i) => <div key={i} style={{ fontSize: "14px", color: "#2b6cb0", marginBottom: "3px" }}>→ {r}</div>)}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "12px" }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: "12px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>FINAL DECISION</div>
+                              <div style={{ fontSize: "20px", fontWeight: "700", color: "#1a1a2e", lineHeight: "1.4" }}>{synthesis.recommendation}</div>
+                              {evidence && evidence.evidence_strength_score > 0 && <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "4px" }}>Evidence Strength: {evidence.evidence_strength_score}% · {evidence.evidence_strength_score >= 70 ? "✅ Well-supported" : evidence.evidence_strength_score >= 50 ? "⚠️ Moderately supported" : "❌ Weakly supported"}</div>}
+                              {scenario && scenario.decision_robustness?.rating && <div style={{ fontSize: "12px", color: "#06b6d4", marginTop: "2px" }}>Scenario Robustness: {scenario.decision_robustness.rating}</div>}
+                              {assumptionsData && assumptionsData.summary?.critical > 0 && <div style={{ fontSize: "12px", color: "#ef4444", marginTop: "2px" }}>⚠️ {assumptionsData.summary.critical} critical assumptions identified</div>}
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "5px", flexShrink: 0 }}>
+                              <ConfidenceBadge value={synthesis.confidence} />
+                              <span style={{ fontSize: "12px", fontWeight: "700", padding: "2px 10px", borderRadius: "4px", background: synthesis.risk_level === "High" ? "#ef444415" : synthesis.risk_level === "Medium" ? "#f59e0b15" : "#22c55e15", color: synthesis.risk_level === "High" ? "#ef4444" : synthesis.risk_level === "Medium" ? "#f59e0b" : "#22c55e", border: `1px solid ${synthesis.risk_level === "High" ? "#ef444430" : synthesis.risk_level === "Medium" ? "#f59e0b30" : "#22c55e30"}` }}>
+                                {synthesis.risk_level} RISK
+                              </span>
+                            </div>
+                          </div>
+
+                          {synthesis.confidence_reasoning?.length > 0 && (
+                            <div style={{ background: "#f7fafc", borderRadius: "6px", padding: "8px 12px", marginBottom: "12px" }}>
+                              <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>CONFIDENCE REASONING</div>
+                              {synthesis.confidence_reasoning.map((r, i) => <div key={i} style={{ fontSize: "13px", color: "#4a5568", marginBottom: "2px" }}>· {r}</div>)}
+                            </div>
+                          )}
+
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
+                            <MiniSection title="WHY" items={synthesis.why} color="#2b6cb0" />
+                            <MiniSection title="TOP RISKS" items={synthesis.top_risks} color="#c53030" />
+                            <MiniSection title="WHAT WOULD CHANGE THIS (+)" items={synthesis.what_would_change_positive} color="#276749" />
+                            <MiniSection title="WHAT WOULD CHANGE THIS (−)" items={synthesis.what_would_change_negative} color="#c05621" />
+                          </div>
+
+                          {synthesis.next_actions?.length > 0 && (
+                            <div>
+                              <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "6px" }}>NEXT ACTIONS</div>
+                              {synthesis.next_actions.slice(0, 5).map((a, i) => (
+                                <div key={i} style={{ display: "flex", gap: "10px", marginBottom: "4px" }}>
+                                  <span style={{ fontSize: "12px", fontFamily: "'JetBrains Mono', monospace", color: "#6366f1", fontWeight: "700", flexShrink: 0, marginTop: "2px" }}>{String(i + 1).padStart(2, "0")}</span>
+                                  <span style={{ fontSize: "14px", color: "#4a5568", lineHeight: "1.6" }}>{a}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <button onClick={() => setChatOpen(chatOpen === "general" ? null : "general")} style={{ marginTop: "12px", fontSize: "12px", fontWeight: "600", color: "#6366f1", background: "#6366f112", border: "1px solid #6366f130", borderRadius: "20px", padding: "6px 14px", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>
+                            💬 {chatOpen === "general" ? "Close chat" : "Ask a follow-up about this recommendation"}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ) : <LoadingSkeleton color="#f1c40f" label="Synthesizing decision…" />;
+
+                case "research":
+                  return research && (
+                    <div style={{ background: "#ffffff", borderRadius: "12px", padding: "18px 22px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                        <div style={{ fontSize: "13px", color: "#4a5568", fontWeight: "600", letterSpacing: "0.08em" }}>🔎 RESEARCH LAYER</div>
+                        <ConfidenceBadge value={research.research_confidence} small />
+                      </div>
+                      {research.research_summary && <div style={{ fontSize: "14px", color: "#4a5568", marginBottom: "12px", fontStyle: "italic" }}>{research.research_summary}</div>}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
+                        <div><div style={{ fontSize: "11px", color: "#22c55e", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>FACTS ✓</div>{(!research.facts?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None found</div> : research.facts.slice(0, 5).map((f, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {f}</div>)}</div>
+                        <div><div style={{ fontSize: "11px", color: "#f59e0b", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>SOURCES</div>{(!research.sources?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None</div> : research.sources.slice(0, 5).map((s, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {s}</div>)}</div>
+                        <div><div style={{ fontSize: "11px", color: "#ef4444", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>UNKNOWNS ?</div>{(!research.unknowns?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None</div> : research.unknowns.slice(0, 5).map((u, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {u}</div>)}</div>
+                      </div>
+                    </div>
+                  );
+
+                case "reality":
+                  return reality && (
+                    <div style={{ background: "#ffffff", borderRadius: "12px", padding: "18px 22px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                        <div style={{ fontSize: "13px", color: "#4a5568", fontWeight: "600", letterSpacing: "0.08em" }}>REALITY EXTRACTION</div>
+                        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>{reality.problem_type && <span style={{ fontSize: "12px", background: "#6366f112", border: "1px solid #6366f128", borderRadius: "4px", padding: "2px 8px", color: "#6366f1" }}>{PROBLEM_TYPES.find(p => p.id === reality.problem_type)?.icon} {reality.problem_type}</span>}<ConfidenceBadge value={reality.extraction_confidence} small /></div>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
+                        {[
+                          { title: "FACTS ✓", items: reality.facts, color: "#22c55e" },
+                          { title: "ASSUMPTIONS ~", items: reality.assumptions, color: "#f59e0b" },
+                          { title: "UNKNOWNS ?", items: reality.unknowns, color: "#ef4444" },
+                        ].map(({ title, items, color }) => (
+                          <div key={title}><div style={{ fontSize: "11px", color, fontWeight: "600", letterSpacing: "0.08em", marginBottom: "4px" }}>{title}</div>{(!items?.length) ? <div style={{ fontSize: "13px", color: "#a0aec0" }}>None</div> : items.slice(0, 4).map((item, i) => <div key={i} style={{ fontSize: "13px", color: "#2d3748", lineHeight: "1.6", marginBottom: "3px" }}>· {item}</div>)}</div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+
+                case "crossexam":
+                  return crossexam ? (
+                    <div style={{ background: "#ffffff", borderRadius: "12px", padding: "18px 22px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                        <div style={{ fontSize: "13px", color: "#4a5568", fontWeight: "600", letterSpacing: "0.08em" }}>CONSENSUS ENGINE</div>
+                        <div style={{ display: "flex", gap: "10px" }}><span style={{ fontSize: "13px", color: "#22c55e", fontWeight: "600" }}>Agreement {crossexam.agreement_score}%</span><span style={{ fontSize: "13px", color: "#ef4444", fontWeight: "600" }}>Conflict {crossexam.conflict_score}%</span></div>
+                      </div>
+                      {consensusItems.map((c, i) => (
+                        <div key={i} style={{ marginBottom: "8px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}><span style={{ fontSize: "14px", color: "#1a1a2e" }}>{c.recommendation}</span><span style={{ fontSize: "12px", fontFamily: "'JetBrains Mono', monospace", color: "#718096" }}>{c.support_count}/{selectedFwIds.length}</span></div>
+                          <div style={{ height: "5px", background: "#edf2f7", borderRadius: "3px" }}><div style={{ height: "100%", width: `${(c.support_count / maxSupport) * 100}%`, background: i === 0 ? "#6366f1" : "#a0aec0", borderRadius: "3px", transition: "width 0.6s ease" }} /></div>
+                        </div>
+                      ))}
+                      {crossexam.major_disagreements?.length > 0 && (
+                        <div style={{ marginTop: "10px", borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
+                          <div style={{ fontSize: "12px", color: "#ec4899", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "8px" }}>⚡ MAJOR DISAGREEMENTS — Often the most valuable insight</div>
+                          {crossexam.major_disagreements.map((d, i) => (
+                            <div key={i} style={{ marginBottom: "8px", padding: "8px 12px", background: "#fdf2f8", border: "1px solid #fbb6ce", borderRadius: "6px" }}>
+                              <div style={{ fontSize: "12px", color: "#d53f8c", fontWeight: "600", marginBottom: "3px" }}>{d.framework_a} vs {d.framework_b}</div>
+                              <div style={{ fontSize: "14px", color: "#4a5568", marginBottom: "3px" }}>{d.disagreement}</div>
+                              {d.why_this_matters && <div style={{ fontSize: "13px", color: "#718096" }}>Why it matters: {d.why_this_matters}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {crossexam.hidden_insight && <div style={{ marginTop: "10px", padding: "8px 12px", background: "#fefcbf", border: "1px solid #f6e05e", borderRadius: "6px", fontSize: "14px", color: "#744210" }}>💡 {crossexam.hidden_insight}</div>}
+                    </div>
+                  ) : <LoadingSkeleton color="#ec4899" label="Cross-examining frameworks…" />;
+
+                case "redteam":
+                  return redteam ? (
+                    <div style={{ background: "#ffffff", borderRadius: "12px", padding: "18px 22px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                        <div style={{ fontSize: "13px", color: "#4a5568", fontWeight: "600", letterSpacing: "0.08em" }}>RED TEAM REVIEW</div>
+                        <span style={{ fontSize: "12px", fontWeight: "700", padding: "2px 10px", borderRadius: "20px", background: redteam.survivability === "Yes" ? "#22c55e15" : redteam.survivability === "No" ? "#ef444415" : "#f59e0b15", color: redteam.survivability === "Yes" ? "#22c55e" : redteam.survivability === "No" ? "#ef4444" : "#f59e0b", border: `1px solid ${redteam.survivability === "Yes" ? "#22c55e30" : redteam.survivability === "No" ? "#ef444430" : "#f59e0b30"}` }}>Survives: {redteam.survivability}</span>
+                      </div>
+                      {redteam.kill_shot && <div style={{ fontSize: "14px", color: "#c53030", fontWeight: "600", marginBottom: "10px" }}>☠ Kill shot: {redteam.kill_shot}</div>}
+                      {(redteam.failure_modes || []).slice(0, 5).map((fm, i) => (
+                        <div key={i} style={{ display: "flex", gap: "10px", marginBottom: "7px", padding: "8px 12px", background: "#f7fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                          <SeverityBadge severity={fm.severity} />
+                          <div style={{ flex: 1 }}><div style={{ fontSize: "14px", color: "#1a1a2e", fontWeight: "500" }}>{fm.mode}</div>{fm.warning_signal && <div style={{ fontSize: "13px", color: "#718096", marginTop: "2px" }}>⚡ {fm.warning_signal}</div>}{fm.mitigation && <div style={{ fontSize: "13px", color: "#2b6cb0", marginTop: "2px" }}>🛡 {fm.mitigation}</div>}</div>
+                        </div>
+                      ))}
+                      {redteam.mitigation_plan?.length > 0 && (
+                        <div style={{ marginTop: "10px", borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
+                          <div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "6px" }}>MITIGATION PLAN</div>
+                          {redteam.mitigation_plan.slice(0, 4).map((m, i) => (
+                            <div key={i} style={{ marginBottom: "5px", display: "flex", gap: "10px" }}>
+                              <span style={{ fontSize: "12px", fontFamily: "'JetBrains Mono', monospace", color: "#c53030", flexShrink: 0, marginTop: "2px" }}>{String(i + 1).padStart(2, "0")}</span>
+                              <div><div style={{ fontSize: "14px", color: "#4a5568" }}>{m.risk}</div><div style={{ fontSize: "13px", color: "#2b6cb0" }}>→ {m.action}</div></div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : <LoadingSkeleton color="#ef4444" label="Red teaming…" />;
+
+                case "evidence":
+                  return evidence ? (
+                    <div style={{ background: "#ffffff", borderRadius: "12px", padding: "18px 22px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                      <div onClick={() => setEvidenceExpanded(!evidenceExpanded)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", userSelect: "none" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <span style={{ fontSize: "16px" }}>🔬</span>
+                          <span style={{ fontSize: "13px", fontWeight: "700", color: "#4a5568" }}>Evidence Challenge</span>
+                          {evidence.evidence_strength_score > 0 && (
+                            <span style={{ fontSize: "12px", fontWeight: "700", padding: "2px 10px", borderRadius: "4px", background: confColor(evidence.evidence_strength_score) + "15", color: confColor(evidence.evidence_strength_score), border: `1px solid ${confColor(evidence.evidence_strength_score)}30` }}>
+                              Score: {evidence.evidence_strength_score}%
+                            </span>
+                          )}
+                          <span style={{ fontSize: "12px", color: "#94a3b8" }}>{evidence.supporting_evidence?.length || 0} supporting · {evidence.contradicting_evidence?.length || 0} contradicting</span>
+                        </div>
+                        <span style={{ fontSize: "14px", color: "#94a3b8" }}>{evidenceExpanded ? "▼" : "▶"}</span>
+                      </div>
+                      {evidenceExpanded && (
+                        <div style={{ marginTop: "14px", borderTop: "1px solid #e2e8f0", paddingTop: "14px" }}>
+                          {evidence.evidence_summary && <div style={{ marginBottom: "12px", padding: "10px 12px", background: "#f7fafc", borderRadius: "6px", fontSize: "13px", color: "#4a5568", fontStyle: "italic" }}>{evidence.evidence_summary}</div>}
+                          {evidence.major_recommendations?.length > 0 && <div style={{ marginBottom: "10px" }}><div style={{ fontSize: "11px", fontWeight: "600", color: "#4a5568", marginBottom: "4px" }}>📋 Major Recommendations</div>{evidence.major_recommendations.map((rec, i) => <div key={i} style={{ fontSize: "13px", color: "#1a1a2e", padding: "3px 0" }}>· {rec}</div>)}</div>}
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                            {evidence.supporting_evidence?.length > 0 && <div><div style={{ fontSize: "11px", fontWeight: "600", color: "#22c55e", marginBottom: "6px" }}>✅ Supporting Evidence</div>{evidence.supporting_evidence.slice(0, 5).map((item, i) => <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px", fontSize: "12px", color: "#2d3748" }}><EvidenceBadge classification={item.classification} /><span>{item.evidence}</span></div>)}</div>}
+                            {evidence.contradicting_evidence?.length > 0 && <div><div style={{ fontSize: "11px", fontWeight: "600", color: "#ef4444", marginBottom: "6px" }}>⚠️ Contradicting Evidence</div>{evidence.contradicting_evidence.slice(0, 5).map((item, i) => <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px", fontSize: "12px", color: "#2d3748" }}><EvidenceBadge classification={item.classification} /><span>{item.evidence}</span></div>)}</div>}
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: "10px" }}>
+                            {evidence.missing_evidence?.length > 0 && <div><div style={{ fontSize: "11px", fontWeight: "600", color: "#f59e0b", marginBottom: "4px" }}>📌 Missing Evidence</div>{evidence.missing_evidence.slice(0, 5).map((item, i) => <div key={i} style={{ fontSize: "12px", color: "#2d3748", marginBottom: "2px" }}>· {item}</div>)}</div>}
+                            {evidence.remaining_assumptions?.length > 0 && <div><div style={{ fontSize: "11px", fontWeight: "600", color: "#f97316", marginBottom: "4px" }}>🤔 Remaining Assumptions</div>{evidence.remaining_assumptions.slice(0, 5).map((item, i) => <div key={i} style={{ fontSize: "12px", color: "#2d3748", marginBottom: "2px" }}>· {item}</div>)}</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : <LoadingSkeleton color="#8b5cf6" label="Challenging evidence…" />;
+
+                case "scenario":
+                  return scenario ? (
+                    <div style={{ background: "#ffffff", borderRadius: "12px", padding: "18px 22px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                      <div onClick={() => setScenarioExpanded(!scenarioExpanded)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", userSelect: "none" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <span style={{ fontSize: "16px" }}>🌊</span>
+                          <span style={{ fontSize: "13px", fontWeight: "700", color: "#4a5568" }}>Scenario Simulation</span>
+                          {scenario.decision_robustness?.rating && <ScenarioBadge type={scenario.decision_robustness.rating === "High" ? "Best Case" : scenario.decision_robustness.rating === "Medium" ? "Most Likely" : "Worst Case"} />}
+                          <span style={{ fontSize: "12px", color: "#94a3b8" }}>{scenario.best_case ? "✅" : ""} {scenario.most_likely ? "📊" : ""} {scenario.worst_case ? "⚠️" : ""}</span>
+                        </div>
+                        <span style={{ fontSize: "14px", color: "#94a3b8" }}>{scenarioExpanded ? "▼" : "▶"}</span>
+                      </div>
+                      {scenarioExpanded && (
+                        <div style={{ marginTop: "14px", borderTop: "1px solid #e2e8f0", paddingTop: "14px" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "12px" }}>
+                            {scenario.best_case && <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: "8px", padding: "10px 12px" }}><ScenarioBadge type="Best Case" /><div style={{ fontSize: "12px", color: "#166534", marginTop: "4px" }}>{scenario.best_case.outcome?.slice(0, 80) || "Optimal outcome"}</div></div>}
+                            {scenario.most_likely && <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: "8px", padding: "10px 12px" }}><ScenarioBadge type="Most Likely" /><div style={{ fontSize: "12px", color: "#92400e", marginTop: "4px" }}>{scenario.most_likely.outcome?.slice(0, 80) || "Expected outcome"}</div></div>}
+                            {scenario.worst_case && <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", padding: "10px 12px" }}><ScenarioBadge type="Worst Case" /><div style={{ fontSize: "12px", color: "#991b1b", marginTop: "4px" }}>{scenario.worst_case.outcome?.slice(0, 80) || "Failure outcome"}</div></div>}
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", fontSize: "12px" }}>
+                            {scenario.risk_analysis?.length > 0 && <div><span style={{ fontWeight: "600", color: "#ef4444" }}>⚠️ Risks: </span><span style={{ color: "#4a5568" }}>{scenario.risk_analysis.length} identified</span></div>}
+                            {scenario.opportunities?.length > 0 && <div><span style={{ fontWeight: "600", color: "#22c55e" }}>🚀 Opportunities: </span><span style={{ color: "#4a5568" }}>{scenario.opportunities.length} identified</span></div>}
+                            {scenario.monitoring_indicators?.length > 0 && <div><span style={{ fontWeight: "600", color: "#06b6d4" }}>📊 Monitoring: </span><span style={{ color: "#4a5568" }}>{scenario.monitoring_indicators.length} metrics</span></div>}
+                          </div>
+                          <div style={{ marginTop: "8px", fontSize: "12px", color: "#94a3b8" }}>Click 🌊 Scenario button above for full details</div>
+                        </div>
+                      )}
+                    </div>
+                  ) : <LoadingSkeleton color="#06b6d4" label="Simulating scenarios…" />;
+
+                case "assumptions":
+                  return assumptionsData ? (
+                    <div style={{ background: "#ffffff", borderRadius: "12px", padding: "18px 22px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                      <div onClick={() => setAssumptionExpanded(!assumptionExpanded)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", userSelect: "none" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <span style={{ fontSize: "16px" }}>🔍</span>
+                          <span style={{ fontSize: "13px", fontWeight: "700", color: "#4a5568" }}>Assumption Manager</span>
+                          {assumptionsData.summary && (
+                            <span style={{ fontSize: "11px", color: "#718096" }}>
+                              {assumptionsData.summary.total || 0} total · {assumptionsData.summary.critical || 0} critical · {assumptionsData.summary.contradictions || 0} conflicts
+                            </span>
+                          )}
+                          {assumptionsData.summary?.critical > 0 && (
+                            <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "4px", background: "#ef444415", color: "#ef4444", border: "1px solid #ef444430" }}>⚠️ {assumptionsData.summary.critical} critical assumptions</span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: "14px", color: "#94a3b8" }}>{assumptionExpanded ? "▼" : "▶"}</span>
+                      </div>
+                      {assumptionExpanded && (
+                        <div style={{ marginTop: "14px", borderTop: "1px solid #e2e8f0", paddingTop: "14px" }}>
+                          {assumptionsData.summary && (
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px", marginBottom: "12px", padding: "8px 12px", background: "#f7fafc", borderRadius: "6px" }}>
+                              <div><span style={{ fontWeight: "600", fontSize: "12px" }}>Total:</span> <span style={{ fontSize: "13px" }}>{assumptionsData.summary.total || 0}</span></div>
+                              <div><span style={{ fontWeight: "600", fontSize: "12px", color: "#22c55e" }}>Verified:</span> <span style={{ fontSize: "13px" }}>{assumptionsData.summary.verified || 0}</span></div>
+                              <div><span style={{ fontWeight: "600", fontSize: "12px", color: "#ef4444" }}>Unverified:</span> <span style={{ fontSize: "13px" }}>{assumptionsData.summary.unverified || 0}</span></div>
+                              <div><span style={{ fontWeight: "600", fontSize: "12px", color: "#ef4444" }}>Critical:</span> <span style={{ fontSize: "13px" }}>{assumptionsData.summary.critical || 0}</span></div>
+                            </div>
+                          )}
+
+                          {assumptionsData.assumptions?.length > 0 && (
+                            <div style={{ marginBottom: "12px" }}>
+                              <div style={{ fontSize: "11px", fontWeight: "600", color: "#4a5568", marginBottom: "6px" }}>📋 All Assumptions <span style={{ fontWeight: "400", color: "#a0aec0" }}>— you can confirm or reject these yourself</span></div>
+                              {assumptionsData.assumptions.slice(0, 8).map((a, i) => {
+                                const overridden = assumptionOverrides[i];
+                                const displayStatus = overridden || a.verification_status || "Unknown";
+                                return (
+                                  <div key={i} style={{ padding: "6px 10px", background: "#f7fafc", borderRadius: "6px", marginBottom: "4px", border: "1px solid #e2e8f0" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                                      <span style={{ fontSize: "13px", fontWeight: "500", color: "#1a1a2e" }}>{a.statement}</span>
+                                      <AssumptionStatusBadge status={displayStatus} />
+                                      {overridden && <span style={{ fontSize: "9px", color: "#6366f1", fontWeight: "700" }}>YOU CONFIRMED</span>}
+                                      <AssumptionCriticalityBadge criticality={a.criticality || "Medium"} />
+                                      {a.category && <span style={{ fontSize: "10px", color: "#718096", background: "#edf2f7", padding: "1px 6px", borderRadius: "4px" }}>{a.category}</span>}
+                                      <div style={{ display: "flex", gap: "4px", marginLeft: "auto" }}>
+                                        <button onClick={() => setAssumptionOverrides(prev => ({ ...prev, [i]: "Verified" }))} title="I checked this myself — it's true" style={{ fontSize: "10px", padding: "2px 7px", borderRadius: "4px", border: "1px solid #22c55e40", background: displayStatus === "Verified" && overridden ? "#22c55e" : "#22c55e10", color: displayStatus === "Verified" && overridden ? "#fff" : "#22c55e", cursor: "pointer", fontWeight: "600" }}>✓ True</button>
+                                        <button onClick={() => setAssumptionOverrides(prev => ({ ...prev, [i]: "Contradicted" }))} title="I checked this myself — it's false" style={{ fontSize: "10px", padding: "2px 7px", borderRadius: "4px", border: "1px solid #ef444440", background: displayStatus === "Contradicted" && overridden ? "#ef4444" : "#ef444410", color: displayStatus === "Contradicted" && overridden ? "#fff" : "#ef4444", cursor: "pointer", fontWeight: "600" }}>✕ False</button>
+                                      </div>
+                                    </div>
+                                    {a.supporting_evidence?.length > 0 && <div style={{ fontSize: "11px", color: "#22c55e", marginTop: "2px" }}>✅ {a.supporting_evidence.slice(0, 2).join(", ")}</div>}
+                                    {a.contradicting_evidence?.length > 0 && <div style={{ fontSize: "11px", color: "#ef4444", marginTop: "1px" }}>⚠️ {a.contradicting_evidence.slice(0, 2).join(", ")}</div>}
+                                    {a.impact_if_false && <div style={{ fontSize: "11px", color: "#f97316", marginTop: "1px" }}>💥 If false: {a.impact_if_false}</div>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {assumptionsData.conflicts?.length > 0 && (
+                            <div>
+                              <div style={{ fontSize: "11px", fontWeight: "600", color: "#ec4899", marginBottom: "6px" }}>⚡ Conflicts Detected</div>
+                              {assumptionsData.conflicts.slice(0, 3).map((c, i) => (
+                                <div key={i} style={{ padding: "6px 10px", background: "#fdf2f8", borderRadius: "6px", marginBottom: "4px", border: "1px solid #fbb6ce" }}>
+                                  <div style={{ fontSize: "12px", color: "#1a1a2e" }}><span style={{ fontWeight: "600" }}>{c.assumption_a}</span> vs <span style={{ fontWeight: "600" }}>{c.assumption_b}</span></div>
+                                  <div style={{ fontSize: "11px", color: "#718096" }}>{c.conflict}</div>
+                                  {c.impact && <div style={{ fontSize: "11px", color: "#ef4444" }}>Impact: {c.impact}</div>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : <LoadingSkeleton color="#f97316" label="Managing assumptions…" />;
+
+                default:
+                  return null;
+              }
+            })()}
+
+            {/* Framework analysis detail (still shows when a framework is active) */}
             {activeFrameworkId && !activeFrameworkId.startsWith("__") && activeFw && (
-              <div style={{ background: "#ffffff", border: `1px solid ${activeFw.color}40`, borderRadius: "10px", padding: "16px 20px", animation: "fadeUp 0.3s ease" }}>
+              <div style={{ marginTop: "20px", background: "#ffffff", border: `1px solid ${activeFw.color}40`, borderRadius: "12px", padding: "16px 20px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
                   <div style={{ width: "36px", height: "36px", background: `${activeFw.color}18`, border: `1px solid ${activeFw.color}35`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>{activeFw.icon}</div>
                   <div><div style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a2e" }}>{activeFw.label}</div><div style={{ fontSize: "12px", color: "#718096" }}>{activeFw.thinker}</div></div>
@@ -3533,7 +3613,7 @@ export default function ThinkingOSv2() {
                       <FrameworkList title="UNKNOWNS" items={activeFwResult.unknowns} color="#c05621" />
                       {activeFwResult.recommendation && <div><div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>RECOMMENDATION</div><div style={{ fontSize: "14px", color: activeFw.accent, lineHeight: "1.6" }}>{activeFwResult.recommendation}</div></div>}
                     </div>
-                    <button onClick={() => setChatOpen(chatOpen === activeFw.id ? null : activeFw.id)} style={{ marginTop: "12px", fontSize: "12px", fontWeight: "600", color: activeFw.accent, background: `${activeFw.color}12`, border: `1px solid ${activeFw.color}30`, borderRadius: "6px", padding: "6px 12px", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>
+                    <button onClick={() => setChatOpen(chatOpen === activeFw.id ? null : activeFw.id)} style={{ marginTop: "12px", fontSize: "12px", fontWeight: "600", color: activeFw.accent, background: `${activeFw.color}12`, border: `1px solid ${activeFw.color}30`, borderRadius: "20px", padding: "6px 14px", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>
                       💬 {chatOpen === activeFw.id ? "Close chat" : `Continue with ${activeFw.label}`}
                     </button>
                   </div>
@@ -3541,8 +3621,9 @@ export default function ThinkingOSv2() {
               </div>
             )}
 
+            {/* Chat panel (global) */}
             {chatOpen && (
-              <div style={{ background: "#ffffff", border: "1px solid #6366f140", borderRadius: "10px", padding: "14px 18px", marginTop: "16px", animation: "fadeUp 0.3s ease" }}>
+              <div style={{ background: "#ffffff", border: "1px solid #6366f140", borderRadius: "12px", padding: "14px 18px", marginTop: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
                   <div style={{ fontSize: "12px", color: "#6366f1", fontWeight: "700", letterSpacing: "0.08em" }}>
                     💬 {chatOpen === "general" ? "FOLLOW-UP CHAT" : `CHAT — IN THE STYLE OF ${ALL_FRAMEWORKS.find(f => f.id === chatOpen)?.label?.toUpperCase() || chatOpen}`}
@@ -3586,8 +3667,6 @@ export default function ThinkingOSv2() {
                 </div>
               </div>
             )}
-
-            {hasRun && !research && <LoadingSkeleton color="#22c55e" label="Searching for evidence…" />}
           </div>
         </div>
       )}
