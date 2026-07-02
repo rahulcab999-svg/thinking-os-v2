@@ -1397,7 +1397,7 @@ function createContext(question, type, answers = {}) {
 // NOTE: this calls our own /api/analyze route, which currently calls Groq's
 // Llama 3.3 70B model — named callModel (not callClaude) so the code doesn't
 // silently misrepresent which model is actually doing the reasoning.
-async function callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch) {
+async function callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch, model) {
   const response = await fetch("/api/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -1405,7 +1405,8 @@ async function callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch)
       question: userContent,
       systemPrompt,
       maxTokens,
-      useWebSearch
+      useWebSearch,
+      model: model || "groq"   // <-- pass the model
     })
   });
   const result = await response.json();
@@ -1419,10 +1420,10 @@ async function callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch)
   return result.data.content?.map(c => c.text || "").join("") || "";
 }
 
-async function callModel(systemPrompt, userContent, maxTokens = 1200, useWebSearch = false) {
+async function callModel(systemPrompt, userContent, maxTokens = 1200, useWebSearch = false, model = "groq") {
   let raw;
   try {
-    raw = await callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch);
+    raw = await callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch, model);
   } catch (firstErr) {
     if (firstErr.contextTooLong) {
       // Retrying identically won't help — the request itself is too large.
@@ -1434,12 +1435,12 @@ async function callModel(systemPrompt, userContent, maxTokens = 1200, useWebSear
       // to (or a safe default), then retry once — rather than failing the
       // whole pipeline on a transient, self-resolving condition.
       await sleep(firstErr.retryAfterMs || 4000);
-      raw = await callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch);
+      raw = await callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch, model);
       return raw;
     }
     // Network/API-level failure — plain retry after a short backoff.
     await sleep(800);
-    raw = await callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch);
+    raw = await callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch, model);
     return raw;
   }
 
@@ -1450,7 +1451,7 @@ async function callModel(systemPrompt, userContent, maxTokens = 1200, useWebSear
   if (!parseJSON(raw)) {
     const stricter = `${systemPrompt}\n\nCRITICAL: Your previous response could not be parsed as JSON. This time respond with ONLY the raw JSON object. No markdown formatting, no code fences, no explanation text, no preamble. Start your response with { and end with }.`;
     try {
-      const retried = await callModelOnce(stricter, userContent, maxTokens, useWebSearch);
+      const retried = await callModelOnce(stricter, userContent, maxTokens, useWebSearch, model);
       if (parseJSON(retried)) return retried;
     } catch {
       // fall through and return the original raw text — caller's parseJSON
@@ -1572,7 +1573,8 @@ function confLabel(c) {
   if (c >= 70) return "HIGH";
   if (c >= 45) return "MEDIUM";
   return "LOW";
-}// ─── SYSTEM PROMPTS ───────────────────────────────────────────────────────────
+}
+// ─── SYSTEM PROMPTS ───────────────────────────────────────────────────────────
 
 const RESEARCH_SYSTEM = `You are an evidence collection engine. Your job: gather real, verifiable information about the question before any analysis begins. Use web search to collect:
 - Market size and trends (if applicable)
@@ -2319,6 +2321,8 @@ export default function ThinkingOSv2() {
 
   // ─── NEW: active tab for results ──────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("synthesis");
+  // ─── NEW: model selector ──────────────────────────────────────────────────
+  const [selectedModel, setSelectedModel] = useState("groq");
 
   useEffect(() => {
     const s = document.createElement("style");
@@ -2508,7 +2512,8 @@ export default function ThinkingOSv2() {
         RESEARCH_SYSTEM,
         `Question / Problem: "${fullQuestion}"\n\nSearch for relevant evidence now.`,
         1400,
-        ENABLE_WEB_SEARCH
+        ENABLE_WEB_SEARCH,
+        selectedModel   // <-- pass the selected model
       );
       const parsed = parseJSON(raw);
       if (!parsed) setStageErrors(prev => ({ ...prev, research: ["Response couldn't be parsed — research ran on a fallback with low confidence."] }));
@@ -2531,7 +2536,10 @@ export default function ThinkingOSv2() {
     try {
       const raw = await callModel(
         REALITY_SYSTEM,
-        `Question: "${fullQuestion}"\n\nResearch data:\n${JSON.stringify(researchData)}\n\nExtract reality now.`
+        `Question: "${fullQuestion}"\n\nResearch data:\n${JSON.stringify(researchData)}\n\nExtract reality now.`,
+        1200,
+        false,
+        selectedModel
       );
       if (!parseJSON(raw)) flagParseFailure("reality", "Reality extraction");
       realityData = safeJSON(raw, {
@@ -2566,7 +2574,10 @@ export default function ThinkingOSv2() {
       try {
         const raw = await callModel(
           fw.prompt,
-          `Problem: "${fullQuestion}"\n\nVERIFIED FACTS:\n${JSON.stringify(researchData.facts)}\n\nSources: ${JSON.stringify(researchData.sources)}\n\nASSUMPTIONS:\n${JSON.stringify(realityData.assumptions)}\n\nUNKNOWNS:\n${JSON.stringify(realityData.unknowns)}\n\nUSER CONTEXT:\n${answerContext}\n\nApply your framework now.`
+          `Problem: "${fullQuestion}"\n\nVERIFIED FACTS:\n${JSON.stringify(researchData.facts)}\n\nSources: ${JSON.stringify(researchData.sources)}\n\nASSUMPTIONS:\n${JSON.stringify(realityData.assumptions)}\n\nUNKNOWNS:\n${JSON.stringify(realityData.unknowns)}\n\nUSER CONTEXT:\n${answerContext}\n\nApply your framework now.`,
+          1200,
+          false,
+          selectedModel
         );
         const parsed = parseJSON(raw);
         if (!parsed) {
@@ -2604,7 +2615,7 @@ export default function ThinkingOSv2() {
           const r = fwRes[fw.id];
           return `${fw.label}: claim="${r?.key_claim || ""}" conf=${r?.confidence || 0} rec="${r?.recommendation || ""}"`;
         }).join("\n");
-        const raw = await callModel(CROSS_EXAM_SYSTEM, `Problem: "${fullQuestion}"\n\nFramework results:\n${summary}\n\nRun cross-examination now.`);
+        const raw = await callModel(CROSS_EXAM_SYSTEM, `Problem: "${fullQuestion}"\n\nFramework results:\n${summary}\n\nRun cross-examination now.`, 1200, false, selectedModel);
         if (!parseJSON(raw)) flagParseFailure("crossexam", "Cross-examination");
         crossData = safeJSON(raw, { attacks: [], upgraded_claims: [], downgraded_claims: [], consensus: [], major_disagreements: [], agreement_score: 50, conflict_score: 50, hidden_insight: "" });
       } catch (e) {
@@ -2625,7 +2636,7 @@ export default function ThinkingOSv2() {
     } else {
       try {
         const topRec = crossData?.consensus?.[0]?.recommendation || Object.values(fwRes)[0]?.recommendation || "proceed with the plan";
-        const raw = await callModel(RED_TEAM_SYSTEM, `Problem: "${fullQuestion}"\nTop Recommendation: "${topRec}"\n\nRed team this now.`);
+        const raw = await callModel(RED_TEAM_SYSTEM, `Problem: "${fullQuestion}"\nTop Recommendation: "${topRec}"\n\nRed team this now.`, 1200, false, selectedModel);
         if (!parseJSON(raw)) flagParseFailure("redteam", "Red team");
         redData = safeJSON(raw, { failure_modes: [], early_warning_signals: [], risk_severity: [], mitigation_plan: [], kill_shot: "Unknown", survivability: "Conditional", survivability_condition: "" });
       } catch (e) {
@@ -2650,7 +2661,7 @@ export default function ThinkingOSv2() {
         crossexam: compact(crossData),
         redteam: compact(redData),
       };
-      const raw = await callModel(EVIDENCE_CHALLENGE_SYSTEM, `Full analysis data:\n${JSON.stringify(payload)}\n\nChallenge the evidence now.`, 1200);
+      const raw = await callModel(EVIDENCE_CHALLENGE_SYSTEM, `Full analysis data:\n${JSON.stringify(payload)}\n\nChallenge the evidence now.`, 1200, false, selectedModel);
       if (!parseJSON(raw)) flagParseFailure("evidence", "Evidence challenge");
       evidenceData = safeJSON(raw, {
         major_recommendations: [],
@@ -2703,7 +2714,7 @@ export default function ThinkingOSv2() {
           evidence: compact(evidenceData),
           recommendation: crossData?.consensus?.[0]?.recommendation || Object.values(fwRes)[0]?.recommendation || "No recommendation yet",
         };
-        const raw = await callModel(SCENARIO_SYSTEM, `Full analysis data:\n${JSON.stringify(payload)}\n\nSimulate scenarios now.`, 1600);
+        const raw = await callModel(SCENARIO_SYSTEM, `Full analysis data:\n${JSON.stringify(payload)}\n\nSimulate scenarios now.`, 1600, false, selectedModel);
         if (!parseJSON(raw)) flagParseFailure("scenario", "Scenario simulation");
         scenarioData = safeJSON(raw, {
           best_case: { outcome: "Optimal outcome", conditions: "Favorable conditions", benefits: "Significant benefits", probability_drivers: "Key drivers", indicators: "Success signals" },
@@ -2750,7 +2761,7 @@ export default function ThinkingOSv2() {
         evidence: compact(evidenceData),
         scenario: compact(scenarioData),
       };
-      const raw = await callModel(ASSUMPTION_SYSTEM, `Full analysis data:\n${JSON.stringify(payload)}\n\nDetect and manage all assumptions now.`, 1600);
+      const raw = await callModel(ASSUMPTION_SYSTEM, `Full analysis data:\n${JSON.stringify(payload)}\n\nDetect and manage all assumptions now.`, 1600, false, selectedModel);
       if (!parseJSON(raw)) flagParseFailure("assumptions", "Assumption manager");
       assumptionData = safeJSON(raw, {
         assumptions: [],
@@ -2785,7 +2796,7 @@ export default function ThinkingOSv2() {
         scenario: compact(scenarioData),
         assumptions: compact(assumptionData),
       };
-      const raw = await callModel(SYNTHESIS_SYSTEM, `Full analysis:\n${JSON.stringify(payload)}\n\nGenerate final decision output now.`, 1600);
+      const raw = await callModel(SYNTHESIS_SYSTEM, `Full analysis:\n${JSON.stringify(payload)}\n\nGenerate final decision output now.`, 1600, false, selectedModel);
       if (!parseJSON(raw)) flagParseFailure("synthesis", "Final synthesis — this is the output you're about to read");
       synthData = safeJSON(raw, { status: "ready", recommendation: "Analysis failed — retry.", confidence: 0, confidence_reasoning: [], risk_level: "High", why: [], top_risks: [], what_would_change_positive: [], what_would_change_negative: [], next_actions: [], missing_information: [], recommended_research: [], investigation_needed: true });
     } catch (e) {
@@ -2860,7 +2871,7 @@ export default function ThinkingOSv2() {
     setIsRunning(false);
     setInfoStatus("");
     setActiveTab("synthesis");
-  }, [scores, manualProblemType, selectedFwIds, traces]);
+  }, [scores, manualProblemType, selectedFwIds, traces, selectedModel]);
 
   const startAnalysis = useCallback(async () => {
     if (!question.trim() || isRunning) return;
@@ -3093,6 +3104,30 @@ export default function ThinkingOSv2() {
                   <button onClick={() => setRunMode("deep")} style={{ padding: "4px 12px", border: "none", borderRadius: "18px", background: runMode === "deep" ? "#6366f1" : "transparent", color: runMode === "deep" ? "#fff" : "#64748b", fontSize: "11px", fontWeight: "600", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>Deep</button>
                 </div>
               </div>
+
+              {/* ─── NEW: MODEL DROPDOWN ─────────────────────────────────────── */}
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ fontSize: "12px", color: "#718096" }}>Model</span>
+                <select
+                  value={selectedModel}
+                  onChange={e => setSelectedModel(e.target.value)}
+                  style={{
+                    padding: "4px 8px",
+                    fontSize: "12px",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "6px",
+                    background: "#f7fafc",
+                    fontFamily: "'Inter', sans-serif",
+                    cursor: "pointer"
+                  }}
+                >
+                  <option value="groq">Groq (Llama 3.3)</option>
+                  <option value="openai">OpenAI (GPT-4o)</option>
+                  <option value="claude">Claude (Sonnet 3.5)</option>
+                  <option value="gemini">Gemini (1.5 Pro)</option>
+                </select>
+              </div>
+
               <button onClick={startAnalysis} disabled={!question.trim()} style={{ marginLeft: "auto", background: question.trim() ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "#edf2f7", border: "none", borderRadius: "8px", padding: "8px 24px", color: question.trim() ? "#fff" : "#a0aec0", fontSize: "14px", fontWeight: "600", cursor: question.trim() ? "pointer" : "not-allowed", fontFamily: "'Inter', sans-serif", transition: "transform 0.1s" }}>
                 Analyze →
               </button>
