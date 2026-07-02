@@ -35,22 +35,36 @@ export async function POST(req) {
       ? `${context}User Question: ${question}` 
       : question;
 
-    // ─── CALL GROQ ─────────────────────────────────────────────────────────
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessage }
-        ],
-        max_tokens: maxTokens || 1000,
-      }),
-    });
+    // ─── CALL GROQ (with timeout) ──────────────────────────────────────────
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s ceiling
+
+    let response;
+    try {
+      response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMessage }
+          ],
+          max_tokens: maxTokens || 1000,
+        }),
+        signal: controller.signal,
+      });
+    } catch (fetchErr) {
+      if (fetchErr.name === 'AbortError') {
+        throw new Error('Model request timed out after 30s');
+      }
+      throw fetchErr;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     const data = await response.json();
 
@@ -60,7 +74,6 @@ export async function POST(req) {
 
     const text = data.choices?.[0]?.message?.content || 'No analysis generated.';
 
-    // ─── RETURN IN THE FORMAT THE FRONTEND EXPECTS ──────────────────────────
     return NextResponse.json({ 
       success: true, 
       data: { content: [{ text }] } 
