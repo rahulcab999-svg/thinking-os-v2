@@ -1406,7 +1406,7 @@ async function callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch,
       systemPrompt,
       maxTokens,
       useWebSearch,
-      model: model || "groq"   // <-- pass the model
+      model: model || "groq"
     })
   });
   const result = await response.json();
@@ -1426,36 +1426,25 @@ async function callModel(systemPrompt, userContent, maxTokens = 1200, useWebSear
     raw = await callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch, model);
   } catch (firstErr) {
     if (firstErr.contextTooLong) {
-      // Retrying identically won't help — the request itself is too large.
-      // Fail fast with a clear message instead of burning time on a doomed retry.
       throw new Error(`Request too large for the model's context window (${firstErr.message}). This usually means too much prior-stage data was included in the prompt.`);
     }
     if (firstErr.rateLimited) {
-      // Groq enforces per-minute token limits. Wait however long it told us
-      // to (or a safe default), then retry once — rather than failing the
-      // whole pipeline on a transient, self-resolving condition.
       await sleep(firstErr.retryAfterMs || 4000);
       raw = await callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch, model);
       return raw;
     }
-    // Network/API-level failure — plain retry after a short backoff.
     await sleep(800);
     raw = await callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch, model);
     return raw;
   }
 
-  // The call succeeded, but if the response isn't valid JSON, retry once with
-  // a stricter instruction rather than silently falling back to empty data.
-  // (Ported from Prism-5's callClaudeWithRetry — this fixes far more parse
-  // failures than a blind identical retry would.)
   if (!parseJSON(raw)) {
     const stricter = `${systemPrompt}\n\nCRITICAL: Your previous response could not be parsed as JSON. This time respond with ONLY the raw JSON object. No markdown formatting, no code fences, no explanation text, no preamble. Start your response with { and end with }.`;
     try {
       const retried = await callModelOnce(stricter, userContent, maxTokens, useWebSearch, model);
       if (parseJSON(retried)) return retried;
     } catch {
-      // fall through and return the original raw text — caller's parseJSON
-      // check / fallback logic still applies
+      // fall through
     }
   }
   return raw;
@@ -1465,9 +1454,7 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Plain-text call for Thinker Chat — deliberately NOT using callModel(), because
-// that function's retry logic checks "is this valid JSON?" and would misfire on
-// every ordinary chat reply (chat text is never JSON). Simple network retry only.
+// Plain-text call for Thinker Chat
 async function callModelText(systemPrompt, userContent, maxTokens = 700) {
   try {
     return await callModelOnce(systemPrompt, userContent, maxTokens, false);
@@ -1477,10 +1464,6 @@ async function callModelText(systemPrompt, userContent, maxTokens = 700) {
   }
 }
 
-// Ported concept from Prism-5's "Thinker Chat," rewritten to avoid instructing
-// the model to permanently impersonate a real, named person. It responds in
-// that thinker's documented analytical style instead of claiming to BE them,
-// and will say plainly that it's an AI if asked directly.
 function buildChatSystemPrompt(fw, contextStr) {
   const who = fw ? `${fw.label} (${fw.thinker || fw.label})'s` : "a rigorous, adversarial decision-analysis";
   return `You are a decision-support assistant responding in the analytical style and tradition of ${who} thinking — their known public frameworks, mental models, and values, applied to this specific problem.
@@ -1495,9 +1478,6 @@ ${contextStr}
 Continue the conversation naturally from here, answering whatever the user asks next.`;
 }
 
-// Runs async tasks with at most `limit` in flight at once. Used so framework
-// analyses run in parallel (big speed win) without firing 6 requests at the
-// exact same instant and tripping Groq's per-second rate limit.
 async function mapWithConcurrency(items, limit, worker) {
   const results = new Array(items.length);
   let nextIndex = 0;
@@ -1512,11 +1492,6 @@ async function mapWithConcurrency(items, limit, worker) {
   return results;
 }
 
-// By the time the pipeline reaches evidence/scenario/assumptions/synthesis,
-// the raw JSON of every prior stage combined can run into thousands of
-// tokens — large enough to trip Groq's per-minute token limits on Deep-mode
-// runs. Later stages need the gist of each prior stage, not every field
-// verbatim, so trim arrays and long strings before re-serializing.
 function compact(obj, maxArrayItems = 3, maxStringLen = 220) {
   if (obj == null) return obj;
   if (typeof obj === "string") return obj.length > maxStringLen ? obj.slice(0, maxStringLen) + "…" : obj;
@@ -1529,7 +1504,6 @@ function compact(obj, maxArrayItems = 3, maxStringLen = 220) {
   return obj;
 }
 
-// Compact summary of a single framework's result — key fields only, capped.
 function compactFramework(id, r) {
   return {
     framework: id,
@@ -1546,9 +1520,6 @@ function parseJSON(raw) {
   try {
     return JSON.parse(cleaned);
   } catch {
-    // Ported from Prism-5: if the response got cut off mid-object (common when
-    // max_tokens is hit), count open vs. closed braces and auto-close the rest
-    // before giving up. Recovers a lot of otherwise-wasted truncated responses.
     const firstBrace = cleaned.indexOf("{");
     if (firstBrace === -1) return null;
     let frag = cleaned.slice(firstBrace);
@@ -2513,7 +2484,7 @@ export default function ThinkingOSv2() {
         `Question / Problem: "${fullQuestion}"\n\nSearch for relevant evidence now.`,
         1400,
         ENABLE_WEB_SEARCH,
-        selectedModel   // <-- pass the selected model
+        selectedModel
       );
       const parsed = parseJSON(raw);
       if (!parsed) setStageErrors(prev => ({ ...prev, research: ["Response couldn't be parsed — research ran on a fallback with low confidence."] }));
@@ -3105,7 +3076,7 @@ export default function ThinkingOSv2() {
                 </div>
               </div>
 
-              {/* ─── NEW: MODEL DROPDOWN ─────────────────────────────────────── */}
+              {/* ─── MODEL DROPDOWN ─────────────────────────────────────────────── */}
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <span style={{ fontSize: "12px", color: "#718096" }}>Model</span>
                 <select
@@ -3125,6 +3096,7 @@ export default function ThinkingOSv2() {
                   <option value="openai">OpenAI (GPT-4o)</option>
                   <option value="claude">Claude (Sonnet 3.5)</option>
                   <option value="gemini">Gemini (1.5 Pro)</option>
+                  <option value="deepseek">DeepSeek (Chat)</option>
                 </select>
               </div>
 
