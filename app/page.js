@@ -107,7 +107,6 @@ function exportMarkdown(question, phaseData, fwResults, selectedFwIds) {
   }
   
   // ... rest of export (crossexam, redteam, research, reality, frameworks)
-  // (included in the full code below)
   const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url;
@@ -1394,9 +1393,6 @@ function createContext(question, type, answers = {}) {
 }
 
 // ─── API CALL ──────────────────────────────────────────────────────────────────
-// NOTE: this calls our own /api/analyze route, which currently calls Groq's
-// Llama 3.3 70B model — named callModel (not callClaude) so the code doesn't
-// silently misrepresent which model is actually doing the reasoning.
 async function callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch, model) {
   const response = await fetch("/api/analyze", {
     method: "POST",
@@ -1545,8 +1541,8 @@ function confLabel(c) {
   if (c >= 45) return "MEDIUM";
   return "LOW";
 }
-// ─── SYSTEM PROMPTS ───────────────────────────────────────────────────────────
 
+// ─── SYSTEM PROMPTS ───────────────────────────────────────────────────────────
 const RESEARCH_SYSTEM = `You are an evidence collection engine. Your job: gather real, verifiable information about the question before any analysis begins. Use web search to collect:
 - Market size and trends (if applicable)
 - Industry statistics and benchmarks
@@ -3486,8 +3482,22 @@ export default function ThinkingOSv2() {
                             {evidence.contradicting_evidence?.length > 0 && <div><div style={{ fontSize: "11px", fontWeight: "600", color: "#ef4444", marginBottom: "6px" }}>⚠️ Contradicting Evidence</div>{evidence.contradicting_evidence.slice(0, 5).map((item, i) => <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px", fontSize: "12px", color: "#2d3748" }}><EvidenceBadge classification={item.classification} /><span>{item.evidence}</span></div>)}</div>}
                           </div>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: "10px" }}>
-                            {evidence.missing_evidence?.length > 0 && <div><div style={{ fontSize: "11px", fontWeight: "600", color: "#f59e0b", marginBottom: "4px" }}>📌 Missing Evidence</div>{evidence.missing_evidence.slice(0, 5).map((item, i) => <div key={i} style={{ fontSize: "12px", color: "#2d3748", marginBottom: "2px" }}>· {item}</div>)}</div>}
-                            {evidence.remaining_assumptions?.length > 0 && <div><div style={{ fontSize: "11px", fontWeight: "600", color: "#f97316", marginBottom: "4px" }}>🤔 Remaining Assumptions</div>{evidence.remaining_assumptions.slice(0, 5).map((item, i) => <div key={i} style={{ fontSize: "12px", color: "#2d3748", marginBottom: "2px" }}>· {item}</div>)}</div>
+                            {evidence.missing_evidence?.length > 0 && (
+                              <div>
+                                <div style={{ fontSize: "11px", fontWeight: "600", color: "#f59e0b", marginBottom: "4px" }}>📌 Missing Evidence</div>
+                                {evidence.missing_evidence.slice(0, 5).map((item, i) => (
+                                  <div key={i} style={{ fontSize: "12px", color: "#2d3748", marginBottom: "2px" }}>· {item}</div>
+                                ))}
+                              </div>
+                            )}
+                            {evidence.remaining_assumptions?.length > 0 && (
+                              <div>
+                                <div style={{ fontSize: "11px", fontWeight: "600", color: "#f97316", marginBottom: "4px" }}>🤔 Remaining Assumptions</div>
+                                {evidence.remaining_assumptions.slice(0, 5).map((item, i) => (
+                                  <div key={i} style={{ fontSize: "12px", color: "#2d3748", marginBottom: "2px" }}>· {item}</div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
@@ -3679,4 +3689,4 @@ export default function ThinkingOSv2() {
       )}
     </div>
   );
-} 
+}
