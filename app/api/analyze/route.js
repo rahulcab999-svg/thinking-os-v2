@@ -49,6 +49,9 @@ export async function POST(req) {
       case 'gemini':
         result = await callGemini(systemPrompt, userMessage, maxTokens);
         break;
+      case 'deepseek':
+        result = await callDeepSeek(systemPrompt, userMessage, maxTokens);
+        break;
       case 'groq':
       default:
         result = await callGroq(systemPrompt, userMessage, maxTokens);
@@ -136,7 +139,7 @@ async function callOpenAI(systemPrompt, userMessage, maxTokens) {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o', // or 'gpt-4-turbo', 'gpt-3.5-turbo'
+        model: 'gpt-4o',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage }
@@ -231,6 +234,44 @@ async function callGemini(systemPrompt, userMessage, maxTokens) {
   } catch (fetchErr) {
     if (fetchErr.name === 'AbortError') {
       throw new Error('Gemini request timed out after 30s');
+    }
+    throw fetchErr;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// DeepSeek (OpenAI-compatible)
+async function callDeepSeek(systemPrompt, userMessage, maxTokens) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  try {
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage }
+        ],
+        max_tokens: maxTokens || 1000,
+      }),
+      signal: controller.signal,
+    });
+    const data = await response.json();
+    return { 
+      text: data.choices?.[0]?.message?.content || '', 
+      raw: data, 
+      ok: response.ok 
+    };
+  } catch (fetchErr) {
+    if (fetchErr.name === 'AbortError') {
+      throw new Error('DeepSeek request timed out after 30s');
     }
     throw fetchErr;
   } finally {
