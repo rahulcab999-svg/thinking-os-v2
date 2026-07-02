@@ -1394,7 +1394,10 @@ function createContext(question, type, answers = {}) {
 }
 
 // ─── API CALL ──────────────────────────────────────────────────────────────────
-async function callClaude(systemPrompt, userContent, maxTokens = 1200, useWebSearch = false) {
+// NOTE: this calls our own /api/analyze route, which currently calls Groq's
+// Llama 3.3 70B model — named callModel (not callClaude) so the code doesn't
+// silently misrepresent which model is actually doing the reasoning.
+async function callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch) {
   const response = await fetch("/api/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -1410,12 +1413,104 @@ async function callClaude(systemPrompt, userContent, maxTokens = 1200, useWebSea
   return result.data.content?.map(c => c.text || "").join("") || "";
 }
 
+async function callModel(systemPrompt, userContent, maxTokens = 1200, useWebSearch = false) {
+  let raw;
+  try {
+    raw = await callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch);
+  } catch (firstErr) {
+    // Network/API-level failure — plain retry after a short backoff.
+    await sleep(800);
+    raw = await callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch);
+    return raw;
+  }
+
+  // The call succeeded, but if the response isn't valid JSON, retry once with
+  // a stricter instruction rather than silently falling back to empty data.
+  // (Ported from Prism-5's callClaudeWithRetry — this fixes far more parse
+  // failures than a blind identical retry would.)
+  if (!parseJSON(raw)) {
+    const stricter = `${systemPrompt}\n\nCRITICAL: Your previous response could not be parsed as JSON. This time respond with ONLY the raw JSON object. No markdown formatting, no code fences, no explanation text, no preamble. Start your response with { and end with }.`;
+    try {
+      const retried = await callModelOnce(stricter, userContent, maxTokens, useWebSearch);
+      if (parseJSON(retried)) return retried;
+    } catch {
+      // fall through and return the original raw text — caller's parseJSON
+      // check / fallback logic still applies
+    }
+  }
+  return raw;
+}
+
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Plain-text call for Thinker Chat — deliberately NOT using callModel(), because
+// that function's retry logic checks "is this valid JSON?" and would misfire on
+// every ordinary chat reply (chat text is never JSON). Simple network retry only.
+async function callModelText(systemPrompt, userContent, maxTokens = 700) {
+  try {
+    return await callModelOnce(systemPrompt, userContent, maxTokens, false);
+  } catch (e) {
+    await sleep(800);
+    return await callModelOnce(systemPrompt, userContent, maxTokens, false);
+  }
+}
+
+// Ported concept from Prism-5's "Thinker Chat," rewritten to avoid instructing
+// the model to permanently impersonate a real, named person. It responds in
+// that thinker's documented analytical style instead of claiming to BE them,
+// and will say plainly that it's an AI if asked directly.
+function buildChatSystemPrompt(fw, contextStr) {
+  const who = fw ? `${fw.label} (${fw.thinker || fw.label})'s` : "a rigorous, adversarial decision-analysis";
+  return `You are a decision-support assistant responding in the analytical style and tradition of ${who} thinking — their known public frameworks, mental models, and values, applied to this specific problem.
+
+You are an AI applying that thinking style, not the person themselves. Do not invent personal anecdotes, private quotes, or claim first-hand experiences that aren't part of their well-documented public work. If the user asks whether you are an AI, or whether you are actually that person, answer honestly and plainly: you are an AI applying their documented frameworks, not the person.
+
+Stay direct, rigorous, and framework-driven — the substance of their thinking style, not a theatrical impression of it.
+
+CONTEXT — the original problem and the analysis so far:
+${contextStr}
+
+Continue the conversation naturally from here, answering whatever the user asks next.`;
+}
+
+// Runs async tasks with at most `limit` in flight at once. Used so framework
+// analyses run in parallel (big speed win) without firing 6 requests at the
+// exact same instant and tripping Groq's per-second rate limit.
+async function mapWithConcurrency(items, limit, worker) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+  async function runNext() {
+    while (nextIndex < items.length) {
+      const i = nextIndex++;
+      results[i] = await worker(items[i], i);
+    }
+  }
+  const runners = Array.from({ length: Math.min(limit, items.length) }, runNext);
+  await Promise.all(runners);
+  return results;
+}
+
 function parseJSON(raw) {
-  try { return JSON.parse(raw.replace(/```json|```/g, "").trim()); } catch { return null; }
+  const cleaned = (raw || "").replace(/```json|```/g, "").trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    // Ported from Prism-5: if the response got cut off mid-object (common when
+    // max_tokens is hit), count open vs. closed braces and auto-close the rest
+    // before giving up. Recovers a lot of otherwise-wasted truncated responses.
+    const firstBrace = cleaned.indexOf("{");
+    if (firstBrace === -1) return null;
+    let frag = cleaned.slice(firstBrace);
+    let depth = 0;
+    for (const ch of frag) {
+      if (ch === "{") depth++;
+      if (ch === "}") depth--;
+    }
+    while (depth > 0) { frag += "}"; depth--; }
+    try { return JSON.parse(frag); } catch { return null; }
+  }
 }
 function safeJSON(raw, fallback) {
   return parseJSON(raw) || fallback;
@@ -2135,6 +2230,18 @@ export default function ThinkingOSv2() {
   const [activePhase, setActivePhase]         = useState(null);
   const [completedPhases, setCompletedPhases] = useState({});
   const [phaseData, setPhaseData]             = useState({});
+  const [stageErrors, setStageErrors]         = useState({}); // { stageId: [messages] } — surfaced to the user instead of failing silently
+  const [assumptionOverrides, setAssumptionOverrides] = useState({}); // { index: "Verified" | "Contradicted" } — user's own confirmation, separate from the model's self-graded status
+  const [runMode, setRunMode]                 = useState("deep"); // "deep" (full 9-stage pipeline) or "quick" (3 frameworks, skips cross-exam/red-team/scenario — shape borrowed from Prism-5)
+  const runModeRef = useRef("deep");
+  useEffect(() => { runModeRef.current = runMode; }, [runMode]);
+
+  // ─── THINKER CHAT (ported concept from Prism-5, safer wording) ───────────
+  // chatOpen: null | "general" | a framework id — which chat panel is showing
+  const [chatOpen, setChatOpen]       = useState(null);
+  const [chatMessages, setChatMessages] = useState({}); // { "general" | fw.id: [{role, content}] }
+  const [chatInput, setChatInput]     = useState("");
+  const [chatSending, setChatSending] = useState(false);
   const [activeFrameworkId, setActiveFwId]    = useState(null);
   const [selectedFwIds, setSelectedFwIds]     = useState([]);
   const [fwResults, setFwResults]             = useState({});
@@ -2247,7 +2354,7 @@ export default function ThinkingOSv2() {
   }, [contexts]);
 
   const reset = useCallback(() => {
-    setActivePhase(null); setCompletedPhases({}); setPhaseData({});
+    setActivePhase(null); setCompletedPhases({}); setPhaseData({}); setStageErrors({}); setAssumptionOverrides({});
     setActiveFwId(null); setSelectedFwIds([]); setFwResults({}); setFwLoading({});
     setIsRunning(false); setHasRun(false); setManualType(null);
     setShowJournalForm(false); setPendingEntry(null); setJournalOutcome("");
@@ -2255,7 +2362,43 @@ export default function ThinkingOSv2() {
     setEvidenceExpanded(false);
     setScenarioExpanded(false);
     setAssumptionExpanded(false);
+    setChatOpen(null); setChatMessages({}); setChatInput(""); setChatSending(false);
   }, []);
+
+  // Builds a short text summary of the analysis so far, used as context for
+  // Thinker Chat. `scope` is either a framework object (chat scoped to that
+  // one framework's analysis) or null (general chat scoped to the final
+  // recommendation).
+  const buildChatContext = useCallback((scope) => {
+    if (scope) {
+      const r = fwResults[scope.id];
+      return `Original problem: "${question}"\n\n${scope.label}'s analysis:\nKey claim: ${r?.key_claim || "N/A"}\nRecommendation: ${r?.recommendation || "N/A"}\nEvidence: ${(r?.evidence || []).join("; ")}\nCounterarguments: ${(r?.counterarguments || []).join("; ")}`;
+    }
+    const synth = phaseData.synthesis;
+    return `Original problem: "${question}"\n\nFinal recommendation: ${synth?.recommendation || "N/A"}\nConfidence: ${synth?.confidence || "N/A"}%\nKey risks: ${(synth?.top_risks || []).join("; ")}\nNext actions: ${(synth?.next_actions || []).join("; ")}`;
+  }, [question, phaseData, fwResults]);
+
+  const sendChatMessage = useCallback(async () => {
+    const msg = chatInput.trim();
+    if (!msg || chatSending || !chatOpen) return;
+    const scope = chatOpen === "general" ? null : ALL_FRAMEWORKS.find(f => f.id === chatOpen);
+    const key = chatOpen;
+    setChatInput("");
+    setChatSending(true);
+    const prior = chatMessages[key] || [];
+    const updated = [...prior, { role: "user", content: msg }];
+    setChatMessages(prev => ({ ...prev, [key]: updated }));
+    try {
+      const systemPrompt = buildChatSystemPrompt(scope, buildChatContext(scope));
+      const historyText = updated.map(m => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`).join("\n\n");
+      const reply = await callModelText(systemPrompt, historyText, 700);
+      setChatMessages(prev => ({ ...prev, [key]: [...updated, { role: "assistant", content: reply.trim() }] }));
+    } catch (e) {
+      setChatMessages(prev => ({ ...prev, [key]: [...updated, { role: "assistant", content: `(Message failed to send: ${e.message}. Try again.)` }] }));
+    } finally {
+      setChatSending(false);
+    }
+  }, [chatInput, chatSending, chatOpen, chatMessages, buildChatContext]);
 
   const submitAnswers = useCallback(() => {
     const currentAnswers = {};
@@ -2298,22 +2441,34 @@ export default function ThinkingOSv2() {
 
     setIsRunning(true);
     setHasRun(true);
+    setStageErrors({});
+    setAssumptionOverrides({});
     const col = {};
+
+    // A stage can "succeed" (no exception) but still return text the model
+    // didn't format as valid JSON, in which case safeJSON quietly substitutes
+    // a fallback. Flag that here so it's visible instead of silent.
+    const flagParseFailure = (stageId, label) => {
+      setStageErrors(prev => ({ ...prev, [stageId]: [...(prev[stageId] || []), `${label}: response couldn't be parsed — used fallback data.`] }));
+    };
 
     setActivePhase("research");
     let researchData;
     try {
-      const raw = await callClaude(
+      const raw = await callModel(
         RESEARCH_SYSTEM,
         `Question / Problem: "${fullQuestion}"\n\nSearch for relevant evidence now.`,
         1400,
         ENABLE_WEB_SEARCH
       );
-      researchData = safeJSON(raw, {
+      const parsed = parseJSON(raw);
+      if (!parsed) setStageErrors(prev => ({ ...prev, research: ["Response couldn't be parsed — research ran on a fallback with low confidence."] }));
+      researchData = parsed || {
         facts: [], sources: [], assumptions: [], unknowns: [],
         research_confidence: 30, research_summary: "Research incomplete."
-      });
+      };
     } catch (e) {
+      setStageErrors(prev => ({ ...prev, research: [e.message] }));
       researchData = { facts: [], sources: [], assumptions: [], unknowns: [], research_confidence: 20, research_summary: `Research error: ${e.message}` };
     }
     col.research = researchData;
@@ -2325,10 +2480,11 @@ export default function ThinkingOSv2() {
     setActivePhase("reality");
     let realityData;
     try {
-      const raw = await callClaude(
+      const raw = await callModel(
         REALITY_SYSTEM,
         `Question: "${fullQuestion}"\n\nResearch data:\n${JSON.stringify(researchData)}\n\nExtract reality now.`
       );
+      if (!parseJSON(raw)) flagParseFailure("reality", "Reality extraction");
       realityData = safeJSON(raw, {
         facts: researchData.facts, assumptions: researchData.assumptions,
         unknowns: researchData.unknowns, problem_type: category,
@@ -2336,6 +2492,7 @@ export default function ThinkingOSv2() {
         extraction_confidence: 40
       });
     } catch (e) {
+      setStageErrors(prev => ({ ...prev, reality: [e.message] }));
       realityData = { facts: [], assumptions: [], unknowns: [], problem_type: category, recommended_frameworks: FRAMEWORK_SELECTION[category] || ["first_principles","taleb","bayes","inversion","kahneman"], extraction_confidence: 35 };
     }
     if (manualProblemType) realityData.problem_type = manualProblemType;
@@ -2343,7 +2500,9 @@ export default function ThinkingOSv2() {
     setPhaseData(p => ({ ...p, reality: realityData }));
     setCompletedPhases(c => ({ ...c, reality: true }));
 
-    const fws = ALL_FRAMEWORKS.filter(f => (realityData.recommended_frameworks || []).includes(f.id));
+    const isQuick = runModeRef.current === "quick";
+    let fws = ALL_FRAMEWORKS.filter(f => (realityData.recommended_frameworks || []).includes(f.id));
+    if (isQuick) fws = fws.slice(0, 3); // Quick mode: 3 frameworks, like Prism-5's lean pipeline
     setSelectedFwIds(fws.map(f => f.id));
     if (fws.length > 0) setActiveFwId(fws[0].id);
 
@@ -2353,24 +2512,35 @@ export default function ThinkingOSv2() {
     setFwLoading(loadInit);
 
     const fwRes = {};
-    for (let i = 0; i < fws.length; i++) {
-      const fw = fws[i];
+    const fwErrors = [];
+    // Run frameworks concurrently (limit 3 at a time) instead of one-by-one.
+    // This was the single biggest latency cost in the old pipeline — 4-6
+    // frameworks sequentially, each with an extra 1.5s artificial delay,
+    // could add 30-60+ seconds by itself.
+    await mapWithConcurrency(fws, 3, async (fw) => {
       try {
-        if (i > 0) await sleep(1500);
-        const raw = await callClaude(
+        const raw = await callModel(
           fw.prompt,
           `Problem: "${fullQuestion}"\n\nVERIFIED FACTS:\n${JSON.stringify(researchData.facts)}\n\nSources: ${JSON.stringify(researchData.sources)}\n\nASSUMPTIONS:\n${JSON.stringify(realityData.assumptions)}\n\nUNKNOWNS:\n${JSON.stringify(realityData.unknowns)}\n\nUSER CONTEXT:\n${answerContext}\n\nApply your framework now.`
         );
-        fwRes[fw.id] = safeJSON(raw, { key_claim: raw.slice(0, 200), confidence: 40, evidence: [], counterarguments: [], unknowns: [], recommendation: "" });
+        const parsed = parseJSON(raw);
+        if (!parsed) {
+          fwErrors.push(`${fw.label}: response couldn't be parsed, used fallback`);
+        }
+        fwRes[fw.id] = parsed || { key_claim: raw.slice(0, 200), confidence: 40, evidence: [], counterarguments: [], unknowns: [], recommendation: "" };
       } catch (e) {
+        fwErrors.push(`${fw.label}: ${e.message}`);
         fwRes[fw.id] = { key_claim: `Error: ${e.message}`, confidence: 0, evidence: [], counterarguments: [], unknowns: [], recommendation: "" };
       }
       setFwResults(prev => ({ ...prev, [fw.id]: fwRes[fw.id] }));
       setFwLoading(prev => ({ ...prev, [fw.id]: false }));
-    }
+    });
 
     col.frameworks = fwRes;
     setCompletedPhases(c => ({ ...c, analysis: true }));
+    if (fwErrors.length > 0) {
+      setStageErrors(prev => ({ ...prev, analysis: fwErrors }));
+    }
 
     const avgFwConf = Object.values(fwRes).reduce((sum, r) => sum + (r?.confidence || 0), 0) / (Object.keys(fwRes).length || 1);
     const updatedScores = recordFrameworkUse(scores, fws.map(f => f.id), avgFwConf);
@@ -2381,36 +2551,48 @@ export default function ThinkingOSv2() {
 
     setActivePhase("crossexam");
     let crossData;
-    try {
-      const summary = fws.map(fw => {
-        const r = fwRes[fw.id];
-        return `${fw.label}: claim="${r?.key_claim || ""}" conf=${r?.confidence || 0} rec="${r?.recommendation || ""}"`;
-      }).join("\n");
-      const raw = await callClaude(CROSS_EXAM_SYSTEM, `Problem: "${fullQuestion}"\n\nFramework results:\n${summary}\n\nRun cross-examination now.`);
-      crossData = safeJSON(raw, { attacks: [], upgraded_claims: [], downgraded_claims: [], consensus: [], major_disagreements: [], agreement_score: 50, conflict_score: 50, hidden_insight: "" });
-    } catch (e) {
-      crossData = { attacks: [], upgraded_claims: [], downgraded_claims: [], consensus: [], major_disagreements: [], agreement_score: 50, conflict_score: 50, hidden_insight: "" };
+    if (isQuick) {
+      crossData = { attacks: [], upgraded_claims: [], downgraded_claims: [], consensus: [], major_disagreements: [], agreement_score: 50, conflict_score: 50, hidden_insight: "", skipped: "Skipped in Quick mode" };
+    } else {
+      try {
+        const summary = fws.map(fw => {
+          const r = fwRes[fw.id];
+          return `${fw.label}: claim="${r?.key_claim || ""}" conf=${r?.confidence || 0} rec="${r?.recommendation || ""}"`;
+        }).join("\n");
+        const raw = await callModel(CROSS_EXAM_SYSTEM, `Problem: "${fullQuestion}"\n\nFramework results:\n${summary}\n\nRun cross-examination now.`);
+        if (!parseJSON(raw)) flagParseFailure("crossexam", "Cross-examination");
+        crossData = safeJSON(raw, { attacks: [], upgraded_claims: [], downgraded_claims: [], consensus: [], major_disagreements: [], agreement_score: 50, conflict_score: 50, hidden_insight: "" });
+      } catch (e) {
+        setStageErrors(prev => ({ ...prev, crossexam: [e.message] }));
+        crossData = { attacks: [], upgraded_claims: [], downgraded_claims: [], consensus: [], major_disagreements: [], agreement_score: 50, conflict_score: 50, hidden_insight: "" };
+      }
     }
     col.crossexam = crossData;
     setPhaseData(p => ({ ...p, crossexam: crossData }));
     setCompletedPhases(c => ({ ...c, crossexam: true }));
 
-    await sleep(300);
+    if (!isQuick) await sleep(300);
 
     setActivePhase("redteam");
     let redData;
-    try {
-      const topRec = crossData?.consensus?.[0]?.recommendation || Object.values(fwRes)[0]?.recommendation || "proceed with the plan";
-      const raw = await callClaude(RED_TEAM_SYSTEM, `Problem: "${fullQuestion}"\nTop Recommendation: "${topRec}"\n\nRed team this now.`);
-      redData = safeJSON(raw, { failure_modes: [], early_warning_signals: [], risk_severity: [], mitigation_plan: [], kill_shot: "Unknown", survivability: "Conditional", survivability_condition: "" });
-    } catch (e) {
-      redData = { failure_modes: [], early_warning_signals: [], risk_severity: [], mitigation_plan: [], kill_shot: "", survivability: "Conditional", survivability_condition: "" };
+    if (isQuick) {
+      redData = { failure_modes: [], early_warning_signals: [], risk_severity: [], mitigation_plan: [], kill_shot: "", survivability: "Conditional", survivability_condition: "", skipped: "Skipped in Quick mode" };
+    } else {
+      try {
+        const topRec = crossData?.consensus?.[0]?.recommendation || Object.values(fwRes)[0]?.recommendation || "proceed with the plan";
+        const raw = await callModel(RED_TEAM_SYSTEM, `Problem: "${fullQuestion}"\nTop Recommendation: "${topRec}"\n\nRed team this now.`);
+        if (!parseJSON(raw)) flagParseFailure("redteam", "Red team");
+        redData = safeJSON(raw, { failure_modes: [], early_warning_signals: [], risk_severity: [], mitigation_plan: [], kill_shot: "Unknown", survivability: "Conditional", survivability_condition: "" });
+      } catch (e) {
+        setStageErrors(prev => ({ ...prev, redteam: [e.message] }));
+        redData = { failure_modes: [], early_warning_signals: [], risk_severity: [], mitigation_plan: [], kill_shot: "", survivability: "Conditional", survivability_condition: "" };
+      }
     }
     col.redteam = redData;
     setPhaseData(p => ({ ...p, redteam: redData }));
     setCompletedPhases(c => ({ ...c, redteam: true }));
 
-    await sleep(300);
+    if (!isQuick) await sleep(300);
 
     setActivePhase("evidence");
     let evidenceData;
@@ -2423,7 +2605,8 @@ export default function ThinkingOSv2() {
         crossexam: crossData,
         redteam: redData,
       };
-      const raw = await callClaude(EVIDENCE_CHALLENGE_SYSTEM, `Full analysis data:\n${JSON.stringify(payload)}\n\nChallenge the evidence now.`, 1200);
+      const raw = await callModel(EVIDENCE_CHALLENGE_SYSTEM, `Full analysis data:\n${JSON.stringify(payload)}\n\nChallenge the evidence now.`, 1200);
+      if (!parseJSON(raw)) flagParseFailure("evidence", "Evidence challenge");
       evidenceData = safeJSON(raw, {
         major_recommendations: [],
         supporting_evidence: [],
@@ -2434,6 +2617,7 @@ export default function ThinkingOSv2() {
         evidence_summary: "Evidence challenge could not be completed."
       });
     } catch (e) {
+      setStageErrors(prev => ({ ...prev, evidence: [e.message] }));
       evidenceData = {
         major_recommendations: [],
         supporting_evidence: [],
@@ -2452,47 +2636,61 @@ export default function ThinkingOSv2() {
 
     setActivePhase("scenario");
     let scenarioData;
-    try {
-      const payload = {
-        question: fullQuestion,
-        research: col.research,
-        reality: col.reality,
-        frameworks: Object.entries(fwRes).map(([id, r]) => ({ framework: id, ...r })),
-        crossexam: crossData,
-        redteam: redData,
-        evidence: evidenceData,
-        recommendation: crossData?.consensus?.[0]?.recommendation || Object.values(fwRes)[0]?.recommendation || "No recommendation yet",
-      };
-      const raw = await callClaude(SCENARIO_SYSTEM, `Full analysis data:\n${JSON.stringify(payload)}\n\nSimulate scenarios now.`, 1600);
-      scenarioData = safeJSON(raw, {
-        best_case: { outcome: "Optimal outcome", conditions: "Favorable conditions", benefits: "Significant benefits", probability_drivers: "Key drivers", indicators: "Success signals" },
-        most_likely: { outcome: "Expected outcome", challenges: "Expected challenges", trade_offs: "Key trade-offs", indicators: "Reality check signals" },
-        worst_case: { outcome: "Failure outcome", risks: "Major risks", downside: "Financial/strategic downside", conditions: "Failure conditions", early_warnings: "Warning signals" },
-        sensitive_variables: [],
-        risk_analysis: [],
-        opportunities: [],
-        recommendation_stability: { stable: true, when_to_change: "" },
-        decision_robustness: { rating: "Medium", valid_under: "", invalid_under: "" },
-        monitoring_indicators: [],
-      });
-    } catch (e) {
+    if (isQuick) {
       scenarioData = {
-        best_case: { outcome: "Optimal outcome", conditions: "Favorable conditions", benefits: "Significant benefits", probability_drivers: "Key drivers", indicators: "Success signals" },
-        most_likely: { outcome: "Expected outcome", challenges: "Expected challenges", trade_offs: "Key trade-offs", indicators: "Reality check signals" },
-        worst_case: { outcome: "Failure outcome", risks: "Major risks", downside: "Financial/strategic downside", conditions: "Failure conditions", early_warnings: "Warning signals" },
-        sensitive_variables: [],
-        risk_analysis: [],
-        opportunities: [],
+        best_case: { outcome: "", conditions: "", benefits: "", probability_drivers: "", indicators: "" },
+        most_likely: { outcome: "", challenges: "", trade_offs: "", indicators: "" },
+        worst_case: { outcome: "", risks: "", downside: "", conditions: "", early_warnings: "" },
+        sensitive_variables: [], risk_analysis: [], opportunities: [],
         recommendation_stability: { stable: true, when_to_change: "" },
         decision_robustness: { rating: "Medium", valid_under: "", invalid_under: "" },
-        monitoring_indicators: [],
+        monitoring_indicators: [], skipped: "Skipped in Quick mode",
       };
+    } else {
+      try {
+        const payload = {
+          question: fullQuestion,
+          research: col.research,
+          reality: col.reality,
+          frameworks: Object.entries(fwRes).map(([id, r]) => ({ framework: id, ...r })),
+          crossexam: crossData,
+          redteam: redData,
+          evidence: evidenceData,
+          recommendation: crossData?.consensus?.[0]?.recommendation || Object.values(fwRes)[0]?.recommendation || "No recommendation yet",
+        };
+        const raw = await callModel(SCENARIO_SYSTEM, `Full analysis data:\n${JSON.stringify(payload)}\n\nSimulate scenarios now.`, 1600);
+        if (!parseJSON(raw)) flagParseFailure("scenario", "Scenario simulation");
+        scenarioData = safeJSON(raw, {
+          best_case: { outcome: "Optimal outcome", conditions: "Favorable conditions", benefits: "Significant benefits", probability_drivers: "Key drivers", indicators: "Success signals" },
+          most_likely: { outcome: "Expected outcome", challenges: "Expected challenges", trade_offs: "Key trade-offs", indicators: "Reality check signals" },
+          worst_case: { outcome: "Failure outcome", risks: "Major risks", downside: "Financial/strategic downside", conditions: "Failure conditions", early_warnings: "Warning signals" },
+          sensitive_variables: [],
+          risk_analysis: [],
+          opportunities: [],
+          recommendation_stability: { stable: true, when_to_change: "" },
+          decision_robustness: { rating: "Medium", valid_under: "", invalid_under: "" },
+          monitoring_indicators: [],
+        });
+      } catch (e) {
+        setStageErrors(prev => ({ ...prev, scenario: [e.message] }));
+        scenarioData = {
+          best_case: { outcome: "Optimal outcome", conditions: "Favorable conditions", benefits: "Significant benefits", probability_drivers: "Key drivers", indicators: "Success signals" },
+          most_likely: { outcome: "Expected outcome", challenges: "Expected challenges", trade_offs: "Key trade-offs", indicators: "Reality check signals" },
+          worst_case: { outcome: "Failure outcome", risks: "Major risks", downside: "Financial/strategic downside", conditions: "Failure conditions", early_warnings: "Warning signals" },
+          sensitive_variables: [],
+          risk_analysis: [],
+          opportunities: [],
+          recommendation_stability: { stable: true, when_to_change: "" },
+          decision_robustness: { rating: "Medium", valid_under: "", invalid_under: "" },
+          monitoring_indicators: [],
+        };
+      }
     }
     col.scenario = scenarioData;
     setPhaseData(p => ({ ...p, scenario: scenarioData }));
     setCompletedPhases(c => ({ ...c, scenario: true }));
 
-    await sleep(300);
+    if (!isQuick) await sleep(300);
 
     setActivePhase("assumptions");
     let assumptionData;
@@ -2508,13 +2706,15 @@ export default function ThinkingOSv2() {
         scenario: scenarioData,
         synthesis: col.synthesis || {},
       };
-      const raw = await callClaude(ASSUMPTION_SYSTEM, `Full analysis data:\n${JSON.stringify(payload)}\n\nDetect and manage all assumptions now.`, 1600);
+      const raw = await callModel(ASSUMPTION_SYSTEM, `Full analysis data:\n${JSON.stringify(payload)}\n\nDetect and manage all assumptions now.`, 1600);
+      if (!parseJSON(raw)) flagParseFailure("assumptions", "Assumption manager");
       assumptionData = safeJSON(raw, {
         assumptions: [],
         conflicts: [],
         summary: { total: 0, verified: 0, unverified: 0, critical: 0, contradictions: 0 }
       });
     } catch (e) {
+      setStageErrors(prev => ({ ...prev, assumptions: [e.message] }));
       assumptionData = {
         assumptions: [],
         conflicts: [],
@@ -2541,9 +2741,11 @@ export default function ThinkingOSv2() {
         scenario: scenarioData,
         assumptions: assumptionData,
       };
-      const raw = await callClaude(SYNTHESIS_SYSTEM, `Full analysis:\n${JSON.stringify(payload)}\n\nGenerate final decision output now.`, 1600);
+      const raw = await callModel(SYNTHESIS_SYSTEM, `Full analysis:\n${JSON.stringify(payload)}\n\nGenerate final decision output now.`, 1600);
+      if (!parseJSON(raw)) flagParseFailure("synthesis", "Final synthesis — this is the output you're about to read");
       synthData = safeJSON(raw, { status: "ready", recommendation: "Analysis failed — retry.", confidence: 0, confidence_reasoning: [], risk_level: "High", why: [], top_risks: [], what_would_change_positive: [], what_would_change_negative: [], next_actions: [], missing_information: [], recommended_research: [], investigation_needed: true });
     } catch (e) {
+      setStageErrors(prev => ({ ...prev, synthesis: [`Final synthesis failed: ${e.message}. The recommendation below is a placeholder, not a real result — please retry.`] }));
       synthData = { status: "ready", recommendation: "Synthesis error.", confidence: 0, confidence_reasoning: [], risk_level: "High", why: [], top_risks: [], what_would_change_positive: [], what_would_change_negative: [], next_actions: [], missing_information: [], recommended_research: [], investigation_needed: true };
     }
     col.synthesis = synthData;
@@ -2853,6 +3055,16 @@ export default function ThinkingOSv2() {
                   }}>{pt.icon} {pt.label}</button>
                 ))}
               </div>
+              <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden", flexShrink: 0 }}>
+                <button onClick={() => setRunMode("quick")} title="3 frameworks, skips cross-exam/red-team/scenario — faster, lighter rigor" style={{
+                  padding: "10px 12px", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "600", fontFamily: "'Inter',sans-serif",
+                  background: runMode === "quick" ? "#6366f1" : "#f7fafc", color: runMode === "quick" ? "#fff" : "#718096"
+                }}>⚡ Quick</button>
+                <button onClick={() => setRunMode("deep")} title="Full 9-stage pipeline: cross-exam, red-team, scenario simulation, assumption manager" style={{
+                  padding: "10px 12px", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "600", fontFamily: "'Inter',sans-serif",
+                  background: runMode === "deep" ? "#6366f1" : "#f7fafc", color: runMode === "deep" ? "#fff" : "#718096"
+                }}>🔬 Deep</button>
+              </div>
               <button onClick={startAnalysis} disabled={!question.trim()} style={{
                 background: question.trim() ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "#edf2f7",
                 border: "none", borderRadius: "8px", padding: "10px 24px",
@@ -2861,7 +3073,7 @@ export default function ThinkingOSv2() {
               }}>Analyze →</button>
             </div>
             <div style={{ fontSize: "12px", color: "#a0aec0", marginTop: "8px" }}>
-              ⌘+Enter to run · Web search: {ENABLE_WEB_SEARCH ? "✅ ON" : "❌ OFF"} · Auto-selects frameworks
+              ⌘+Enter to run · Web search: {ENABLE_WEB_SEARCH ? "✅ ON" : "❌ OFF"} · Auto-selects frameworks · {runMode === "quick" ? "Quick mode: ~3 frameworks, no cross-exam/red-team/scenario" : "Deep mode: full 9-stage pipeline"}
               {currentContext && ` · 📋 ${Object.keys(currentContext.answers).filter(k => currentContext.answers[k] && currentContext.answers[k].trim() !== "").length} fields saved`}
             </div>
           </div>
@@ -2984,6 +3196,21 @@ export default function ThinkingOSv2() {
           </div>
 
           <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", minWidth: 0, background: "#f0f2f5" }}>
+            {Object.keys(stageErrors).length > 0 && (
+              <div style={{ background: "#fff5f5", border: "1px solid #fc8181", borderRadius: "10px", padding: "12px 16px", marginBottom: "16px", animation: "fadeUp 0.3s ease" }}>
+                <div style={{ fontSize: "13px", fontWeight: "700", color: "#c53030", marginBottom: "6px" }}>
+                  ⚠️ {Object.keys(stageErrors).length} stage{Object.keys(stageErrors).length > 1 ? "s" : ""} had a problem — treat this analysis with extra caution
+                </div>
+                {Object.entries(stageErrors).map(([stageId, msgs]) => {
+                  const phase = PHASES.find(p => p.id === stageId);
+                  return (
+                    <div key={stageId} style={{ fontSize: "12px", color: "#742a2a", padding: "2px 0" }}>
+                      <strong>{phase?.label || stageId}:</strong> {msgs.join("; ")}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             {showJournalForm && (
               <div style={{ background: "#fefcbf", border: "1px solid #f6e05e", borderRadius: "10px", padding: "14px 18px", marginBottom: "16px", animation: "fadeUp 0.3s ease" }}>
                 <div style={{ fontSize: "14px", fontWeight: "700", color: "#744210", marginBottom: "6px" }}>📓 Save to Decision Journal</div>
@@ -3086,20 +3313,29 @@ export default function ThinkingOSv2() {
 
                     {assumptionsData.assumptions?.length > 0 && (
                       <div style={{ marginBottom: "12px" }}>
-                        <div style={{ fontSize: "11px", fontWeight: "600", color: "#4a5568", marginBottom: "6px" }}>📋 All Assumptions</div>
-                        {assumptionsData.assumptions.slice(0, 8).map((a, i) => (
-                          <div key={i} style={{ padding: "6px 10px", background: "#f7fafc", borderRadius: "6px", marginBottom: "4px", border: "1px solid #e2e8f0" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                              <span style={{ fontSize: "13px", fontWeight: "500", color: "#1a1a2e" }}>{a.statement}</span>
-                              <AssumptionStatusBadge status={a.verification_status || "Unknown"} />
-                              <AssumptionCriticalityBadge criticality={a.criticality || "Medium"} />
-                              {a.category && <span style={{ fontSize: "10px", color: "#718096", background: "#edf2f7", padding: "1px 6px", borderRadius: "4px" }}>{a.category}</span>}
+                        <div style={{ fontSize: "11px", fontWeight: "600", color: "#4a5568", marginBottom: "6px" }}>📋 All Assumptions <span style={{ fontWeight: "400", color: "#a0aec0" }}>— you can confirm or reject these yourself</span></div>
+                        {assumptionsData.assumptions.slice(0, 8).map((a, i) => {
+                          const overridden = assumptionOverrides[i];
+                          const displayStatus = overridden || a.verification_status || "Unknown";
+                          return (
+                            <div key={i} style={{ padding: "6px 10px", background: "#f7fafc", borderRadius: "6px", marginBottom: "4px", border: "1px solid #e2e8f0" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                                <span style={{ fontSize: "13px", fontWeight: "500", color: "#1a1a2e" }}>{a.statement}</span>
+                                <AssumptionStatusBadge status={displayStatus} />
+                                {overridden && <span style={{ fontSize: "9px", color: "#6366f1", fontWeight: "700" }}>YOU CONFIRMED</span>}
+                                <AssumptionCriticalityBadge criticality={a.criticality || "Medium"} />
+                                {a.category && <span style={{ fontSize: "10px", color: "#718096", background: "#edf2f7", padding: "1px 6px", borderRadius: "4px" }}>{a.category}</span>}
+                                <div style={{ display: "flex", gap: "4px", marginLeft: "auto" }}>
+                                  <button onClick={() => setAssumptionOverrides(prev => ({ ...prev, [i]: "Verified" }))} title="I checked this myself — it's true" style={{ fontSize: "10px", padding: "2px 7px", borderRadius: "4px", border: "1px solid #22c55e40", background: displayStatus === "Verified" && overridden ? "#22c55e" : "#22c55e10", color: displayStatus === "Verified" && overridden ? "#fff" : "#22c55e", cursor: "pointer", fontWeight: "600" }}>✓ True</button>
+                                  <button onClick={() => setAssumptionOverrides(prev => ({ ...prev, [i]: "Contradicted" }))} title="I checked this myself — it's false" style={{ fontSize: "10px", padding: "2px 7px", borderRadius: "4px", border: "1px solid #ef444440", background: displayStatus === "Contradicted" && overridden ? "#ef4444" : "#ef444410", color: displayStatus === "Contradicted" && overridden ? "#fff" : "#ef4444", cursor: "pointer", fontWeight: "600" }}>✕ False</button>
+                                </div>
+                              </div>
+                              {a.supporting_evidence?.length > 0 && <div style={{ fontSize: "11px", color: "#22c55e", marginTop: "2px" }}>✅ {a.supporting_evidence.slice(0, 2).join(", ")}</div>}
+                              {a.contradicting_evidence?.length > 0 && <div style={{ fontSize: "11px", color: "#ef4444", marginTop: "1px" }}>⚠️ {a.contradicting_evidence.slice(0, 2).join(", ")}</div>}
+                              {a.impact_if_false && <div style={{ fontSize: "11px", color: "#f97316", marginTop: "1px" }}>💥 If false: {a.impact_if_false}</div>}
                             </div>
-                            {a.supporting_evidence?.length > 0 && <div style={{ fontSize: "11px", color: "#22c55e", marginTop: "2px" }}>✅ {a.supporting_evidence.slice(0, 2).join(", ")}</div>}
-                            {a.contradicting_evidence?.length > 0 && <div style={{ fontSize: "11px", color: "#ef4444", marginTop: "1px" }}>⚠️ {a.contradicting_evidence.slice(0, 2).join(", ")}</div>}
-                            {a.impact_if_false && <div style={{ fontSize: "11px", color: "#f97316", marginTop: "1px" }}>💥 If false: {a.impact_if_false}</div>}
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
 
@@ -3185,6 +3421,9 @@ export default function ThinkingOSv2() {
                         ))}
                       </div>
                     )}
+                    <button onClick={() => setChatOpen(chatOpen === "general" ? null : "general")} style={{ marginTop: "12px", fontSize: "12px", fontWeight: "600", color: "#6366f1", background: "#6366f112", border: "1px solid #6366f130", borderRadius: "6px", padding: "6px 12px", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>
+                      💬 {chatOpen === "general" ? "Close chat" : "Ask a follow-up about this recommendation"}
+                    </button>
                   </>
                 )}
               </div>
@@ -3294,8 +3533,57 @@ export default function ThinkingOSv2() {
                       <FrameworkList title="UNKNOWNS" items={activeFwResult.unknowns} color="#c05621" />
                       {activeFwResult.recommendation && <div><div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>RECOMMENDATION</div><div style={{ fontSize: "14px", color: activeFw.accent, lineHeight: "1.6" }}>{activeFwResult.recommendation}</div></div>}
                     </div>
+                    <button onClick={() => setChatOpen(chatOpen === activeFw.id ? null : activeFw.id)} style={{ marginTop: "12px", fontSize: "12px", fontWeight: "600", color: activeFw.accent, background: `${activeFw.color}12`, border: `1px solid ${activeFw.color}30`, borderRadius: "6px", padding: "6px 12px", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>
+                      💬 {chatOpen === activeFw.id ? "Close chat" : `Continue with ${activeFw.label}`}
+                    </button>
                   </div>
                 ) : <div style={{ color: "#a0aec0", fontSize: "14px" }}>Waiting to load…</div>}
+              </div>
+            )}
+
+            {chatOpen && (
+              <div style={{ background: "#ffffff", border: "1px solid #6366f140", borderRadius: "10px", padding: "14px 18px", marginTop: "16px", animation: "fadeUp 0.3s ease" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <div style={{ fontSize: "12px", color: "#6366f1", fontWeight: "700", letterSpacing: "0.08em" }}>
+                    💬 {chatOpen === "general" ? "FOLLOW-UP CHAT" : `CHAT — IN THE STYLE OF ${ALL_FRAMEWORKS.find(f => f.id === chatOpen)?.label?.toUpperCase() || chatOpen}`}
+                  </div>
+                  <button onClick={() => setChatOpen(null)} style={{ fontSize: "12px", color: "#a0aec0", background: "none", border: "none", cursor: "pointer" }}>✕</button>
+                </div>
+                <div style={{ fontSize: "11px", color: "#a0aec0", marginBottom: "10px" }}>
+                  An AI responding in this framework's analytical style — not the real person.
+                </div>
+                <div style={{ maxHeight: "320px", overflowY: "auto", marginBottom: "10px" }}>
+                  {(chatMessages[chatOpen] || []).length === 0 && (
+                    <div style={{ fontSize: "13px", color: "#a0aec0", fontStyle: "italic" }}>No messages yet — ask a question below.</div>
+                  )}
+                  {(chatMessages[chatOpen] || []).map((m, i) => (
+                    <div key={i} style={{ marginBottom: "10px", display: "flex", flexDirection: "column", alignItems: m.role === "user" ? "flex-end" : "flex-start" }}>
+                      <div style={{
+                        maxWidth: "85%", fontSize: "13px", lineHeight: "1.6", padding: "8px 12px", borderRadius: "8px",
+                        background: m.role === "user" ? "#6366f1" : "#f7fafc",
+                        color: m.role === "user" ? "#fff" : "#2d3748",
+                        whiteSpace: "pre-wrap"
+                      }}>{m.content}</div>
+                    </div>
+                  ))}
+                  {chatSending && <div style={{ fontSize: "12px", color: "#a0aec0" }}>Thinking…</div>}
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <input
+                    value={chatInput}
+                    onChange={e => setChatInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
+                    placeholder="Ask a follow-up…"
+                    disabled={chatSending}
+                    style={{ flex: 1, fontSize: "13px", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: "6px", fontFamily: "'Inter',sans-serif" }}
+                  />
+                  <button onClick={sendChatMessage} disabled={chatSending || !chatInput.trim()} style={{
+                    fontSize: "13px", fontWeight: "600", padding: "8px 16px", borderRadius: "6px", border: "none",
+                    background: chatInput.trim() && !chatSending ? "#6366f1" : "#edf2f7",
+                    color: chatInput.trim() && !chatSending ? "#fff" : "#a0aec0",
+                    cursor: chatInput.trim() && !chatSending ? "pointer" : "not-allowed", fontFamily: "'Inter',sans-serif"
+                  }}>Send</button>
+                </div>
               </div>
             )}
 
