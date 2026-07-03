@@ -30,39 +30,37 @@ export async function POST(req) {
       }
     }
 
-    // ─── BUILD THE FULL USER MESSAGE ──────────────────────────────────────
-    const userMessage = context 
-      ? `${context}User Question: ${question}` 
-      : question;
+    const userMessage = context ? `${context}User Question: ${question}` : question;
 
     // ─── ROUTE TO SELECTED MODEL ─────────────────────────────────────────────
     const selected = model || 'groq';
     let result;
 
-    switch (selected) {
-      case 'openai':
-        result = await callOpenAI(systemPrompt, userMessage, maxTokens);
-        break;
-      case 'claude':
-        result = await callClaude(systemPrompt, userMessage, maxTokens);
-        break;
-      case 'gemini':
-        result = await callGemini(systemPrompt, userMessage, maxTokens);
-        break;
-      case 'deepseek':
-        result = await callDeepSeek(systemPrompt, userMessage, maxTokens);
-        break;
-      case 'groq':
-      default:
-        result = await callGroq(systemPrompt, userMessage, maxTokens);
-        break;
-    }
-
-    if (!result.ok) {
+    try {
+      switch (selected) {
+        case 'openai':
+          result = await callOpenAI(systemPrompt, userMessage, maxTokens);
+          break;
+        case 'claude':
+          result = await callClaude(systemPrompt, userMessage, maxTokens);
+          break;
+        case 'gemini':
+          result = await callGemini(systemPrompt, userMessage, maxTokens);
+          break;
+        case 'deepseek':
+          result = await callDeepSeek(systemPrompt, userMessage, maxTokens);
+          break;
+        case 'groq':
+        default:
+          result = await callGroq(systemPrompt, userMessage, maxTokens);
+          break;
+      }
+    } catch (fetchErr) {
+      // Timeout or network error – we treat these as not rate-limited
       return NextResponse.json(
         { 
           success: false, 
-          error: result.raw?.error?.message || 'Model API error',
+          error: fetchErr.message,
           rateLimited: false,
           contextTooLong: false,
           retryAfterMs: null,
@@ -71,16 +69,36 @@ export async function POST(req) {
       );
     }
 
+    // ─── CHECK IF THE RESPONSE WAS SUCCESSFUL ──────────────────────────────
+    if (!result.ok) {
+      // Now we have detailed error info from the helper
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: result.errorMessage || 'Model API error',
+          rateLimited: result.rateLimited || false,
+          contextTooLong: result.contextTooLong || false,
+          retryAfterMs: result.retryAfterMs || null,
+        },
+        { status: result.status || 500 }
+      );
+    }
+
     const text = result.text;
 
-    // ─── RETURN IN THE FORMAT THE FRONTEND EXPECTS ──────────────────────────
     return NextResponse.json({ 
       success: true, 
       data: { content: [{ text }] } 
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: error.message },
+      { 
+        success: false, 
+        error: error.message,
+        rateLimited: false,
+        contextTooLong: false,
+        retryAfterMs: null,
+      },
       { status: 500 }
     );
   }
@@ -111,10 +129,29 @@ async function callGroq(systemPrompt, userMessage, maxTokens) {
       signal: controller.signal,
     });
     const data = await response.json();
+
+    if (!response.ok) {
+      // Detect Groq rate limit (429)
+      const rateLimited = response.status === 429;
+      const retryAfter = response.headers.get('retry-after') || 
+                         data.error?.message?.match(/(\d+)\s*seconds?/i)?.[1] || 
+                         null;
+      return {
+        ok: false,
+        status: response.status,
+        errorMessage: data.error?.message || 'Groq API error',
+        rateLimited,
+        contextTooLong: response.status === 413 || data.error?.message?.includes('context length') || false,
+        retryAfterMs: retryAfter ? parseInt(retryAfter) * 1000 : null,
+        raw: data,
+      };
+    }
+
     return { 
       text: data.choices?.[0]?.message?.content || '', 
       raw: data, 
-      ok: response.ok 
+      ok: true,
+      status: response.status,
     };
   } catch (fetchErr) {
     if (fetchErr.name === 'AbortError') {
@@ -149,10 +186,28 @@ async function callOpenAI(systemPrompt, userMessage, maxTokens) {
       signal: controller.signal,
     });
     const data = await response.json();
+
+    if (!response.ok) {
+      const rateLimited = response.status === 429;
+      const retryAfter = response.headers.get('retry-after') || 
+                         data.error?.message?.match(/(\d+)\s*seconds?/i)?.[1] || 
+                         null;
+      return {
+        ok: false,
+        status: response.status,
+        errorMessage: data.error?.message || 'OpenAI API error',
+        rateLimited,
+        contextTooLong: response.status === 413 || data.error?.message?.includes('context length') || false,
+        retryAfterMs: retryAfter ? parseInt(retryAfter) * 1000 : null,
+        raw: data,
+      };
+    }
+
     return { 
       text: data.choices?.[0]?.message?.content || '', 
       raw: data, 
-      ok: response.ok 
+      ok: true,
+      status: response.status,
     };
   } catch (fetchErr) {
     if (fetchErr.name === 'AbortError') {
@@ -186,10 +241,28 @@ async function callClaude(systemPrompt, userMessage, maxTokens) {
       signal: controller.signal,
     });
     const data = await response.json();
+
+    if (!response.ok) {
+      const rateLimited = response.status === 429;
+      const retryAfter = response.headers.get('retry-after') || 
+                         data.error?.message?.match(/(\d+)\s*seconds?/i)?.[1] || 
+                         null;
+      return {
+        ok: false,
+        status: response.status,
+        errorMessage: data.error?.message || 'Claude API error',
+        rateLimited,
+        contextTooLong: response.status === 413 || data.error?.message?.includes('context length') || false,
+        retryAfterMs: retryAfter ? parseInt(retryAfter) * 1000 : null,
+        raw: data,
+      };
+    }
+
     return { 
       text: data.content?.[0]?.text || '', 
       raw: data, 
-      ok: response.ok 
+      ok: true,
+      status: response.status,
     };
   } catch (fetchErr) {
     if (fetchErr.name === 'AbortError') {
@@ -225,11 +298,27 @@ async function callGemini(systemPrompt, userMessage, maxTokens) {
       }
     );
     const data = await response.json();
+
+    if (!response.ok) {
+      const rateLimited = response.status === 429 || data.error?.message?.includes('quota') || false;
+      const retryAfter = response.headers.get('retry-after') || null;
+      return {
+        ok: false,
+        status: response.status,
+        errorMessage: data.error?.message || 'Gemini API error',
+        rateLimited,
+        contextTooLong: response.status === 413 || data.error?.message?.includes('context length') || false,
+        retryAfterMs: retryAfter ? parseInt(retryAfter) * 1000 : (rateLimited ? 60000 : null), // Gemini often wants 60s
+        raw: data,
+      };
+    }
+
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     return { 
       text, 
       raw: data, 
-      ok: response.ok 
+      ok: true,
+      status: response.status,
     };
   } catch (fetchErr) {
     if (fetchErr.name === 'AbortError') {
@@ -264,10 +353,28 @@ async function callDeepSeek(systemPrompt, userMessage, maxTokens) {
       signal: controller.signal,
     });
     const data = await response.json();
+
+    if (!response.ok) {
+      const rateLimited = response.status === 429;
+      const retryAfter = response.headers.get('retry-after') || 
+                         data.error?.message?.match(/(\d+)\s*seconds?/i)?.[1] || 
+                         null;
+      return {
+        ok: false,
+        status: response.status,
+        errorMessage: data.error?.message || 'DeepSeek API error',
+        rateLimited,
+        contextTooLong: response.status === 413 || data.error?.message?.includes('context length') || false,
+        retryAfterMs: retryAfter ? parseInt(retryAfter) * 1000 : null,
+        raw: data,
+      };
+    }
+
     return { 
       text: data.choices?.[0]?.message?.content || '', 
       raw: data, 
-      ok: response.ok 
+      ok: true,
+      status: response.status,
     };
   } catch (fetchErr) {
     if (fetchErr.name === 'AbortError') {
