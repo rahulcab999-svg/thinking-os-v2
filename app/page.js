@@ -1279,6 +1279,57 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
   },
 ];
 
+// ─── FRAMEWORK-TO-MODEL MAPPING ──────────────────────────────────────────────
+// Assign different frameworks to different AI models for genuine disagreement
+const FW_MODEL_MAP = {
+  // Risk & Uncertainty
+  "taleb": "claude",
+  "taleb_black_swan": "claude",
+  
+  // Value & Economics
+  "buffett_margin_safety": "deepseek",
+  "keynes_economics": "deepseek",
+  "friedman_free_market": "deepseek",
+  "hayek_spontaneous": "deepseek",
+  "smith_invisible_hand": "deepseek",
+  
+  // Psychology & Bias
+  "kahneman": "openai",
+  "kahneman_noise": "openai",
+  "bias_checker": "openai",
+  "thaler_nudge": "openai",
+  
+  // Strategy & Power
+  "thiel": "openai",
+  "porter": "groq",
+  "sun_tzu": "groq",
+  "machiavelli_prince": "groq",
+  "greene_power": "groq",
+  
+  // Science & Systems
+  "feynman": "gemini",
+  "popper": "gemini",
+  "senge_systems": "gemini",
+  "meadows_leverage": "gemini",
+  "darwin_evolution": "gemini",
+  
+  // Product & Innovation
+  "bezos_day1": "groq",
+  "christensen_disruption": "groq",
+  "collins_flywheel": "groq",
+  
+  // Philosophy (fallback to groq)
+  "epictetus_stoic": "groq",
+  "marcus_aurelius": "groq",
+  "seneca_stoic": "groq",
+  "nietzsche_willpower": "groq",
+  "camus_absurdism": "groq",
+  "sartre_existentialism": "groq",
+  
+  // Default for everything else
+  "default": "groq"
+};
+
 // ─── STORAGE ──────────────────────────────────────────────────────────────────
 function loadJournal() {
   if (typeof window === "undefined") return [];
@@ -1735,6 +1786,23 @@ Return ONLY a JSON object (no fences):
   "investigation_needed": false
 }
 "confidence" MUST be a whole number from 0 to 100 (e.g. 60, not 0.6).`;
+
+const REBUTTAL_SYSTEM = `You are a framework defending its reasoning against an attack.
+You previously analyzed a problem and made a specific claim.
+Now a critic has attacked that claim.
+Your job: respond to the attack with either:
+1. A strong defense, explaining why the attack misses the point or is flawed.
+2. A concession, admitting the critic has a valid point and lowering your confidence.
+
+Be honest. If the critic is right, say so. If they're wrong, explain why.
+
+Return ONLY a JSON object (no fences):
+{
+  "defense": "",
+  "concession": false,
+  "updated_confidence": 0,
+  "updated_recommendation": ""
+}`;
 
 // ─── PHASES ───────────────────────────────────────────────────────────────────
 const PHASES = [
@@ -2539,12 +2607,14 @@ export default function ThinkingOSv2() {
     const fwErrors = [];
     await mapWithConcurrency(fws, 2, async (fw) => {
       try {
+        // Use framework-specific model mapping, fallback to user-selected or groq
+        const fwModel = FW_MODEL_MAP[fw.id] || selectedModel || "groq";
         const raw = await callModel(
           fw.prompt,
           `Problem: "${fullQuestion}"\n\nVERIFIED FACTS:\n${JSON.stringify(researchData.facts)}\n\nSources: ${JSON.stringify(researchData.sources)}\n\nASSUMPTIONS:\n${JSON.stringify(realityData.assumptions)}\n\nUNKNOWNS:\n${JSON.stringify(realityData.unknowns)}\n\nUSER CONTEXT:\n${answerContext}\n\nApply your framework now.`,
           1200,
           false,
-          selectedModel
+          fwModel
         );
         const parsed = parseJSON(raw);
         if (!parsed) {
@@ -2593,6 +2663,58 @@ export default function ThinkingOSv2() {
     col.crossexam = crossData;
     setPhaseData(p => ({ ...p, crossexam: crossData }));
     setCompletedPhases(c => ({ ...c, crossexam: true }));
+
+    // ─── REBUTTAL LOOP ─────────────────────────────────────────────────────────
+    // If we have attacks, let frameworks respond to criticism
+    if (!isQuick && crossData.attacks && crossData.attacks.length > 0) {
+      const rebuttalPromises = crossData.attacks.map(async (attack) => {
+        const targetFwId = attack.target;
+        const targetFw = ALL_FRAMEWORKS.find(f => f.id === targetFwId);
+        const originalResult = fwRes[targetFwId];
+        if (!targetFw || !originalResult) return null;
+
+        const fwModel = FW_MODEL_MAP[targetFwId] || selectedModel || "groq";
+        try {
+          const rebuttalPrompt = `You previously analyzed this problem as ${targetFw.label} and made this claim:
+"${originalResult.key_claim || 'No key claim'}"
+
+You recommended: "${originalResult.recommendation || 'No recommendation'}"
+
+A critic has attacked this claim:
+"${attack.attack}"
+
+Respond to this attack. Either defend your claim, or concede if the critic is right.`;
+          
+          const raw = await callModel(
+            REBUTTAL_SYSTEM,
+            rebuttalPrompt,
+            800,
+            false,
+            fwModel
+          );
+          const parsed = parseJSON(raw);
+          return { 
+            frameworkId: targetFwId, 
+            attack: attack.attack, 
+            rebuttal: parsed || { defense: "Could not parse response.", concession: false } 
+          };
+        } catch (e) {
+          return { 
+            frameworkId: targetFwId, 
+            attack: attack.attack, 
+            rebuttal: { defense: `Error: ${e.message}`, concession: false } 
+          };
+        }
+      });
+
+      const rebuttals = await Promise.all(rebuttalPromises);
+      // Store rebuttals in fwResults
+      rebuttals.forEach(r => {
+        if (r && fwRes[r.frameworkId]) {
+          fwRes[r.frameworkId].rebuttal = r.rebuttal;
+        }
+      });
+    }
 
     if (!isQuick) await sleep(300);
 
@@ -3218,6 +3340,9 @@ export default function ThinkingOSv2() {
                             <span>{fw.icon}</span> {fw.label}
                             {loading && <span style={{ marginLeft: "auto", width: "6px", height: "6px", borderRadius: "50%", background: fw.accent, animation: "pulse 1s infinite" }} />}
                             {res && !loading && <span style={{ marginLeft: "auto", fontSize: "10px", color: confColor(res.confidence) }}>{res.confidence}%</span>}
+                            {res && res.rebuttal && (
+                              <span style={{ marginLeft: "auto", fontSize: "9px", color: "#ec4899" }}>⚔️</span>
+                            )}
                           </button>
                         );
                       })}
@@ -3630,6 +3755,28 @@ export default function ThinkingOSv2() {
                       <FrameworkList title="UNKNOWNS" items={activeFwResult.unknowns} color="#c05621" />
                       {activeFwResult.recommendation && <div><div style={{ fontSize: "11px", color: "#718096", fontWeight: "600", letterSpacing: "0.1em", marginBottom: "4px" }}>RECOMMENDATION</div><div style={{ fontSize: "14px", color: activeFw.accent, lineHeight: "1.6" }}>{activeFwResult.recommendation}</div></div>}
                     </div>
+                    {/* ─── REBUTTAL DISPLAY ─────────────────────────────────────────────── */}
+                    {activeFwResult.rebuttal && (
+                      <div style={{ marginTop: "12px", padding: "10px 14px", background: "#fdf2f8", border: "1px solid #fbb6ce", borderRadius: "8px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "700", color: "#d53f8c", marginBottom: "6px" }}>
+                          ⚔️ Rebuttal
+                          {activeFwResult.rebuttal.concession && <span style={{ fontSize: "11px", color: "#ef4444", marginLeft: "8px" }}>(Conceded)</span>}
+                        </div>
+                        <div style={{ fontSize: "13px", color: "#4a5568", lineHeight: "1.6", marginBottom: "6px" }}>
+                          {activeFwResult.rebuttal.defense}
+                        </div>
+                        {activeFwResult.rebuttal.updated_confidence && (
+                          <div style={{ fontSize: "12px", color: "#718096" }}>
+                            Updated confidence: <span style={{ fontWeight: "700", color: confColor(activeFwResult.rebuttal.updated_confidence) }}>
+                              {activeFwResult.rebuttal.updated_confidence}%
+                            </span>
+                            {activeFwResult.rebuttal.updated_recommendation && 
+                              ` · Updated: ${activeFwResult.rebuttal.updated_recommendation}`
+                            }
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <button onClick={() => setChatOpen(chatOpen === activeFw.id ? null : activeFw.id)} style={{ marginTop: "12px", fontSize: "12px", fontWeight: "600", color: activeFw.accent, background: `${activeFw.color}12`, border: `1px solid ${activeFw.color}30`, borderRadius: "20px", padding: "6px 14px", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>
                       💬 {chatOpen === activeFw.id ? "Close chat" : `Continue with ${activeFw.label}`}
                     </button>
