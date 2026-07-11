@@ -1,11 +1,36 @@
 // app/api/analyze/route.js
 import { NextResponse } from 'next/server';
+import { getGroundedExcerpt } from '../../../retrieval.js';
 
 export async function POST(req) {
   try {
-    const { question, systemPrompt, maxTokens, useWebSearch, model } = await req.json();
+    const { question, systemPrompt, maxTokens, useWebSearch, model, frameworkId } = await req.json();
 
     let context = "";
+    let groundingUsed = false;
+    let groundingSource = null;
+
+    // ─── FIX #2/#3: REAL SOURCE TEXT RETRIEVAL ──────────────────────────────
+    // Only attempted when frameworkId is provided (i.e. this call is for a
+    // specific thinker's framework, not research/synthesis/etc). Verified
+    // sources live in sources.js; getGroundedExcerpt returns null on any
+    // failure (unlisted framework, fetch error, extraction failure) rather
+    // than ever fabricating an excerpt — callers must treat null as "proceed
+    // memory-based," consistent with Fix #1's honesty requirement.
+    if (frameworkId) {
+      try {
+        const grounded = await getGroundedExcerpt(frameworkId, question);
+        if (grounded && grounded.excerpt) {
+          context += `SOURCE TEXT (from ${grounded.sourceLabel || frameworkId}, ${grounded.sourceUrl}):\n${grounded.excerpt}\n\nUsing the source text above as grounding where relevant, answer the question below.\n\n`;
+          groundingUsed = true;
+          groundingSource = grounded.sourceUrl;
+        }
+      } catch (e) {
+        // Fetch/extraction failed — proceed without grounding. Do NOT throw;
+        // a retrieval failure should degrade to memory-based, not break the
+        // whole analysis.
+      }
+    }
 
     // ─── WEB SEARCH VIA TAVILY ──────────────────────────────────────────────
     if (useWebSearch) {
@@ -21,12 +46,12 @@ export async function POST(req) {
           }),
         });
         const searchData = await searchRes.json();
-        context = "REAL-TIME WEB SEARCH RESULTS:\n" + 
+        context += "REAL-TIME WEB SEARCH RESULTS:\n" + 
                   (searchData.results || []).map(r => 
                     `- ${r.title}: ${r.content}`
                   ).join("\n") + "\n\n";
       } catch (e) {
-        context = "(Web search unavailable. Relying on training data.)\n\n";
+        context += "(Web search unavailable. Relying on training data.)\n\n";
       }
     }
 
@@ -88,7 +113,9 @@ export async function POST(req) {
 
     return NextResponse.json({ 
       success: true, 
-      data: { content: [{ text }] } 
+      data: { content: [{ text }] },
+      groundingUsed,
+      groundingSource,
     });
   } catch (error) {
     return NextResponse.json(
