@@ -146,7 +146,10 @@ async function callGroq(systemPrompt, userMessage, maxTokens) {
         'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        // FIXED: llama-3.3-70b-versatile was deprecated by Groq on June 17,
+        // 2026 (confirmed via Groq's own official deprecations page). Groq
+        // explicitly recommends openai/gpt-oss-120b as the replacement.
+        model: 'openai/gpt-oss-120b',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage }
@@ -260,7 +263,10 @@ async function callClaude(systemPrompt, userMessage, maxTokens) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        // FIXED: claude-3-5-sonnet-20241022 is a legacy model (Oct 2024).
+        // Updated to the current model string, same class of fix as the
+        // Gemini deprecated-model bug found and fixed alongside this.
+        model: 'claude-sonnet-5',
         max_tokens: maxTokens || 1000,
         system: systemPrompt,
         messages: [{ role: 'user', content: userMessage }],
@@ -301,14 +307,23 @@ async function callClaude(systemPrompt, userMessage, maxTokens) {
   }
 }
 
-// Google Gemini (1.5 Pro)
+// Google Gemini (2.5 Flash)
+// FIXED: gemini-1.5-pro was retired by Google — confirmed via search that
+// "All Gemini 1.0 models and Gemini 1.5 are already shutdown, and all
+// requests to these models return a 404 error" (Google's own Firebase AI
+// Logic docs, updated within days of this fix). Switched to gemini-2.5-flash
+// (current, stable, and covered by Gemini's genuinely-free API tier — Pro
+// models are "heavily restricted" on the free tier per current provider
+// research). Also switched v1beta -> v1 (the stable API version) since
+// v1beta is explicitly documented as "actively being developed" and more
+// prone to this kind of breaking change.
 async function callGemini(systemPrompt, userMessage, maxTokens) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${process.env.GOOGLE_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${process.env.GOOGLE_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -370,7 +385,11 @@ async function callDeepSeek(systemPrompt, userMessage, maxTokens) {
         'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        // FIXED: deepseek-chat is a legacy compatibility alias that DeepSeek's
+        // own official docs confirm will be deprecated 2026/07/24 (12 days
+        // from when this fix was made). Updated to the real current model
+        // name it currently maps to, ahead of the deadline.
+        model: 'deepseek-v4-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage }
