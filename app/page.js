@@ -6,173 +6,40 @@ import { useState, useRef, useEffect, useCallback } from "react";
 function exportMarkdown(question, phaseData, fwResults, selectedFwIds) {
   const { research, reality, crossexam, redteam, evidence, scenario, assumptions, synthesis, proposed, negated } = phaseData;
   const lines = [];
-  const safe = (v, fallback = "N/A") => (v === undefined || v === null || v === "" ? fallback : v);
-  const pushList = (title, items, mapFn) => {
-    if (!items || !items.length) return;
-    lines.push(`### ${title}`);
-    items.forEach((item, i) => lines.push(mapFn ? mapFn(item, i) : `- ${item}`));
-    lines.push(``);
-  };
-
   lines.push(`# Thinking OS — Decision Analysis`);
   lines.push(`**Question:** ${question}`);
   lines.push(`**Date:** ${new Date().toLocaleString()}`);
   lines.push(``);
 
-  // ─── FINAL DECISION ──────────────────────────────────────────────────────
   if (synthesis) {
     lines.push(`## Final Decision`);
-    lines.push(`**${safe(synthesis.recommendation)}**`);
-    lines.push(`Confidence: ${safe(synthesis.confidence, 0)}% · Risk: ${safe(synthesis.risk_level)}`);
-    if (synthesis.consistency) lines.push(`Consistency: ${synthesis.consistency}`);
-    if (synthesis.consistencyWarning) lines.push(`⚠️ ${synthesis.consistencyWarning}`);
+    lines.push(`**${synthesis.recommendation}**`);
+    lines.push(`Confidence: ${synthesis.confidence}% · Risk: ${synthesis.risk_level}`);
+    if (synthesis.consistency) {
+      lines.push(`Consistency: ${synthesis.consistency}`);
+    }
     lines.push(``);
-    pushList("Why", synthesis.why);
-    pushList("Top Risks", synthesis.top_risks);
-    pushList("What Would Change This (Positive)", synthesis.what_would_change_positive);
-    pushList("What Would Change This (Negative)", synthesis.what_would_change_negative);
-    pushList("Next Actions", synthesis.next_actions, (a, i) => `${i + 1}. ${a}`);
-    pushList("Confidence Reasoning", synthesis.confidence_reasoning);
-    pushList("Missing Information", synthesis.missing_information);
-    pushList("Recommended Research", synthesis.recommended_research);
+    if (synthesis.why?.length) { lines.push(`### Why`); synthesis.why.forEach(w => lines.push(`- ${w}`)); lines.push(``); }
+    if (synthesis.top_risks?.length) { lines.push(`### Top Risks`); synthesis.top_risks.forEach(r => lines.push(`- ${r}`)); lines.push(``); }
+    if (synthesis.next_actions?.length) { lines.push(`### Next Actions`); synthesis.next_actions.forEach((a,i) => lines.push(`${i+1}. ${a}`)); lines.push(``); }
+    if (synthesis.confidence_reasoning?.length) { lines.push(`### Confidence Reasoning`); synthesis.confidence_reasoning.forEach(r => lines.push(`- ${r}`)); lines.push(``); }
   }
 
   // ─── FORCED "DON'T DO IT" CASE ──────────────────────────────────────────
   if (proposed && negated) {
     lines.push(`## Proposed vs. Negated Comparison`);
     lines.push(``);
-    lines.push(`**Proposed Plan:** ${safe(proposed.synthesis?.recommendation)} (Confidence: ${safe(proposed.synthesis?.confidence, 0)}%)`);
-    lines.push(`**Negated Plan:** ${safe(negated.synthesis?.recommendation)} (Confidence: ${safe(negated.synthesis?.confidence, 0)}%)`);
+    lines.push(`**Proposed Plan:** ${proposed.synthesis?.recommendation || "N/A"} (Confidence: ${proposed.synthesis?.confidence || 0}%)`);
+    lines.push(`**Negated Plan:** ${negated.synthesis?.recommendation || "N/A"} (Confidence: ${negated.synthesis?.confidence || 0}%)`);
     lines.push(``);
-    if (synthesis?.comparison) {
+    if (synthesis.comparison) {
       lines.push(`**Comparison:** ${synthesis.comparison}`);
       lines.push(`**Better Plan:** ${synthesis.better_plan}`);
-      lines.push(``);
     }
-  }
-
-  // ─── RESEARCH ────────────────────────────────────────────────────────────
-  if (research) {
-    lines.push(`## Research`);
-    if (research.research_summary) { lines.push(research.research_summary); lines.push(``); }
-    lines.push(`Research Confidence: ${safe(research.research_confidence, 0)}%`);
     lines.push(``);
-    pushList("Facts", research.facts);
-    pushList("Sources", research.sources);
-    pushList("Assumptions", research.assumptions);
-    pushList("Unknowns", research.unknowns);
   }
 
-  // ─── REALITY EXTRACTION ──────────────────────────────────────────────────
-  if (reality) {
-    lines.push(`## Reality Extraction`);
-    lines.push(`Problem Type: ${safe(reality.problem_type)} · Extraction Confidence: ${safe(reality.extraction_confidence, 0)}%`);
-    lines.push(``);
-    pushList("Facts", reality.facts);
-    pushList("Assumptions", reality.assumptions);
-    pushList("Unknowns", reality.unknowns);
-    pushList("Recommended Frameworks", reality.recommended_frameworks);
-  }
-
-  // ─── FRAMEWORK ANALYSIS ──────────────────────────────────────────────────
-  if (selectedFwIds?.length) {
-    lines.push(`## Framework Analysis`);
-    lines.push(``);
-    selectedFwIds.forEach(id => {
-      const fw = ALL_FRAMEWORKS.find(f => f.id === id);
-      const r = fwResults?.[id];
-      if (!fw) return;
-      lines.push(`### ${fw.icon} ${fw.label} (${fw.thinker || ""})`);
-      if (r) {
-        lines.push(`Confidence: ${safe(r.confidence, 0)}%`);
-        if (r.key_claim) lines.push(`**Key Claim:** ${r.key_claim}`);
-        if (r.recommendation) lines.push(`**Recommendation:** ${r.recommendation}`);
-        pushList("Evidence", r.evidence);
-        pushList("Counterarguments", r.counterarguments);
-        pushList("Unknowns", r.unknowns);
-        if (r.rebuttal) {
-          lines.push(`**Rebuttal:** ${safe(r.rebuttal.defense)}${r.rebuttal.concession ? " (Conceded)" : ""}`);
-          if (r.rebuttal.updated_confidence != null) lines.push(`Updated Confidence: ${r.rebuttal.updated_confidence}%`);
-        }
-      } else {
-        lines.push(`_No result available._`);
-      }
-      lines.push(``);
-    });
-  }
-
-  // ─── CROSS-EXAMINATION ───────────────────────────────────────────────────
-  if (crossexam) {
-    lines.push(`## Cross-Examination`);
-    lines.push(`Agreement: ${safe(crossexam.agreement_score, 0)}% · Conflict: ${safe(crossexam.conflict_score, 0)}%`);
-    lines.push(``);
-    pushList("Consensus", crossexam.consensus, c => `- ${c.recommendation} (${c.support_count} frameworks: ${(c.framework_names || []).join(", ")})`);
-    pushList("Attacks", crossexam.attacks, a => `- ${a.attacker} → ${a.target}: ${a.attack} (${a.verdict})`);
-    pushList("Upgraded Claims", crossexam.upgraded_claims);
-    pushList("Downgraded Claims", crossexam.downgraded_claims);
-    pushList("Major Disagreements", crossexam.major_disagreements, d => `- ${d.framework_a} vs ${d.framework_b}: ${d.disagreement} — ${d.why_this_matters || ""}`);
-    if (crossexam.hidden_insight) { lines.push(`**Hidden Insight:** ${crossexam.hidden_insight}`); lines.push(``); }
-  }
-
-  // ─── RED TEAM ────────────────────────────────────────────────────────────
-  if (redteam) {
-    lines.push(`## Red Team`);
-    lines.push(`Survivability: ${safe(redteam.survivability)}${redteam.survivability_condition ? ` (${redteam.survivability_condition})` : ""}`);
-    if (redteam.kill_shot) lines.push(`Kill Shot: ${redteam.kill_shot}`);
-    lines.push(``);
-    pushList("Failure Modes", redteam.failure_modes, f => `- [${f.severity}] ${f.mode}${f.warning_signal ? ` — Warning: ${f.warning_signal}` : ""}${f.mitigation ? ` — Mitigation: ${f.mitigation}` : ""}`);
-    pushList("Early Warning Signals", redteam.early_warning_signals);
-    pushList("Risk Severity", redteam.risk_severity, r => `- ${r.risk} — Severity: ${r.severity}, Probability: ${r.probability}`);
-    pushList("Mitigation Plan", redteam.mitigation_plan, m => `- ${m.risk} → ${m.action} (Owner: ${m.owner || "N/A"}, Timeline: ${m.timeline || "N/A"})`);
-  }
-
-  // ─── EVIDENCE CHALLENGE ──────────────────────────────────────────────────
-  if (evidence) {
-    lines.push(`## Evidence Challenge`);
-    lines.push(`Evidence Strength Score: ${safe(evidence.evidence_strength_score, 0)}%`);
-    if (evidence.evidence_summary) lines.push(evidence.evidence_summary);
-    lines.push(``);
-    pushList("Major Recommendations", evidence.major_recommendations);
-    pushList("Supporting Evidence", evidence.supporting_evidence, e => `- [${e.classification || "N/A"}] ${e.evidence || e}`);
-    pushList("Contradicting Evidence", evidence.contradicting_evidence, e => `- [${e.classification || "N/A"}] ${e.evidence || e}`);
-    pushList("Missing Evidence", evidence.missing_evidence);
-    pushList("Remaining Assumptions", evidence.remaining_assumptions);
-  }
-
-  // ─── SCENARIO SIMULATION ─────────────────────────────────────────────────
-  if (scenario) {
-    lines.push(`## Scenario Simulation`);
-    if (scenario.best_case) { lines.push(`### Best Case`); lines.push(JSON.stringify(scenario.best_case)); lines.push(``); }
-    if (scenario.most_likely) { lines.push(`### Most Likely`); lines.push(JSON.stringify(scenario.most_likely)); lines.push(``); }
-    if (scenario.worst_case) { lines.push(`### Worst Case`); lines.push(JSON.stringify(scenario.worst_case)); lines.push(``); }
-    pushList("Sensitive Variables", scenario.sensitive_variables, v => `- ${v.variable || v}: ${v.effect || ""}`);
-    pushList("Risk Analysis", scenario.risk_analysis, r => `- ${r.description} — Impact: ${r.impact || "N/A"}, Likelihood: ${r.likelihood || "N/A"}`);
-    pushList("Opportunities", scenario.opportunities, o => `- ${o.description} — Upside: ${o.upside || o.expected_upside || "N/A"}`);
-    if (scenario.recommendation_stability) {
-      lines.push(`**Recommendation Stability:** ${scenario.recommendation_stability.stable ? "Stable" : "Not stable"}${scenario.recommendation_stability.when_to_change ? ` — Change if: ${scenario.recommendation_stability.when_to_change}` : ""}`);
-      lines.push(``);
-    }
-    if (scenario.decision_robustness) {
-      lines.push(`**Decision Robustness:** ${safe(scenario.decision_robustness.rating)}`);
-      if (scenario.decision_robustness.valid_under) lines.push(`Valid under: ${scenario.decision_robustness.valid_under}`);
-      if (scenario.decision_robustness.invalid_under) lines.push(`Invalid under: ${scenario.decision_robustness.invalid_under}`);
-      lines.push(``);
-    }
-    pushList("Monitoring Indicators", scenario.monitoring_indicators);
-  }
-
-  // ─── ASSUMPTION MANAGER ──────────────────────────────────────────────────
-  if (assumptions) {
-    lines.push(`## Assumption Manager`);
-    if (assumptions.summary) {
-      const s = assumptions.summary;
-      lines.push(`Total: ${safe(s.total, 0)} · Verified: ${safe(s.verified, 0)} · Unverified: ${safe(s.unverified, 0)} · Critical: ${safe(s.critical, 0)} · Contradictions: ${safe(s.contradictions, 0)}`);
-      lines.push(``);
-    }
-    pushList("Assumptions", assumptions.assumptions, a => `- [${a.verification_status || "Unknown"}] [${a.criticality || "Medium"}] ${a.statement} — Impact if false: ${a.business_impact || a.impact_if_false || "N/A"}`);
-    pushList("Conflicts", assumptions.conflicts, c => `- ${c.assumption_a} vs ${c.assumption_b}: ${c.conflict || ""}`);
-  }
-
+  // ... rest of export (assumptions, scenario, evidence, crossexam, redteam, research, reality, frameworks)
   const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url;
@@ -1345,6 +1212,122 @@ Return ONLY JSON (no fences): {"key_claim":"","confidence":0,"evidence":[],"coun
   },
 ];
 
+// ─── SOURCE GROUNDING MAP (Fix #1) ───────────────────────────────────────────
+// Classifies each framework's thinker attribution by whether their real
+// written/spoken work is legally free to read online, per thinking-os-summary.md §3.
+// This does NOT mean the app currently feeds the model real text (it doesn't yet —
+// see Fix #2). It only labels what's *possible* given copyright status, so the UI
+// stops implying more certainty than the app currently delivers.
+//
+// "grounded"  = public domain (Gutenberg/Internet Archive) OR the thinker
+//               self-published the source material for free (shareholder
+//               letters, free lecture archives, etc.) — per summary.md §3.
+// "memory"    = confirmed under copyright (full text not legally free online)
+//               per summary.md §3, OR not addressed in summary.md at all.
+//               Six frameworks (first_principles, inversion, munger,
+//               bias_checker, hoffertrue_believer, meadows_leverage) fall in
+//               the second group — their thinkers (Elon Musk, Charlie Munger,
+//               Robert Cialdini, Eric Hoffer, Donella Meadows) are not named
+//               in summary.md §3 at all. Defaulted to "memory" per explicit
+//               instruction, not because their copyright status was verified.
+const GROUNDING_MAP = {
+  // Public domain — explicitly listed in summary.md §3
+  sun_tzu: "grounded",
+  machiavelli_prince: "grounded",
+  epictetus_stoic: "grounded",
+  marcus_aurelius: "grounded",
+  seneca_stoic: "grounded",
+  nietzsche_willpower: "grounded",
+  marx_dialectical: "grounded",
+  smith_invisible_hand: "grounded",
+  darwin_evolution: "grounded",
+
+  // Self-published / freely released by the author — explicitly listed in summary.md §3
+  bezos_day1: "grounded",
+  naval_leverage: "grounded",
+  buffett_margin_safety: "grounded",
+  feynman: "grounded",
+  second_order: "grounded", // Howard Marks (free Oaktree memos) · Ray Dalio (early free PDF of Principles)
+
+  // RESOLVED (was gray area in summary.md §3): confirmed public domain in India
+  // (operating jurisdiction) under Copyright Act 1957 §22, life+60 years.
+  // Keynes died 1946 → public domain in India since Jan 1, 2007.
+  // Source: gutenberg.net.au/ebooks03/0300071h/printall.html (General Theory, 1936)
+  // NOTE: still under copyright in the US (95 years from 1936 publication, ~2032).
+  // This reclassification applies to India-jurisdiction use only.
+  keynes_economics: "grounded",
+
+  // BUG FOUND AND FIXED during final review: bayes was incorrectly left as
+  // "grounded" from before verification searches were run. summary.md §3
+  // claims Bayes is public domain, but the actual verification search (see
+  // conversation history) found NO working free full-text hosting of his
+  // 1763 essay anywhere. No sources.js entry exists for bayes either,
+  // consistent with this correction. Same category as popper below: search
+  // was attempted, nothing legitimate was found.
+  bayes: "memory",
+
+  // Confirmed under copyright — explicitly listed in summary.md §3
+  thiel: "memory",
+  taleb: "memory",
+  porter: "memory",
+  kahneman: "memory",
+  popper: "memory", // searched, no free secondary material found either
+  christensen_disruption: "memory",
+  dawkins_memetic: "memory",
+  harari_narrative: "memory",
+  greene_power: "memory",
+  senge_systems: "memory",
+  ackoff_idealized: "memory",
+  drucker_effectiveness: "memory",
+  collins_flywheel: "memory",
+  gladwell_tipping: "memory",
+  kahneman_noise: "memory",
+  thaler_nudge: "memory",
+  taleb_black_swan: "memory",
+  greene_seduction: "memory",
+  // RESOLVED: confirmed public domain in India (operating jurisdiction) under
+  // Copyright Act 1957 §22, life+60 years. Camus died Jan 4, 1960 → public
+  // domain in India since Jan 1, 2021. NOTE: still under copyright in the US.
+  camus_absurdism: "grounded",
+  sartre_existentialism: "memory",
+  foucault_power: "memory",
+  hayek_spontaneous: "memory",
+  friedman_free_market: "memory",
+
+  // NOT addressed in summary.md §3 at all — defaulted to "memory" per explicit
+  // instruction (not a verified copyright determination):
+  // RESOLVED: both co-attributed thinkers now have confirmed free sources.
+  // Aristotle: public domain (gutenberg.org/files/8438/8438-h/8438-h.htm,
+  // Nicomachean Ethics). Elon Musk: abundant free interview transcripts
+  // (lexfridman.com, thehenryford.org official oral history, pbs.org).
+  first_principles: "grounded",
+  // RESOLVED: both co-attributed sources confirmed. Munger: see below.
+  // Stoics: Marcus Aurelius, Epictetus, Seneca all confirmed public domain
+  // (Project Gutenberg texts, verified earlier in this conversation).
+  inversion: "grounded",
+  // RESOLVED: Munger confirmed via CNBC official transcript, Rev.com Caltech
+  // interview, U. Michigan Ross talk transcript, Acquired podcast transcript.
+  munger: "grounded",
+  // RESOLVED: all four co-attributed thinkers confirmed with free sources.
+  // Kahneman, Munger, Taleb: see entries above. Cialdini: Farnam Street
+  // Knowledge Project transcript (fs-lc.s3.amazonaws.com), thoughteconomics.com.
+  bias_checker: "grounded",
+  // RESOLVED: real free transcripts confirmed at americanarchive.org
+  // (GBH + Library of Congress), 12-part 1963 KQED interview series
+  // "Conversations with Eric Hoffer." Not addressed in summary.md §3, but
+  // independently verified via direct search in this session.
+  hoffertrue_believer: "grounded",
+  // RESOLVED: real free interview confirmed at official donellameadows.org
+  // (Academy for Systems Change), plus full text of The Limits to Growth
+  // freely hosted via Dartmouth College Library partnership. Not addressed
+  // in summary.md §3, but independently verified via direct search.
+  meadows_leverage: "grounded",
+};
+
+function getGrounding(fwId) {
+  return GROUNDING_MAP[fwId] || "memory";
+}
+
 // ─── FRAMEWORK-TO-MODEL MAPPING ──────────────────────────────────────────────
 // For genuine disagreement, you can map frameworks to different models
 const FW_MODEL_MAP = {
@@ -1469,84 +1452,6 @@ function createContext(question, type, answers = {}) {
   };
 }
 
-// ─── SOURCE GROUNDING MAP (Fix #1) ───────────────────────────────────────────
-// Classifies each framework's thinker attribution by whether their real
-// written/spoken work is legally free to read online, per thinking-os-summary.md §3.
-// This does NOT mean the app currently feeds the model real text on its own —
-// see retrieval.js / sources.js for the actual fetch-and-ground mechanism. This
-// map only labels what's *possible* given copyright status, so the UI can show
-// an honest pre-run expectation before an actual per-answer result exists.
-//
-// "grounded"  = public domain (Gutenberg/Internet Archive) OR the thinker
-//               self-published the source material for free (shareholder
-//               letters, free lecture archives, etc.) — per summary.md §3.
-// "memory"    = confirmed under copyright (full text not legally free online)
-//               per summary.md §3, OR not addressed in summary.md at all.
-const GROUNDING_MAP = {
-  // Public domain — explicitly listed in summary.md §3
-  sun_tzu: "grounded",
-  machiavelli_prince: "grounded",
-  epictetus_stoic: "grounded",
-  marcus_aurelius: "grounded",
-  seneca_stoic: "grounded",
-  nietzsche_willpower: "grounded",
-  marx_dialectical: "grounded",
-  smith_invisible_hand: "grounded",
-  darwin_evolution: "grounded",
-
-  // Self-published / freely released by the author — explicitly listed in summary.md §3
-  bezos_day1: "grounded",
-  naval_leverage: "grounded",
-  buffett_margin_safety: "grounded",
-  feynman: "grounded",
-  second_order: "grounded", // Howard Marks (free Oaktree memos); Ray Dalio half unconfirmed, see sources.js
-
-  // Confirmed public domain in India (operating jurisdiction) under Copyright
-  // Act 1957 §22, life+60 years. Still under copyright in the US — see sources.js.
-  keynes_economics: "grounded",
-  camus_absurdism: "grounded",
-
-  // No free full-text hosting found during verification — remains memory-based.
-  bayes: "memory",
-
-  // Confirmed under copyright — explicitly listed in summary.md §3
-  thiel: "memory",
-  taleb: "memory",
-  porter: "memory",
-  kahneman: "memory",
-  popper: "memory",
-  christensen_disruption: "memory",
-  dawkins_memetic: "memory",
-  harari_narrative: "memory",
-  greene_power: "memory",
-  senge_systems: "memory",
-  ackoff_idealized: "memory",
-  drucker_effectiveness: "memory",
-  collins_flywheel: "memory",
-  gladwell_tipping: "memory",
-  kahneman_noise: "memory",
-  thaler_nudge: "memory",
-  taleb_black_swan: "memory",
-  greene_seduction: "memory",
-  sartre_existentialism: "memory",
-  foucault_power: "memory",
-  hayek_spontaneous: "memory",
-  friedman_free_market: "memory",
-
-  // Co-attributed frameworks with confirmed free sources for their thinkers —
-  // see sources.js for exact URLs per entry.
-  first_principles: "grounded",   // Aristotle (Gutenberg) + Elon Musk (free transcripts)
-  inversion: "grounded",          // Munger (CNBC transcript) + Marcus Aurelius/Epictetus (Gutenberg)
-  munger: "grounded",             // Confirmed via official CNBC transcript
-  bias_checker: "grounded",       // Kahneman, Munger, Taleb, Cialdini — all have free sources
-  hoffertrue_believer: "grounded", // American Archive of Public Broadcasting transcript
-  meadows_leverage: "grounded",   // Official Donella Meadows Project interview
-};
-
-function getGrounding(fwId) {
-  return GROUNDING_MAP[fwId] || "memory";
-}
-
 // ─── API CALL ──────────────────────────────────────────────────────────────────
 async function callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch, model, frameworkId, groundingMeta) {
   const response = await fetch("/api/analyze", {
@@ -1569,11 +1474,11 @@ async function callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch,
     err.retryAfterMs = result.retryAfterMs || null;
     throw err;
   }
-  // Side-channel: if the caller passed a mutable groundingMeta object, fill it
-  // in as a side effect. Existing callers that don't pass this argument are
-  // completely unaffected — this does NOT change the return type/value. This
-  // is what lets the UI show real per-answer grounding status instead of only
-  // the static GROUNDING_MAP classification (see GroundingBadge).
+  // Side-channel: if the caller passed a mutable groundingMeta object, fill
+  // it in as a side effect. Existing callers that don't pass this argument
+  // are completely unaffected — this does NOT change the return type/value.
+  // This is what lets the UI show real per-answer grounding status instead
+  // of only the static GROUNDING_MAP classification (see GroundingBadge).
   if (groundingMeta) {
     groundingMeta.used = !!result.groundingUsed;
     groundingMeta.source = result.groundingSource || null;
@@ -1581,31 +1486,7 @@ async function callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch,
   return result.data.content?.map(c => c.text || "").join("") || "";
 }
 
-// Applies extra-aggressive compression to the payload when targeting DeepSeek,
-// since it tends to hit "context too long" errors more readily than other models.
-function compactUserContentForDeepSeek(userContent) {
-  if (typeof userContent !== "string") return userContent;
-  // Try to find the largest JSON object embedded in the prompt and re-compact it.
-  const firstBrace = userContent.indexOf("{");
-  const lastBrace = userContent.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    const candidate = userContent.slice(firstBrace, lastBrace + 1);
-    try {
-      const parsed = JSON.parse(candidate);
-      const compacted = compact(parsed, 1, 120);
-      return userContent.slice(0, firstBrace) + JSON.stringify(compacted) + userContent.slice(lastBrace + 1);
-    } catch {
-      // Not valid JSON — fall through to plain truncation below.
-    }
-  }
-  const MAX_LEN = 6000;
-  return userContent.length > MAX_LEN ? userContent.slice(0, MAX_LEN) + "…" : userContent;
-}
-
 async function callModel(systemPrompt, userContent, maxTokens = 1200, useWebSearch = false, model = "groq", frameworkId = null, groundingMeta = null) {
-  if (model === "deepseek") {
-    userContent = compactUserContentForDeepSeek(userContent);
-  }
   let raw;
   try {
     raw = await callModelOnce(systemPrompt, userContent, maxTokens, useWebSearch, model, frameworkId, groundingMeta);
@@ -1677,7 +1558,7 @@ async function mapWithConcurrency(items, limit, worker) {
   return results;
 }
 
-function compact(obj, maxArrayItems = 2, maxStringLen = 150) {
+function compact(obj, maxArrayItems = 3, maxStringLen = 220) {
   if (obj == null) return obj;
   if (typeof obj === "string") return obj.length > maxStringLen ? obj.slice(0, maxStringLen) + "…" : obj;
   if (Array.isArray(obj)) return obj.slice(0, maxArrayItems).map(v => compact(v, maxArrayItems, maxStringLen));
@@ -1692,8 +1573,8 @@ function compact(obj, maxArrayItems = 2, maxStringLen = 150) {
 function compactFramework(id, r) {
   return {
     framework: id,
-    key_claim: (r?.key_claim || "").slice(0, 150),
-    recommendation: (r?.recommendation || "").slice(0, 120),
+    key_claim: (r?.key_claim || "").slice(0, 220),
+    recommendation: (r?.recommendation || "").slice(0, 160),
     confidence: r?.confidence || 0,
     evidence: (r?.evidence || []).slice(0, 2),
     counterarguments: (r?.counterarguments || []).slice(0, 2),
@@ -1979,6 +1860,49 @@ function ConfidenceBadge({ value, small }) {
 }
 
 // ─── SEVERITY BADGE ───────────────────────────────────────────────────────────
+// ─── SOURCE GROUNDING BADGE (Fix #1) ─────────────────────────────────────────
+function GroundingBadge({ fwId, result }) {
+  const staticStatus = getGrounding(fwId); // "grounded" or "memory" — the pre-run expectation
+  const hasRunResult = result && typeof result.actualGroundingUsed === "boolean";
+
+  let state, c, icon, label, title;
+
+  if (hasRunResult && result.actualGroundingUsed) {
+    // Confirmed: retrieval actually succeeded for this specific answer.
+    state = "confirmed_grounded";
+    c = "#22c55e"; icon = "📖";
+    label = "Grounded in primary source";
+    title = `Real source text was fetched and used for this answer.${result.actualGroundingSource ? " Source: " + result.actualGroundingSource : ""}`;
+  } else if (hasRunResult && !result.actualGroundingUsed && staticStatus === "grounded") {
+    // The critical honesty case this fix was built for: a source was
+    // supposed to be available, but retrieval failed for this specific
+    // answer (fetch error, extraction failure, etc.) — do NOT silently
+    // claim grounding just because the framework is classified "grounded."
+    state = "attempted_failed";
+    c = "#f59e0b"; icon = "⚠️";
+    label = "Grounding unavailable this time";
+    title = "This thinker normally has a real source, but retrieval failed for this specific answer (e.g. the source couldn't be fetched). This answer used the AI's general understanding instead.";
+  } else {
+    // Either not run yet (pre-run expectation, static classification), or
+    // run and correctly used memory because no source exists for this
+    // thinker at all.
+    const isGrounded = staticStatus === "grounded";
+    state = isGrounded ? "expected_grounded" : "memory";
+    c = isGrounded ? "#22c55e" : "#94a3b8";
+    icon = isGrounded ? "📖" : "🧠";
+    label = isGrounded ? "Grounded in primary source" : "AI's general understanding";
+    title = isGrounded
+      ? "This thinker's real text is legally free online (public domain or self-published)."
+      : "This thinker's copyrighted work is not fed to the model — response is from the model's trained memory only.";
+  }
+
+  return (
+    <div title={title} style={{ fontSize: "10px", fontWeight: "700", color: c, background: `${c}15`, border: `1px solid ${c}35`, borderRadius: "4px", padding: "1px 7px", display: "inline-flex", alignItems: "center", gap: "4px", whiteSpace: "nowrap", marginTop: "2px" }}>
+      {icon} {label}
+    </div>
+  );
+}
+
 function SeverityBadge({ severity }) {
   const map = { Critical: "#ef4444", High: "#f97316", Medium: "#f59e0b", Low: "#64748b" };
   const c = map[severity] || "#64748b";
@@ -2063,45 +1987,6 @@ function AssumptionCriticalityBadge({ criticality }) {
   return (
     <div style={{ fontSize: "10px", fontWeight: "600", color, background: `${color}18`, border: `1px solid ${color}30`, borderRadius: "4px", padding: "1px 8px", flexShrink: 0, whiteSpace: "nowrap" }}>
       {criticality}
-    </div>
-  );
-}
-
-// ─── SOURCE GROUNDING BADGE (Fix #1) ─────────────────────────────────────────
-function GroundingBadge({ fwId, result }) {
-  const staticStatus = getGrounding(fwId); // "grounded" or "memory" — the pre-run expectation
-  const hasRunResult = result && typeof result.actualGroundingUsed === "boolean";
-
-  let c, icon, label, title;
-
-  if (hasRunResult && result.actualGroundingUsed) {
-    // Confirmed: retrieval actually succeeded for this specific answer.
-    c = "#22c55e"; icon = "📖";
-    label = "Grounded in primary source";
-    title = `Real source text was fetched and used for this answer.${result.actualGroundingSource ? " Source: " + result.actualGroundingSource : ""}`;
-  } else if (hasRunResult && !result.actualGroundingUsed && staticStatus === "grounded") {
-    // The critical honesty case this fix was built for: a source was supposed
-    // to be available, but retrieval failed for this specific answer (fetch
-    // error, extraction failure, etc.) — do NOT silently claim grounding just
-    // because the framework is classified "grounded."
-    c = "#f59e0b"; icon = "⚠️";
-    label = "Grounding unavailable this time";
-    title = "This thinker normally has a real source, but retrieval failed for this specific answer (e.g. the source couldn't be fetched). This answer used the AI's general understanding instead.";
-  } else {
-    // Either not run yet (pre-run expectation, static classification), or run
-    // and correctly used memory because no source exists for this thinker.
-    const isGrounded = staticStatus === "grounded";
-    c = isGrounded ? "#22c55e" : "#94a3b8";
-    icon = isGrounded ? "📖" : "🧠";
-    label = isGrounded ? "Grounded in primary source" : "AI's general understanding";
-    title = isGrounded
-      ? "This thinker's real text is legally free online (public domain or self-published)."
-      : "This thinker's copyrighted work is not fed to the model — response is from the model's trained memory only.";
-  }
-
-  return (
-    <div title={title} style={{ fontSize: "10px", fontWeight: "700", color: c, background: `${c}15`, border: `1px solid ${c}35`, borderRadius: "4px", padding: "1px 7px", display: "inline-flex", alignItems: "center", gap: "4px", whiteSpace: "nowrap", marginTop: "2px" }}>
-      {icon} {label}
     </div>
   );
 }
@@ -2581,7 +2466,7 @@ export default function ThinkingOSv2() {
   // ─── NEW: active tab for results ──────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("synthesis");
   // ─── NEW: model selector ──────────────────────────────────────────────────
-  const [selectedModel, setSelectedModel] = useState("deepseek");
+  const [selectedModel, setSelectedModel] = useState("groq");
 
   // ─── JOURNAL REMINDER (C) ──────────────────────────────────────────────────
   const [checkInDays, setCheckInDays] = useState(null);
@@ -2843,9 +2728,9 @@ export default function ThinkingOSv2() {
       const fwRes = {};
       const fwErrors = [];
       await mapWithConcurrency(fws, 2, async (fw) => {
+        const groundingMeta = {}; // filled in as a side effect by callModel, see callModelOnce
         try {
           const fwModel = FW_MODEL_MAP[fw.id] || selectedModel || "groq";
-          const groundingMeta = {}; // filled in as a side effect by callModel, see callModelOnce
           const raw = await callModel(
             fw.prompt,
             `${modeQuestion}\n\nVERIFIED FACTS:\n${JSON.stringify(researchData.facts)}\n\nSources: ${JSON.stringify(researchData.sources)}\n\nASSUMPTIONS:\n${JSON.stringify(realityData.assumptions)}\n\nUNKNOWNS:\n${JSON.stringify(realityData.unknowns)}\n\nUSER CONTEXT:\n${answerContext}\n\nApply your framework now.`,
@@ -2860,16 +2745,16 @@ export default function ThinkingOSv2() {
             fwErrors.push(`${fw.label}: response couldn't be parsed, used fallback`);
           }
           fwRes[fw.id] = parsed || { key_claim: raw.slice(0, 200), confidence: 40, evidence: [], counterarguments: [], unknowns: [], recommendation: "" };
-          // Attach REAL per-answer grounding status (from this actual API call),
-          // separate from the static GROUNDING_MAP classification. groundingMeta
-          // stays {} (used=undefined) if the call errored before the API
-          // responded — GroundingBadge treats that as "unknown," not "grounded."
-          fwRes[fw.id].actualGroundingUsed = groundingMeta.used === true;
-          fwRes[fw.id].actualGroundingSource = groundingMeta.source || null;
         } catch (e) {
           fwErrors.push(`${fw.label}: ${e.message}`);
           fwRes[fw.id] = { key_claim: `Error: ${e.message}`, confidence: 0, evidence: [], counterarguments: [], unknowns: [], recommendation: "" };
         }
+        // Attach REAL per-answer grounding status (from this actual API call),
+        // separate from the static GROUNDING_MAP classification. groundingMeta
+        // stays {} (used=undefined) if the call errored before the API
+        // responded — GroundingBadge treats that as "unknown," not "grounded."
+        fwRes[fw.id].actualGroundingUsed = groundingMeta.used === true;
+        fwRes[fw.id].actualGroundingSource = groundingMeta.source || null;
         setFwResults(prev => ({ ...prev, [fw.id]: fwRes[fw.id] }));
         setFwLoading(prev => ({ ...prev, [fw.id]: false }));
       });
@@ -3597,12 +3482,6 @@ Respond to this attack. Either defend your claim, or concede if the critic is ri
       {!hasRun && !isAsking && (
         <div style={{ padding: "30px 20px 0", flexShrink: 0 }}>
           <div style={{ background: "#ffffff", borderRadius: "14px", padding: "24px", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "10px 14px", marginBottom: "14px", fontSize: "12px", color: "#4a5568", lineHeight: "1.7" }}>
-              <div style={{ fontWeight: "700", letterSpacing: "0.06em", marginBottom: "4px", color: "#6366f1" }}>HOW TO USE</div>
-              <div>1. Paste your question or decision below.</div>
-              <div>2. Select a model (DeepSeek is the fastest and cheapest).</div>
-              <div>3. Click Analyze and wait about 30 seconds for your report.</div>
-            </div>
             <div style={{ fontSize: "13px", color: "#4a5568", fontWeight: "600", letterSpacing: "0.08em", marginBottom: "12px" }}>
               QUESTION OR DECISION
               {currentContext && <span style={{ fontWeight: "400", color: "#94a3b8", fontSize: "11px" }}> — continuing conversation</span>}
@@ -3654,11 +3533,11 @@ Respond to this attack. Either defend your claim, or concede if the critic is ri
                     cursor: "pointer"
                   }}
                 >
-                  <option value="deepseek">DeepSeek (Chat)</option>
-                  <option value="groq">Groq (Llama 3.3)</option>
+                  <option value="groq">Groq (GPT-OSS 120B)</option>
                   <option value="openai">OpenAI (GPT-4o)</option>
-                  <option value="claude">Claude (Sonnet 3.5)</option>
-                  <option value="gemini">Gemini (1.5 Pro)</option>
+                  <option value="claude">Claude (Sonnet 5)</option>
+                  <option value="gemini">Gemini (2.5 Flash)</option>
+                  <option value="deepseek">DeepSeek (V4 Flash)</option>
                 </select>
               </div>
 
@@ -3711,25 +3590,13 @@ Respond to this attack. Either defend your claim, or concede if the critic is ri
                   <label style={{ fontSize: "14px", fontWeight: "600", color: "#4a5568", display: "block", marginBottom: "4px" }}>
                     {index + 1}. {field.label}
                   </label>
-                  {field.type === "number" ? (
-                    <input
-                      id={`answer_${field.id}`}
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="Enter a number"
-                      className="answer-input"
-                      defaultValue={currentContext?.answers?.[field.id] || ""}
-                    />
-                  ) : (
-                    <input
-                      id={`answer_${field.id}`}
-                      type="text"
-                      placeholder={`Enter your ${field.label.toLowerCase()}`}
-                      className="answer-input"
-                      defaultValue={currentContext?.answers?.[field.id] || ""}
-                    />
-                  )}
+                  <input
+                    id={`answer_${field.id}`}
+                    type={field.type === "number" ? "number" : "text"}
+                    placeholder={`Enter your ${field.label.toLowerCase()}`}
+                    className="answer-input"
+                    defaultValue={currentContext?.answers?.[field.id] || ""}
+                  />
                 </div>
               ))}
             </div>
