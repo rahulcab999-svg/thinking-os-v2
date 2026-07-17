@@ -307,23 +307,27 @@ async function callClaude(systemPrompt, userMessage, maxTokens) {
   }
 }
 
-// Google Gemini (2.5 Flash)
-// FIXED: gemini-1.5-pro was retired by Google — confirmed via search that
-// "All Gemini 1.0 models and Gemini 1.5 are already shutdown, and all
-// requests to these models return a 404 error" (Google's own Firebase AI
-// Logic docs, updated within days of this fix). Switched to gemini-2.5-flash
-// (current, stable, and covered by Gemini's genuinely-free API tier — Pro
-// models are "heavily restricted" on the free tier per current provider
-// research). Also switched v1beta -> v1 (the stable API version) since
-// v1beta is explicitly documented as "actively being developed" and more
-// prone to this kind of breaking change.
+// Google Gemini (3.5 Flash)
+// FIXED (round 1): gemini-1.5-pro was retired by Google — confirmed via
+// search that "All Gemini 1.0 models and Gemini 1.5 are already shutdown"
+// (Google's Firebase AI Logic docs). Switched to gemini-2.5-flash.
+// FIXED (round 2): gemini-2.5-flash then started returning 404 "no longer
+// available to new users" in real testing, despite Google's own official
+// deprecation page listing its shutdown date as October 16, 2026 — months
+// away. Confirmed via Google's own developer forum: multiple independent
+// reports from July 9-10, 2026 (days before this fix) of gemini-2.5-flash
+// and gemini-2.5-flash-lite returning this exact 404 early/inconsistently,
+// apparently affecting new API keys first — Google has not explained why in
+// their changelog. This is a live issue on Google's side, not a wrong model
+// name. Switched to gemini-3.5-flash, Google's own listed official
+// replacement for gemini-2.5-flash, to avoid this specific in-progress bug.
 async function callGemini(systemPrompt, userMessage, maxTokens) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${process.env.GOOGLE_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-3.5-flash:generateContent?key=${process.env.GOOGLE_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
