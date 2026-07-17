@@ -3536,7 +3536,7 @@ Respond to this attack. Either defend your claim, or concede if the critic is ri
                   <option value="groq">Groq (GPT-OSS 120B)</option>
                   <option value="openai">OpenAI (GPT-4o)</option>
                   <option value="claude">Claude (Sonnet 5)</option>
-                  <option value="gemini">Gemini (2.5 Flash)</option>
+                  <option value="gemini">Gemini (3.5 Flash)</option>
                   <option value="deepseek">DeepSeek (V4 Flash)</option>
                 </select>
               </div>
